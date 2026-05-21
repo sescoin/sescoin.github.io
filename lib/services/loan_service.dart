@@ -4,9 +4,9 @@ import '../core/constants.dart';
 import '../models/loan.dart';
 
 class LoanService {
-  final SupabaseClient _client;
-
   LoanService(this._client);
+
+  final SupabaseClient _client;
 
   Future<List<Loan>> getBorrowedLoans(String userId) async {
     final data = await _client
@@ -15,7 +15,7 @@ class LoanService {
         .eq('borrower_id', userId)
         .order('created_at', ascending: false);
 
-    return (data as List).map((e) => Loan.fromJson(e)).toList();
+    return (data as List).map((row) => Loan.fromJson(row)).toList();
   }
 
   Future<List<Loan>> getLentLoans(String userId) async {
@@ -25,7 +25,7 @@ class LoanService {
         .eq('lender_id', userId)
         .order('created_at', ascending: false);
 
-    return (data as List).map((e) => Loan.fromJson(e)).toList();
+    return (data as List).map((row) => Loan.fromJson(row)).toList();
   }
 
   Future<List<Loan>> getAllUserLoans(String userId) async {
@@ -35,7 +35,7 @@ class LoanService {
         .or('borrower_id.eq.$userId,lender_id.eq.$userId')
         .order('created_at', ascending: false);
 
-    return (data as List).map((e) => Loan.fromJson(e)).toList();
+    return (data as List).map((row) => Loan.fromJson(row)).toList();
   }
 
   Future<List<Loan>> getOverdueLoans() async {
@@ -47,7 +47,7 @@ class LoanService {
         .lt('due_date', now)
         .order('due_date', ascending: true);
 
-    return (data as List).map((e) => Loan.fromJson(e)).toList();
+    return (data as List).map((row) => Loan.fromJson(row)).toList();
   }
 
   Future<Loan> getLoan(String loanId) async {
@@ -99,7 +99,6 @@ class LoanService {
     }
 
     final totalDue = Loan.calculateTotalDue(principal, interestRate);
-
     final data = await _client.rpc('request_loan', params: {
       'p_borrower_id': borrowerId,
       'p_lender_id': lenderData['id'],
@@ -114,44 +113,36 @@ class LoanService {
   }
 
   Future<Loan> acceptLoan(String loanId, String lenderId) async {
-    final response = await _client.rpc('accept_loan', params: {
+    final data = await _client.rpc('accept_loan', params: {
       'p_loan_id': loanId,
       'p_lender_id': lenderId,
     });
 
-    return Loan.fromJson(response as Map<String, dynamic>);
+    return Loan.fromJson(data as Map<String, dynamic>);
   }
 
   Future<Loan> rejectLoan(String loanId, String lenderId) async {
-    final data = await _client
-        .from(AppConstants.tableLoans)
-        .update({
-          'status': 'rejected',
-          'updated_at': DateTime.now().toIso8601String(),
-        })
-        .eq('id', loanId)
-        .eq('lender_id', lenderId)
-        .eq('status', 'pending')
-        .select()
-        .single();
+    final data = await _client.rpc('reject_loan', params: {
+      'p_loan_id': loanId,
+      'p_lender_id': lenderId,
+    });
 
-    return Loan.fromJson(data);
+    return Loan.fromJson(data as Map<String, dynamic>);
   }
 
   Future<Loan> cancelLoan(String loanId, String borrowerId) async {
-    final data = await _client
-        .from(AppConstants.tableLoans)
-        .update({
-          'status': 'cancelled',
-          'updated_at': DateTime.now().toIso8601String(),
-        })
-        .eq('id', loanId)
-        .eq('borrower_id', borrowerId)
-        .eq('status', 'pending')
-        .select()
-        .single();
+    final data = await _client.rpc('cancel_loan', params: {
+      'p_loan_id': loanId,
+      'p_borrower_id': borrowerId,
+    });
 
-    return Loan.fromJson(data);
+    return Loan.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteLoan(String loanId) async {
+    await _client.rpc('delete_loan', params: {
+      'p_loan_id': loanId,
+    });
   }
 
   Future<Loan> repayLoan({
@@ -163,13 +154,13 @@ class LoanService {
       throw Exception('Le montant de remboursement doit être positif.');
     }
 
-    final response = await _client.rpc('repay_loan', params: {
+    final data = await _client.rpc('repay_loan', params: {
       'p_loan_id': loanId,
       'p_borrower_id': borrowerId,
       'p_amount': amount,
     });
 
-    return Loan.fromJson(response as Map<String, dynamic>);
+    return Loan.fromJson(data as Map<String, dynamic>);
   }
 
   Future<Loan> markAsDefaulted(String loanId) async {
@@ -191,11 +182,14 @@ class LoanService {
         .from(AppConstants.tableLoans)
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
-        .map((rows) => rows
-            .where(
-              (r) => r['borrower_id'] == userId || r['lender_id'] == userId,
-            )
-            .map((r) => Loan.fromJson(r))
-            .toList());
+        .map(
+          (rows) => rows
+              .where(
+                (row) =>
+                    row['borrower_id'] == userId || row['lender_id'] == userId,
+              )
+              .map((row) => Loan.fromJson(row))
+              .toList(),
+        );
   }
 }

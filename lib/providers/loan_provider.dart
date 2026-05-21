@@ -5,39 +5,40 @@ import 'auth_provider.dart';
 import 'service_providers.dart';
 import 'wallet_provider.dart';
 
-// ── Prêts en temps réel ───────────────────────────────────────────────────────
 final userLoansProvider = StreamProvider<List<Loan>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return const Stream.empty();
+  if (userId == null) {
+    return const Stream.empty();
+  }
   return ref.watch(loanServiceProvider).watchUserLoans(userId);
 });
 
-// ── Prêts en tant qu'emprunteur ───────────────────────────────────────────────
 final borrowedLoansProvider = FutureProvider<List<Loan>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return [];
+  if (userId == null) {
+    return [];
+  }
   return ref.watch(loanServiceProvider).getBorrowedLoans(userId);
 });
 
-// ── Prêts en tant que prêteur ─────────────────────────────────────────────────
 final lentLoansProvider = FutureProvider<List<Loan>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return [];
+  if (userId == null) {
+    return [];
+  }
   return ref.watch(loanServiceProvider).getLentLoans(userId);
 });
 
-// ── Actions sur les prêts ─────────────────────────────────────────────────────
-
 class LoanActionState {
-  final bool isLoading;
-  final String? error;
-  final Loan? lastLoan;
-
   const LoanActionState({
     this.isLoading = false,
     this.error,
     this.lastLoan,
   });
+
+  final bool isLoading;
+  final String? error;
+  final Loan? lastLoan;
 
   LoanActionState copyWith({
     bool? isLoading,
@@ -59,9 +60,9 @@ final loanActionProvider =
 });
 
 class LoanActionNotifier extends StateNotifier<LoanActionState> {
-  final Ref _ref;
-
   LoanActionNotifier(this._ref) : super(const LoanActionState());
+
+  final Ref _ref;
 
   Future<Loan> requestLoan({
     required String lenderUsername,
@@ -71,7 +72,9 @@ class LoanActionNotifier extends StateNotifier<LoanActionState> {
     String? note,
   }) async {
     final userId = _ref.read(currentUserIdProvider);
-    if (userId == null) throw Exception('Non connecté');
+    if (userId == null) {
+      throw Exception('Non connecté');
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -85,59 +88,73 @@ class LoanActionNotifier extends StateNotifier<LoanActionState> {
           );
       state = state.copyWith(isLoading: false, lastLoan: loan);
       return loan;
-    } catch (e, st) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      Error.throwWithStackTrace(e, st);
+    } catch (error, stackTrace) {
+      state = state.copyWith(isLoading: false, error: error.toString());
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
   Future<Loan> acceptLoan(String loanId) async {
     final userId = _ref.read(currentUserIdProvider);
-    if (userId == null) throw Exception('Non connecté');
+    if (userId == null) {
+      throw Exception('Non connecté');
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final loan =
-          await _ref.read(loanServiceProvider).acceptLoan(loanId, userId);
+      final loan = await _ref.read(loanServiceProvider).acceptLoan(loanId, userId);
       state = state.copyWith(isLoading: false, lastLoan: loan);
       await _ref.read(currentProfileProvider.notifier).refresh();
       _ref.read(walletProvider.notifier).loadInitial();
       return loan;
-    } catch (e, st) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      Error.throwWithStackTrace(e, st);
+    } catch (error, stackTrace) {
+      state = state.copyWith(isLoading: false, error: error.toString());
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
   Future<Loan> rejectLoan(String loanId) async {
     final userId = _ref.read(currentUserIdProvider);
-    if (userId == null) throw Exception('Non connecté');
+    if (userId == null) {
+      throw Exception('Non connecté');
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final loan =
-          await _ref.read(loanServiceProvider).rejectLoan(loanId, userId);
+      final loan = await _ref.read(loanServiceProvider).rejectLoan(loanId, userId);
       state = state.copyWith(isLoading: false, lastLoan: loan);
       return loan;
-    } catch (e, st) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      Error.throwWithStackTrace(e, st);
+    } catch (error, stackTrace) {
+      state = state.copyWith(isLoading: false, error: error.toString());
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
   Future<Loan> cancelLoan(String loanId) async {
     final userId = _ref.read(currentUserIdProvider);
-    if (userId == null) throw Exception('Non connecté');
+    if (userId == null) {
+      throw Exception('Non connecté');
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final loan =
-          await _ref.read(loanServiceProvider).cancelLoan(loanId, userId);
+      final loan = await _ref.read(loanServiceProvider).cancelLoan(loanId, userId);
       state = state.copyWith(isLoading: false, lastLoan: loan);
       return loan;
-    } catch (e, st) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      Error.throwWithStackTrace(e, st);
+    } catch (error, stackTrace) {
+      state = state.copyWith(isLoading: false, error: error.toString());
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
+  Future<void> deleteLoan(String loanId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _ref.read(loanServiceProvider).deleteLoan(loanId);
+      state = state.copyWith(isLoading: false);
+    } catch (error, stackTrace) {
+      state = state.copyWith(isLoading: false, error: error.toString());
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
@@ -146,7 +163,9 @@ class LoanActionNotifier extends StateNotifier<LoanActionState> {
     required double amount,
   }) async {
     final userId = _ref.read(currentUserIdProvider);
-    if (userId == null) throw Exception('Non connecté');
+    if (userId == null) {
+      throw Exception('Non connecté');
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -159,11 +178,13 @@ class LoanActionNotifier extends StateNotifier<LoanActionState> {
       await _ref.read(currentProfileProvider.notifier).refresh();
       _ref.read(walletProvider.notifier).loadInitial();
       return loan;
-    } catch (e, st) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      Error.throwWithStackTrace(e, st);
+    } catch (error, stackTrace) {
+      state = state.copyWith(isLoading: false, error: error.toString());
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
-  void reset() => state = const LoanActionState();
+  void reset() {
+    state = const LoanActionState();
+  }
 }

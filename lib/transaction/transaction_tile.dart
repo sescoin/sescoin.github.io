@@ -34,11 +34,8 @@ class TransactionTile extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            // ── Icône type transaction ───────────────────────────────────────
             _TypeIcon(type: transaction.type, isCredit: isCredit),
             const SizedBox(width: 12),
-
-            // ── Info principale ──────────────────────────────────────────────
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,8 +60,6 @@ class TransactionTile extends ConsumerWidget {
                 ],
               ),
             ),
-
-            // ── Montant + date ───────────────────────────────────────────────
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -116,20 +111,21 @@ class TransactionTile extends ConsumerWidget {
 
 class _TypeIcon extends StatelessWidget {
   const _TypeIcon({required this.type, required this.isCredit});
+
   final TransactionType type;
   final bool isCredit;
 
   @override
   Widget build(BuildContext context) {
-    final (icon, bg) = _iconData();
+    final (icon, color) = _iconData();
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: bg.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(icon, color: bg, size: 20),
+      child: Icon(icon, color: color, size: 20),
     );
   }
 

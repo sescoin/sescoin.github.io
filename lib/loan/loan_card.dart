@@ -14,6 +14,7 @@ class LoanCard extends StatelessWidget {
     this.onReject,
     this.onRepay,
     this.onCancel,
+    this.onDelete,
     this.isLoading = false,
   });
 
@@ -23,12 +24,13 @@ class LoanCard extends StatelessWidget {
   final VoidCallback? onReject;
   final VoidCallback? onRepay;
   final VoidCallback? onCancel;
+  final VoidCallback? onDelete;
   final bool isLoading;
+
+  static final _dateFormat = DateFormat('dd/MM/yyyy');
 
   bool get _isBorrower => loan.borrowerId == currentUserId;
   bool get _isLender => loan.lenderId == currentUserId;
-
-  static final _dateFormat = DateFormat('dd/MM/yyyy');
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +40,10 @@ class LoanCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ────────────────────────────────────────────────────────
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _LoanStatusBadge(status: loan.status),
+                const Spacer(),
                 if (loan.isOverdue)
                   Container(
                     padding:
@@ -60,48 +61,58 @@ class LoanCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (onDelete != null) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: isLoading ? null : onDelete,
+                    tooltip: 'Supprimer',
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppTheme.negative,
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 12),
-
-            // ── Parties ───────────────────────────────────────────────────────
             Row(
               children: [
-                UserAvatar(username: loan.lenderUsername, radius: 16),
+                UserAvatar(
+                  username: _isLender ? loan.borrowerUsername : loan.lenderUsername,
+                  radius: 16,
+                ),
                 const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _isLender ? 'Vous prêtez à' : 'Prêteur',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isLender ? 'Vous prêtez à' : 'Prêteur',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    Text(
-                      _isLender
-                          ? '@${loan.borrowerUsername}'
-                          : '@${loan.lenderUsername}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                      Text(
+                        _isLender
+                            ? '@${loan.borrowerUsername}'
+                            : '@${loan.lenderUsername}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-
-            // ── Montants ──────────────────────────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _AmountInfo(
-                  label: 'Principal',
-                  amount: loan.principal,
-                ),
+                _AmountInfo(label: 'Principal', amount: loan.principal),
                 _AmountInfo(
                   label: 'Intérêts (${loan.interestRate.toStringAsFixed(1)}%)',
                   amount: loan.interestAmount,
@@ -113,10 +124,8 @@ class LoanCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-
-            // ── Barre de progression ──────────────────────────────────────────
             if (loan.isActive || loan.status == LoanStatus.repaid) ...[
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -126,9 +135,11 @@ class LoanCard extends StatelessWidget {
                   ),
                   Text(
                     'Restant : ${loan.remainingAmount.toStringAsFixed(2)} SC',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppTheme.negative,
+                      color: loan.remainingAmount > 0
+                          ? AppTheme.negative
+                          : AppTheme.positive,
                     ),
                   ),
                 ],
@@ -145,10 +156,8 @@ class LoanCard extends StatelessWidget {
                 ),
               ),
             ],
-
-            // ── Date d'échéance ───────────────────────────────────────────────
             if (loan.dueDate != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Icon(
@@ -171,12 +180,10 @@ class LoanCard extends StatelessWidget {
                 ],
               ),
             ],
-
-            // ── Note ──────────────────────────────────────────────────────────
-            if (loan.note != null && loan.note!.isNotEmpty) ...[
-              const SizedBox(height: 8),
+            if (loan.note != null && loan.note!.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
               Text(
-                '"${loan.note}"',
+                '"${loan.note!.trim()}"',
                 style: TextStyle(
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
@@ -184,8 +191,6 @@ class LoanCard extends StatelessWidget {
                 ),
               ),
             ],
-
-            // ── Actions ───────────────────────────────────────────────────────
             const SizedBox(height: 12),
             _buildActions(context),
           ],
@@ -195,7 +200,6 @@ class LoanCard extends StatelessWidget {
   }
 
   Widget _buildActions(BuildContext context) {
-    // Prêteur voit une demande en attente
     if (_isLender && loan.isPending) {
       return Row(
         children: [
@@ -220,7 +224,6 @@ class LoanCard extends StatelessWidget {
       );
     }
 
-    // Emprunteur peut annuler sa demande
     if (_isBorrower && loan.isPending) {
       return SizedBox(
         width: double.infinity,
@@ -235,7 +238,6 @@ class LoanCard extends StatelessWidget {
       );
     }
 
-    // Emprunteur peut rembourser
     if (_isBorrower && loan.isActive && !loan.isFullyRepaid) {
       return SizedBox(
         width: double.infinity,
@@ -247,12 +249,26 @@ class LoanCard extends StatelessWidget {
       );
     }
 
+    if (loan.isArchived && onDelete != null) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Archivé',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
     return const SizedBox.shrink();
   }
 }
 
 class _LoanStatusBadge extends StatelessWidget {
   const _LoanStatusBadge({required this.status});
+
   final LoanStatus status;
 
   @override
@@ -291,6 +307,7 @@ class _AmountInfo extends StatelessWidget {
     required this.amount,
     this.bold = false,
   });
+
   final String label;
   final double amount;
   final bool bold;

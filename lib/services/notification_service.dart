@@ -1,15 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../core/constants.dart';
 import '../models/app_notification.dart';
 
 class NotificationService {
-  final SupabaseClient _client;
-
   NotificationService(this._client);
 
-  // ─── Lecture ─────────────────────────────────────────────────────────────────
+  final SupabaseClient _client;
 
-  /// Notifications d'un utilisateur (les plus récentes en premier)
   Future<List<AppNotification>> getNotifications({
     required String userId,
     int page = 0,
@@ -25,10 +23,9 @@ class NotificationService {
         .order('created_at', ascending: false)
         .range(from, to);
 
-    return (data as List).map((e) => AppNotification.fromJson(e)).toList();
+    return (data as List).map((row) => AppNotification.fromJson(row)).toList();
   }
 
-  /// Notifications non lues uniquement
   Future<List<AppNotification>> getUnreadNotifications(String userId) async {
     final data = await _client
         .from(AppConstants.tableNotifications)
@@ -37,10 +34,9 @@ class NotificationService {
         .eq('is_read', false)
         .order('created_at', ascending: false);
 
-    return (data as List).map((e) => AppNotification.fromJson(e)).toList();
+    return (data as List).map((row) => AppNotification.fromJson(row)).toList();
   }
 
-  /// Nombre de notifications non lues (pour le badge)
   Future<int> getUnreadCount(String userId) async {
     final data = await _client
         .from(AppConstants.tableNotifications)
@@ -51,16 +47,12 @@ class NotificationService {
     return (data as List).length;
   }
 
-  // ─── Marquage ─────────────────────────────────────────────────────────────────
-
-  /// Marque une notification comme lue
   Future<void> markAsRead(String notificationId) async {
     await _client
         .from(AppConstants.tableNotifications)
         .update({'is_read': true}).eq('id', notificationId);
   }
 
-  /// Marque toutes les notifications d'un utilisateur comme lues
   Future<void> markAllAsRead(String userId) async {
     await _client
         .from(AppConstants.tableNotifications)
@@ -69,9 +61,6 @@ class NotificationService {
         .eq('is_read', false);
   }
 
-  // ─── Suppression ─────────────────────────────────────────────────────────────
-
-  /// Supprime une notification
   Future<void> deleteNotification(String notificationId) async {
     await _client
         .from(AppConstants.tableNotifications)
@@ -79,7 +68,6 @@ class NotificationService {
         .eq('id', notificationId);
   }
 
-  /// Supprime toutes les notifications lues d'un utilisateur
   Future<void> clearReadNotifications(String userId) async {
     await _client
         .from(AppConstants.tableNotifications)
@@ -88,9 +76,6 @@ class NotificationService {
         .eq('is_read', true);
   }
 
-  // ─── Envoi (admin / système) ─────────────────────────────────────────────────
-
-  /// Envoie une notification à un utilisateur spécifique
   Future<AppNotification> sendToUser({
     required String userId,
     required NotificationType type,
@@ -114,7 +99,6 @@ class NotificationService {
     return AppNotification.fromJson(response);
   }
 
-  /// Envoie une notification à tous les utilisateurs actifs (admin)
   Future<void> broadcastToAll({
     required NotificationType type,
     required String title,
@@ -129,9 +113,6 @@ class NotificationService {
     });
   }
 
-  // ─── FCM Token ───────────────────────────────────────────────────────────────
-
-  /// Met à jour le token FCM d'un utilisateur (pour les push notifications)
   Future<void> updateFcmToken({
     required String userId,
     required String fcmToken,
@@ -141,35 +122,28 @@ class NotificationService {
         .update({'fcm_token': fcmToken}).eq('id', userId);
   }
 
-  /// Supprime le token FCM à la déconnexion
   Future<void> clearFcmToken(String userId) async {
     await _client
         .from(AppConstants.tableProfiles)
         .update({'fcm_token': null}).eq('id', userId);
   }
 
-  // ─── Realtime ────────────────────────────────────────────────────────────────
-
-  /// Stream des notifications d'un utilisateur (nouvelles en temps réel)
   Stream<List<AppNotification>> watchNotifications(String userId) {
     return _client
         .from(AppConstants.tableNotifications)
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
         .order('created_at', ascending: false)
-        .map((rows) => rows.map((r) => AppNotification.fromJson(r)).toList());
+        .map((rows) => rows.map((row) => AppNotification.fromJson(row)).toList());
   }
 
-  /// Stream du nombre de non-lus (pour le badge de l'onglet)
   Stream<int> watchUnreadCount(String userId) {
     return _client
         .from(AppConstants.tableNotifications)
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
-        .map((rows) => rows.where((r) => r['is_read'] == false).length);
+        .map((rows) => rows.where((row) => row['is_read'] == false).length);
   }
-
-  // ─── Helpers privés ──────────────────────────────────────────────────────────
 
   String _typeToDb(NotificationType type) {
     switch (type) {

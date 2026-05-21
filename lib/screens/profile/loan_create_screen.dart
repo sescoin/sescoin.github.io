@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
-import '../../common/loading_overlay.dart';
 
 class LoanCreateScreen extends ConsumerStatefulWidget {
   const LoanCreateScreen({super.key});
@@ -17,21 +17,15 @@ class LoanCreateScreen extends ConsumerStatefulWidget {
 }
 
 class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
-  final _formKey    = GlobalKey<FormState>();
-  final _amountCtrl = TextEditingController();
-  final _noteCtrl   = TextEditingController();
-  final _searchCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+  final _noteController = TextEditingController();
+  final _searchController = TextEditingController();
 
   DateTime? _dueDate;
-
-  // Tous les utilisateurs (chargés une fois)
   List<Map<String, dynamic>> _allUsers = [];
-  bool _loadingUsers = true;
-
-  // Prêteurs sélectionnés
   final List<Map<String, dynamic>> _selectedLenders = [];
-
-  // Filtre recherche
+  bool _loadingUsers = true;
   String _searchQuery = '';
 
   @override
@@ -42,9 +36,9 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
 
   @override
   void dispose() {
-    _amountCtrl.dispose();
-    _noteCtrl.dispose();
-    _searchCtrl.dispose();
+    _amountController.dispose();
+    _noteController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -59,38 +53,48 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
           .eq('is_banned', false)
           .neq('role', 'admin')
           .order('display_name');
-      if (mounted) {
-        setState(() {
-          _allUsers = List<Map<String, dynamic>>.from(data as List);
-          _loadingUsers = false;
-        });
+
+      if (!mounted) {
+        return;
       }
+      setState(() {
+        _allUsers = List<Map<String, dynamic>>.from(data as List);
+        _loadingUsers = false;
+      });
     } catch (_) {
-      if (mounted) setState(() => _loadingUsers = false);
+      if (mounted) {
+        setState(() => _loadingUsers = false);
+      }
     }
   }
 
   List<Map<String, dynamic>> get _filteredUsers {
-    final q = _searchQuery.toLowerCase();
-    if (q.isEmpty) return _allUsers;
-    return _allUsers.where((u) {
-      final username = (u['username'] as String).toLowerCase();
-      final name = (u['display_name'] as String).toLowerCase();
-      return username.contains(q) || name.contains(q);
+    final query = _searchQuery.toLowerCase();
+    if (query.isEmpty) {
+      return _allUsers;
+    }
+    return _allUsers.where((user) {
+      final username = (user['username'] as String).toLowerCase();
+      final name = (user['display_name'] as String).toLowerCase();
+      return username.contains(query) || name.contains(query);
     }).toList();
   }
 
   void _addLender(Map<String, dynamic> user) {
-    if (_selectedLenders.any((l) => l['id'] == user['id'])) return;
+    if (_selectedLenders.any((lender) => lender['id'] == user['id'])) {
+      return;
+    }
     setState(() {
       _selectedLenders.add(user);
-      _searchCtrl.clear();
+      _searchController.clear();
       _searchQuery = '';
     });
   }
 
   void _removeLender(String id) {
-    setState(() => _selectedLenders.removeWhere((l) => l['id'] == id));
+    setState(() {
+      _selectedLenders.removeWhere((lender) => lender['id'] == id);
+    });
   }
 
   Future<void> _pickDate() async {
@@ -102,11 +106,16 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
       lastDate:
           DateTime.now().add(Duration(days: AppConstants.maxLoanDurationDays)),
     );
-    if (picked != null) setState(() => _dueDate = picked);
+
+    if (picked != null) {
+      setState(() => _dueDate = picked);
+    }
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     if (_selectedLenders.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ajoute au moins un prêteur')),
@@ -115,11 +124,11 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     }
 
     final principal =
-        double.parse(_amountCtrl.text.replaceAll(',', '.'));
+        double.parse(_amountController.text.trim().replaceAll(',', '.'));
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (d) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Confirmer la demande'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -132,25 +141,28 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
             Text('Montant : ${principal.toStringAsFixed(2)} SC'),
             if (_dueDate != null)
               Text(
-                  'Échéance : ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'),
+                'Échéance : ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}',
+              ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(d, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Annuler'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(d, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Envoyer'),
           ),
         ],
       ),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted) {
+      return;
+    }
 
-    int sent = 0;
+    var sent = 0;
     final errors = <String>[];
 
     for (final lender in _selectedLenders) {
@@ -160,35 +172,38 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
               principal: principal,
               interestRate: 0,
               dueDate: _dueDate,
-              note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text,
+              note: _noteController.text.trim().isEmpty
+                  ? null
+                  : _noteController.text.trim(),
             );
         sent++;
-      } catch (e) {
-        errors.add('${lender['display_name']} : $e');
+      } catch (error) {
+        errors.add('${lender['display_name']} : $error');
       }
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     if (errors.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$sent envoyée(s), ${errors.length} échec(s)'),
-          backgroundColor: errors.length == _selectedLenders.length
-              ? Colors.red
-              : Colors.orange,
+          backgroundColor:
+              errors.length == _selectedLenders.length ? Colors.red : Colors.orange,
         ),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              '$sent demande(s) de prêt envoyée(s) avec succès !'),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
-      context.pop();
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$sent demande(s) de prêt envoyée(s) avec succès !'),
+        backgroundColor: AppTheme.positive,
+      ),
+    );
+    context.pop();
   }
 
   @override
@@ -213,59 +228,51 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Sélection des prêteurs ───────────────────────────────
                 _Label('Prêteur(s)'),
                 const SizedBox(height: 8),
-
-                // Chips des prêteurs sélectionnés
                 if (_selectedLenders.isNotEmpty) ...[
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
                     children: _selectedLenders
                         .map(
-                          (l) => Chip(
+                          (lender) => Chip(
                             avatar: CircleAvatar(
                               backgroundColor:
                                   AppTheme.gold.withValues(alpha: 0.2),
                               child: Text(
-                                (l['display_name'] as String)[0]
-                                    .toUpperCase(),
+                                (lender['display_name'] as String)[0].toUpperCase(),
                                 style: const TextStyle(
-                                    fontSize: 12, color: AppTheme.gold),
+                                  fontSize: 12,
+                                  color: AppTheme.gold,
+                                ),
                               ),
                             ),
-                            label: Text(l['display_name'] as String),
-                            onDeleted: () =>
-                                _removeLender(l['id'] as String),
+                            label: Text(lender['display_name'] as String),
+                            onDeleted: () => _removeLender(lender['id'] as String),
                           ),
                         )
                         .toList(),
                   ),
                   const SizedBox(height: 8),
                 ],
-
-                // Champ de recherche
                 TextField(
-                  controller: _searchCtrl,
-                  onChanged: (q) => setState(() => _searchQuery = q),
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _searchQuery = value),
                   decoration: InputDecoration(
                     hintText: 'Rechercher un utilisateur…',
                     prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.close_rounded,
-                                size: 18),
+                    suffixIcon: _searchQuery.isEmpty
+                        ? null
+                        : IconButton(
                             onPressed: () {
-                              _searchCtrl.clear();
+                              _searchController.clear();
                               setState(() => _searchQuery = '');
                             },
-                          )
-                        : null,
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                          ),
                   ),
                 ),
-
-                // Liste filtrée
                 if (_searchQuery.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   _loadingUsers
@@ -279,58 +286,53 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                               ),
                             )
                           : Container(
-                              constraints:
-                                  const BoxConstraints(maxHeight: 220),
+                              constraints: const BoxConstraints(maxHeight: 220),
                               decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: Theme.of(context)
-                                        .dividerColor),
+                                border:
+                                    Border.all(color: Theme.of(context).dividerColor),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
                                 child: ListView.separated(
-                                  shrinkWrap: true,
                                   padding: EdgeInsets.zero,
                                   itemCount: _filteredUsers.length,
                                   separatorBuilder: (_, __) =>
                                       const Divider(height: 1),
-                                  itemBuilder: (context, i) {
-                                    final u = _filteredUsers[i];
-                                    final already =
-                                        _selectedLenders.any(
-                                            (l) => l['id'] == u['id']);
+                                  itemBuilder: (context, index) {
+                                    final user = _filteredUsers[index];
+                                    final alreadySelected = _selectedLenders.any(
+                                      (lender) => lender['id'] == user['id'],
+                                    );
+
                                     return ListTile(
                                       dense: true,
                                       leading: CircleAvatar(
                                         radius: 18,
-                                        backgroundColor: AppTheme.gold
-                                            .withValues(alpha: 0.15),
+                                        backgroundColor:
+                                            AppTheme.gold.withValues(alpha: 0.15),
                                         child: Text(
-                                          (u['display_name']
-                                                  as String)[0]
+                                          (user['display_name'] as String)[0]
                                               .toUpperCase(),
                                           style: const TextStyle(
-                                              color: AppTheme.gold,
-                                              fontWeight:
-                                                  FontWeight.w700),
+                                            color: AppTheme.gold,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                         ),
                                       ),
-                                      title:
-                                          Text(u['display_name'] as String),
+                                      title: Text(user['display_name'] as String),
                                       subtitle: Text(
-                                          '@${u['username']}',
-                                          style: const TextStyle(
-                                              fontSize: 12)),
-                                      trailing: already
+                                        '@${user['username']}',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                      trailing: alreadySelected
                                           ? const Icon(
                                               Icons.check_rounded,
                                               color: AppTheme.positive,
-                                              size: 18)
+                                              size: 18,
+                                            )
                                           : null,
-                                      onTap: already
-                                          ? null
-                                          : () => _addLender(u),
+                                      onTap: alreadySelected ? null : () => _addLender(user),
                                     );
                                   },
                                 ),
@@ -338,31 +340,27 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                             ),
                 ],
                 const SizedBox(height: 20),
-
-                // ── Montant ──────────────────────────────────────────────
                 _Label('Montant emprunté'),
                 const SizedBox(height: 8),
                 TextFormField(
-                  controller: _amountCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
+                  controller: _amountController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
                     hintText: '0.00',
                     suffixText: 'SC',
                   ),
-                  validator: (v) {
-                    final n =
-                        double.tryParse(v?.replaceAll(',', '.') ?? '');
-                    if (n == null ||
-                        n < AppConstants.minTransferAmount) {
+                  validator: (value) {
+                    final amount = double.tryParse(
+                      value?.trim().replaceAll(',', '.') ?? '',
+                    );
+                    if (amount == null || amount < AppConstants.minTransferAmount) {
                       return 'Montant invalide';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
-
-                // ── Date d'échéance ──────────────────────────────────────
                 _Label('Date d\'échéance (optionnelle)'),
                 const SizedBox(height: 8),
                 InkWell(
@@ -370,18 +368,15 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .inputDecorationTheme
-                          .fillColor,
+                      color: Theme.of(context).inputDecorationTheme.fillColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today_rounded,
-                            size: 18),
+                        const Icon(Icons.calendar_today_rounded, size: 18),
                         const SizedBox(width: 12),
                         Text(
                           _dueDate == null
@@ -389,19 +384,19 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                               : '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}',
                           style: TextStyle(
                             color: _dueDate == null
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
                                 : null,
                           ),
                         ),
                         if (_dueDate != null) ...[
                           const Spacer(),
                           GestureDetector(
-                            onTap: () =>
-                                setState(() => _dueDate = null),
-                            child: const Icon(Icons.close_rounded,
-                                size: 16, color: Colors.grey),
+                            onTap: () => setState(() => _dueDate = null),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ],
@@ -409,12 +404,10 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // ── Note ─────────────────────────────────────────────────
                 _Label('Note (optionnelle)'),
                 const SizedBox(height: 8),
                 TextFormField(
-                  controller: _noteCtrl,
+                  controller: _noteController,
                   maxLength: 150,
                   maxLines: 2,
                   decoration: const InputDecoration(
@@ -422,7 +415,6 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -440,8 +432,16 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   }
 }
 
-// ignore: non_constant_identifier_names
-Widget _Label(String text) => Text(
+class _Label extends StatelessWidget {
+  const _Label(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
       text,
       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
     );
+  }
+}

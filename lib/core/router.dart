@@ -14,12 +14,15 @@ import '../screens/admin/admin_tax_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/request_sent_screen.dart';
+import '../screens/explorer/transaction_explorer_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/home/leaderboard_screen.dart';
 import '../screens/market/auction_detail_screen.dart';
 import '../screens/market/market_screen.dart';
 import '../screens/pay/pay_screen.dart';
 import '../screens/profile/loan_create_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../screens/profile/public_profile_screen.dart';
 import '../screens/wallet/transfer_screen.dart';
 import '../screens/wallet/wallet_screen.dart';
 
@@ -43,6 +46,7 @@ class AppRoutes {
   static const String loanDetail = '/loan/:id';
   static const String publicProfile = '/user/:username';
   static const String leaderboard = '/leaderboard';
+  static const String transactionExplorer = '/explorer';
 
   static const String adminDashboard = '/admin';
   static const String adminRequests = '/admin/requests';
@@ -50,6 +54,8 @@ class AppRoutes {
   static const String adminMarketEdit = '/admin/market';
   static const String adminTax = '/admin/tax';
   static const String adminRate = '/admin/rate';
+
+  static String publicProfilePath(String username) => '/user/$username';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -140,10 +146,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.profile,
                 name: 'profile',
                 builder: (context, state) => ProfileScreen(
-                  initialTab:
-                      state.uri.queryParameters['tab'] == 'notifications'
-                          ? 1
-                          : 0,
+                  initialTab: state.uri.queryParameters['tab'] == 'notifications'
+                      ? 1
+                      : 0,
                 ),
               ),
             ],
@@ -175,10 +180,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.publicProfile,
         name: 'publicProfile',
-        builder: (context, state) {
-          final username = state.pathParameters['username']!;
-          return _PlaceholderScreen(title: 'Profil de $username');
-        },
+        builder: (context, state) => PublicProfileScreen(
+          username: state.pathParameters['username']!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.transactionExplorer,
+        name: 'transactionExplorer',
+        builder: (context, state) => const TransactionExplorerScreen(),
       ),
       GoRoute(
         path: AppRoutes.adminDashboard,
@@ -226,7 +235,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             Text('Page introuvable : ${state.matchedLocation}'),
             TextButton(
               onPressed: () => context.go(AppRoutes.home),
-              child: const Text('Retour à l\'accueil'),
+              child: const Text('Retour à l’accueil'),
             ),
           ],
         ),
@@ -274,27 +283,13 @@ class MainShell extends StatelessWidget {
         ),
         items: _tabs
             .map(
-              (t) => BottomNavigationBarItem(
-                icon: Icon(t.icon),
-                label: t.label,
+              (tab) => BottomNavigationBarItem(
+                icon: Icon(tab.icon),
+                label: tab.label,
               ),
             )
             .toList(),
       ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text(title)),
     );
   }
 }

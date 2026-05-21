@@ -1,21 +1,6 @@
 enum LoanStatus { pending, active, repaid, defaulted, rejected, cancelled }
 
 class Loan {
-  final String id;
-  final String lenderId;
-  final String lenderUsername;
-  final String borrowerId;
-  final String borrowerUsername;
-  final double principal; // montant emprunté
-  final double interestRate; // taux en % (ex: 10.0 = 10%)
-  final double totalDue; // principal + intérêts
-  final double amountRepaid;
-  final LoanStatus status;
-  final DateTime? dueDate;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final String? note;
-
   const Loan({
     required this.id,
     required this.lenderId,
@@ -33,24 +18,44 @@ class Loan {
     this.note,
   });
 
+  final String id;
+  final String lenderId;
+  final String lenderUsername;
+  final String borrowerId;
+  final String borrowerUsername;
+  final double principal;
+  final double interestRate;
+  final double totalDue;
+  final double amountRepaid;
+  final LoanStatus status;
+  final DateTime? dueDate;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String? note;
+
   double get remainingAmount => totalDue - amountRepaid;
   double get interestAmount => totalDue - principal;
   bool get isFullyRepaid => amountRepaid >= totalDue;
   bool get isActive => status == LoanStatus.active;
   bool get isPending => status == LoanStatus.pending;
+  bool get isArchived =>
+      status == LoanStatus.repaid ||
+      status == LoanStatus.rejected ||
+      status == LoanStatus.cancelled ||
+      status == LoanStatus.defaulted;
+
   bool get isOverdue =>
       isActive && dueDate != null && DateTime.now().isAfter(dueDate!);
 
   double get repaymentProgress =>
       totalDue > 0 ? (amountRepaid / totalDue).clamp(0.0, 1.0) : 0.0;
 
-  /// Calcule le montant total dû avec intérêts simples
   static double calculateTotalDue(double principal, double interestRate) {
     return principal * (1 + interestRate / 100);
   }
 
-  static LoanStatus _statusFromString(String s) {
-    switch (s) {
+  static LoanStatus _statusFromString(String value) {
+    switch (value) {
       case 'pending':
         return LoanStatus.pending;
       case 'active':
@@ -68,8 +73,8 @@ class Loan {
     }
   }
 
-  static String _statusToString(LoanStatus s) {
-    switch (s) {
+  static String _statusToString(LoanStatus value) {
+    switch (value) {
       case LoanStatus.pending:
         return 'pending';
       case LoanStatus.active:
@@ -161,13 +166,13 @@ class Loan {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Loan && runtimeType == other.runtimeType && id == other.id;
+      identical(this, other) || other is Loan && other.id == id;
 
   @override
   int get hashCode => id.hashCode;
 
   @override
-  String toString() =>
-      'Loan(id: $id, borrower: $borrowerUsername, principal: $principal, status: $status)';
+  String toString() {
+    return 'Loan(id: $id, borrower: $borrowerUsername, principal: $principal, status: $status)';
+  }
 }
