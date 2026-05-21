@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Permet à l'app de sélectionner notre AID propriétaire en ISO 7816 -->
+    <!-- Nécessaire pour lire le HCE d'un Android depuis un iPhone -->
+    <!-- AID : F0 + "SESCOIN" = F0534553434F494E -->
+    <key>com.apple.developer.nfc.readersession.iso7816.select-identifiers</key>
+    <array>
+        <string>F0534553434F494E</string>
+    </array>
+</dict>
+</plist>

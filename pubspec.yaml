@@ -1,0 +1,80 @@
+name: ses_coin
+description: SES Coin - Monnaie locale de la classe de SES
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # NFC
+  nfc_manager: ^3.5.0
+
+  # Backend
+  supabase_flutter: ^2.3.4
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Navigation
+  go_router: ^17.2.3
+
+  # NFC
+  flutter_nfc_kit: ^3.3.1
+  ndef: ^0.4.0
+
+  # QR Code
+  qr_flutter: ^4.1.0          # Générer un QR Code
+  mobile_scanner: ^7.2.0      # Scanner un QR Code
+
+
+  # Images & photo de profil
+  image_picker: ^1.0.7
+  cached_network_image: ^3.3.1
+
+  # Graphique du cours de la monnaie
+  fl_chart: ^1.2.0
+
+  # Utilitaires
+  intl: ^0.20.2                # Formatage dates et nombres
+  diacritic: ^0.1.5            # Conversion accents (é→e, ç→c...)
+  crypto: ^3.0.3               # Hash des mots de passe côté client
+  uuid: ^4.3.3                 # Génération d'IDs uniques
+  timeago: ^3.6.1              # "il y a 2 minutes"
+  shimmer: ^3.0.0              # Loading skeletons
+  lottie: ^3.1.0               # Animations JSON
+
+  cupertino_icons: ^1.0.8
+
+  # UI
+  google_fonts: ^8.1.0
+  flutter_svg: ^2.0.10+1
+  gap: ^3.0.1                  # Espacement propre
+  modal_bottom_sheet: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.9
+  riverpod_generator: ^2.6.5
+  json_serializable: ^6.7.1
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/animations/
+    - assets/icons/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+  image_path: assets/icons/logo.jpg
