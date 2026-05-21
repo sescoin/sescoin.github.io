@@ -13,19 +13,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Flutter
-        run: |
-          git clone https://github.com/flutter/flutter.git --depth 1 -b stable "$HOME/flutter"
-          echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Enable web
         run: flutter config --enable-web
 
-      - name: Flutter pub get
+      - name: Install dependencies
         run: flutter pub get
 
       - name: Build web
-        run: flutter build web
+        run: flutter build web --release
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
