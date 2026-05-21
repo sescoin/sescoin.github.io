@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,8 +39,6 @@ class _PayScreenState extends ConsumerState<PayScreen>
 
   final bool _isIOS = NfcHceService.isIOS;
   final bool _isAndroid = NfcHceService.isAndroid;
-  final bool _isAndroidBrowser =
-      kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   @override
   void initState() {
@@ -53,14 +50,20 @@ class _PayScreenState extends ConsumerState<PayScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _checkNfc();
+    if (state == AppLifecycleState.resumed) {
+      _checkNfc();
+    }
   }
 
   Future<void> _checkNfc() async {
-    if (!_isAndroid) return;
+    if (!_isAndroid) {
+      return;
+    }
     try {
       final state = await NfcHceService.getNfcState();
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _nfcAvailable = state == 'enabled';
         _nfcDisabled = state == 'disabled';
@@ -111,7 +114,7 @@ class _PayScreenState extends ConsumerState<PayScreen>
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 leading: const Icon(Icons.nfc_rounded, color: AppTheme.gold),
                 content: const Text(
-                  'Active le NFC pour les paiements de proximit\u00E9',
+                  'Active le NFC pour les paiements de proximité',
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),
                 actions: [
@@ -138,7 +141,6 @@ class _PayScreenState extends ConsumerState<PayScreen>
                   _SendTab(
                     isAndroid: _isAndroid,
                     isIOS: _isIOS,
-                    isAndroidBrowser: _isAndroidBrowser,
                     nfcAvailable: _nfcAvailable,
                     nfcSupported: _nfcSupported,
                   ),
@@ -175,17 +177,25 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
   @override
   void didUpdateWidget(_ReceiveTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.nfcAvailable != oldWidget.nfcAvailable) _syncHce();
+    if (widget.nfcAvailable != oldWidget.nfcAvailable) {
+      _syncHce();
+    }
   }
 
   Future<void> _syncHce() async {
-    if (_myId == null) return;
+    if (_myId == null) {
+      return;
+    }
     if (!widget.isIOS && widget.nfcAvailable) {
       await NfcHceService.startEmitting(_myId!);
-      if (mounted) setState(() => _hceActive = true);
+      if (mounted) {
+        setState(() => _hceActive = true);
+      }
     } else {
       await NfcHceService.stopEmitting();
-      if (mounted) setState(() => _hceActive = false);
+      if (mounted) {
+        setState(() => _hceActive = false);
+      }
     }
   }
 
@@ -200,7 +210,7 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (_myId == null) {
-      return const Center(child: Text('Non connect\u00E9'));
+      return const Center(child: Text('Non connecté'));
     }
 
     return SingleChildScrollView(
@@ -223,7 +233,7 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
                   Icon(Icons.nfc_rounded, size: 18, color: AppTheme.gold),
                   SizedBox(width: 6),
                   Text(
-                    'NFC actif \u00B7 approche l\u2019envoyeur',
+                    'NFC actif · approche l’envoyeur',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppTheme.gold,
@@ -237,7 +247,7 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
           ],
           Text(
             _hceActive
-                ? 'Ou montre ce QR \u00E0 l\u2019envoyeur'
+                ? 'Ou montre ce QR à l’envoyeur'
                 : 'Montre ce QR pour recevoir un paiement',
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 13, color: Colors.grey),
@@ -263,7 +273,7 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
           ),
           const SizedBox(height: 16),
           Text(
-            'L\u2019envoyeur choisit le montant de son c\u00F4t\u00E9',
+            'L’envoyeur choisit le montant de son côté',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
@@ -277,14 +287,12 @@ class _SendTab extends ConsumerStatefulWidget {
   const _SendTab({
     required this.isAndroid,
     required this.isIOS,
-    required this.isAndroidBrowser,
     required this.nfcAvailable,
     required this.nfcSupported,
   });
 
   final bool isAndroid;
   final bool isIOS;
-  final bool isAndroidBrowser;
   final bool nfcAvailable;
   final bool nfcSupported;
 
@@ -309,7 +317,9 @@ class _SendTabState extends ConsumerState<_SendTab> {
   }
 
   bool _validateForm() {
-    if (!_formKey.currentState!.validate()) return false;
+    if (!_formKey.currentState!.validate()) {
+      return false;
+    }
     return true;
   }
 
@@ -322,7 +332,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('QR invalide : ce n\u2019est pas un compte SES Coin'),
+            content: Text('QR invalide : ce n’est pas un compte SES Coin'),
           ),
         );
       }
@@ -339,7 +349,9 @@ class _SendTabState extends ConsumerState<_SendTab> {
           .eq('id', raw)
           .maybeSingle();
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       if (profile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Compte introuvable')),
@@ -374,9 +386,9 @@ class _SendTabState extends ConsumerState<_SendTab> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Paiement effectu\u00E9 !'),
+        title: const Text('Paiement effectué !'),
         content: Text(
-          '${amount.toStringAsFixed(2)} SC envoy\u00E9s${name != null ? ' \u00E0 $name' : ''}',
+          '${amount.toStringAsFixed(2)} SC envoyés${name != null ? ' à $name' : ''}',
         ),
         actions: [
           ElevatedButton(
@@ -396,31 +408,37 @@ class _SendTabState extends ConsumerState<_SendTab> {
   }
 
   Future<void> _startNfcScan() async {
-    if (!_validateForm()) return;
+    if (!_validateForm()) {
+      return;
+    }
     setState(() => _nfcScanning = true);
     try {
       await FlutterNfcKit.poll(
         timeout: const Duration(seconds: 30),
-        iosAlertMessage: 'Approche le t\u00E9l\u00E9phone du destinataire',
+        iosAlertMessage: 'Approche le téléphone du destinataire',
       );
 
       final selResp = await FlutterNfcKit.transceive(_apduSelectAid);
       if (!selResp.toUpperCase().endsWith('9000')) {
         await FlutterNfcKit.finish(iosErrorMessage: 'Tag SES Coin non reconnu');
-        if (mounted) setState(() => _nfcScanning = false);
+        if (mounted) {
+          setState(() => _nfcScanning = false);
+        }
         return;
       }
 
       final dataResp = await FlutterNfcKit.transceive(_apduGetData);
       if (!dataResp.toUpperCase().endsWith('9000')) {
         await FlutterNfcKit.finish(iosErrorMessage: 'Erreur de lecture');
-        if (mounted) setState(() => _nfcScanning = false);
+        if (mounted) {
+          setState(() => _nfcScanning = false);
+        }
         return;
       }
 
       final id = _hexToUtf8(dataResp.substring(0, dataResp.length - 4));
       await FlutterNfcKit.finish(
-        iosAlertMessage: 'Destinataire d\u00E9tect\u00E9 !',
+        iosAlertMessage: 'Destinataire détecté !',
       );
       if (mounted) {
         setState(() => _nfcScanning = false);
@@ -445,23 +463,19 @@ class _SendTabState extends ConsumerState<_SendTab> {
     try {
       await FlutterNfcKit.finish();
     } catch (_) {}
-    if (mounted) setState(() => _nfcScanning = false);
+    if (mounted) {
+      setState(() => _nfcScanning = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_showQrScanner) return _buildQrScanner();
+    if (_showQrScanner) {
+      return _buildQrScanner();
+    }
 
     final canNfc = widget.isAndroid && widget.nfcAvailable;
-    final showUnavailableMessage = !widget.isAndroid;
     final showUnsupportedMessage = widget.isAndroid && !widget.nfcSupported;
-    final unavailableMessage = widget.isAndroidBrowser
-        ? 'Sur Android web, le NFC téléphone-à-téléphone du navigateur reste limité. Utilise le QR pour un paiement fiable.'
-        : kIsWeb
-            ? 'Sur la web app, le paiement se fait via QR Code.'
-        : widget.isIOS
-            ? 'Sur iPhone, le paiement se fait via QR Code.'
-            : 'Le paiement NFC est disponible uniquement sur Android.';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -471,7 +485,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Montant \u00E0 envoyer',
+              'Montant à envoyer',
               style: Theme.of(context)
                   .textTheme
                   .labelLarge
@@ -486,9 +500,11 @@ class _SendTabState extends ConsumerState<_SendTab> {
                 hintText: '0.00',
                 suffixText: 'SC',
               ),
-              validator: (v) {
-                final n = double.tryParse(v?.replaceAll(',', '.') ?? '');
-                if (n == null || n <= 0) return 'Montant invalide';
+              validator: (value) {
+                final number = double.tryParse(value?.replaceAll(',', '.') ?? '');
+                if (number == null || number <= 0) {
+                  return 'Montant invalide';
+                }
                 return null;
               },
             ),
@@ -562,14 +578,12 @@ class _SendTabState extends ConsumerState<_SendTab> {
                 label: const Text('Payer via QR Code'),
               ),
             ),
-            if (showUnavailableMessage || showUnsupportedMessage) ...[
+            if (showUnsupportedMessage) ...[
               const SizedBox(height: 12),
-              Text(
-                showUnsupportedMessage
-                    ? 'Cet appareil Android ne supporte pas le NFC. Le QR est utilis\u00E9.'
-                    : unavailableMessage,
+              const Text(
+                'Cet appareil Android ne supporte pas le NFC. Le QR est utilisé.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
             if (_sending) ...[

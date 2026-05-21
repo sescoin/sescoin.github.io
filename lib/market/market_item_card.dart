@@ -32,7 +32,7 @@ class MarketItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   item.imageUrl!,
-                  height: 96,
+                  height: 112,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => _Placeholder(item: item),
@@ -56,21 +56,21 @@ class MarketItemCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               item.name,
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 15,
+                fontSize: 16,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               item.description,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               maxLines: 2,
@@ -106,10 +106,10 @@ class MarketItemCard extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
-              height: 38,
+              height: 50,
               child: ElevatedButton(
                 onPressed: item.isAvailable && !isLoading ? onBuy : null,
                 child: isLoading
@@ -121,7 +121,15 @@ class MarketItemCard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       )
-                    : Text(item.isAvailable ? 'Acheter' : 'Épuisé'),
+                    : Text(
+                        item.isAvailable ? 'Acheter' : 'Épuisé',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -139,7 +147,7 @@ class _Placeholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 96,
+      height: 112,
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppTheme.gold.withValues(alpha: 0.08),

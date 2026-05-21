@@ -88,7 +88,7 @@ class _ShopTab extends ConsumerWidget {
     final purchaseState = ref.watch(purchaseProvider);
     final width = MediaQuery.of(context).size.width;
     final crossAxisCount = width >= 900 ? 4 : width >= 680 ? 3 : 2;
-    final childAspectRatio = crossAxisCount == 2 ? 0.54 : 0.62;
+    final mainAxisExtent = crossAxisCount == 2 ? 356.0 : 332.0;
 
     return itemsAsync.when(
       loading: () => const InlineLoader(message: 'Chargement du marché...'),
@@ -125,24 +125,33 @@ class _ShopTab extends ConsumerWidget {
                         ),
                   ),
                 ),
-                GridView.count(
-                  crossAxisCount: crossAxisCount,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: childAspectRatio,
-                  children: items
-                      .where((item) => item.category == category)
-                      .map(
-                        (item) => MarketItemCard(
+                Builder(
+                  builder: (context) {
+                    final categoryItems = items
+                        .where((item) => item.category == category)
+                        .toList(growable: false);
+
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        mainAxisExtent: mainAxisExtent,
+                      ),
+                      itemCount: categoryItems.length,
+                      itemBuilder: (context, index) {
+                        final item = categoryItems[index];
+                        return MarketItemCard(
                           item: item,
                           isLoading: purchaseState.isLoading &&
                               purchaseState.loadingItemId == item.id,
                           onBuy: () => _confirmPurchase(context, ref, item),
-                        ),
-                      )
-                      .toList(),
+                        );
+                      },
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
               ],

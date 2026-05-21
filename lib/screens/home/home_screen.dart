@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,8 +26,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _nfcAvailable = false;
-  final bool _isAndroidBrowser =
-      kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   @override
   void initState() {
@@ -37,10 +34,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _checkNfc() async {
-    if (!NfcHceService.isSupported) return;
+    if (!NfcHceService.isSupported) {
+      return;
+    }
     try {
       final state = await NfcHceService.getNfcState();
-      if (mounted) setState(() => _nfcAvailable = state == 'enabled');
+      if (mounted) {
+        setState(() => _nfcAvailable = state == 'enabled');
+      }
     } catch (_) {}
   }
 
@@ -111,42 +112,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 24),
               const CurrencyChart(),
               const SizedBox(height: 24),
-              if (_isAndroidBrowser) ...[
-                InkWell(
-                  onTap: () => context.go(AppRoutes.pay),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppTheme.gold.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.nfc_rounded,
-                          color: AppTheme.gold,
-                          size: 28,
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Android web détecté · le mode QR reste le plus fiable pour payer',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
               if (_nfcAvailable) ...[
                 InkWell(
                   onTap: () => context.go(AppRoutes.pay),
@@ -185,7 +150,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                               Text(
-                                'Mode principal \u00B7 Approche les t\u00E9l\u00E9phones',
+                                'Mode principal · approche les téléphones',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
@@ -249,7 +214,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Derni\u00E8res transactions',
+                    'Dernières transactions',
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -267,7 +232,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ? const EmptyState(
                         icon: Icons.receipt_long_rounded,
                         title: 'Aucune transaction',
-                        subtitle: 'Tes transactions appara\u00EEtront ici',
+                        subtitle: 'Tes transactions apparaîtront ici',
                       )
                     : Card(
                         child: ListView.separated(

@@ -477,6 +477,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     ),
                     child: TabBar(
                       controller: _tabController,
+                      dividerColor: Colors.transparent,
                       indicatorSize: TabBarIndicatorSize.tab,
                       indicator: BoxDecoration(
                         color: AppTheme.gold.withValues(alpha: 0.16),
