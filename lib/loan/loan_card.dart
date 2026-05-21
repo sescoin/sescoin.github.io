@@ -249,19 +249,6 @@ class LoanCard extends StatelessWidget {
       );
     }
 
-    if (loan.isArchived && onDelete != null) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'Archivé',
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    }
-
     return const SizedBox.shrink();
   }
 }

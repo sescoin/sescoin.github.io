@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +27,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _nfcAvailable = false;
+  final bool _isAndroidBrowser =
+      kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   @override
   void initState() {
@@ -108,6 +111,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 24),
               const CurrencyChart(),
               const SizedBox(height: 24),
+              if (_isAndroidBrowser) ...[
+                InkWell(
+                  onTap: () => context.go(AppRoutes.pay),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.gold.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.nfc_rounded,
+                          color: AppTheme.gold,
+                          size: 28,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Android web détecté · le mode QR reste le plus fiable pour payer',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               if (_nfcAvailable) ...[
                 InkWell(
                   onTap: () => context.go(AppRoutes.pay),
@@ -174,30 +213,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
                 children: [
                   _QuickAction(
                     icon: Icons.qr_code_scanner_rounded,
                     label: 'Payer',
                     onTap: () => context.go(AppRoutes.pay),
                   ),
-                  const SizedBox(width: 12),
                   _QuickAction(
                     icon: Icons.send_rounded,
-                    label: 'Transf\u00E9rer',
+                    label: 'Transférer',
                     onTap: () => context.push(AppRoutes.transferManual),
                   ),
-                  const SizedBox(width: 12),
                   _QuickAction(
                     icon: Icons.leaderboard_rounded,
                     label: 'Classement',
                     onTap: () => context.push(AppRoutes.leaderboard),
                   ),
-                  const SizedBox(width: 12),
                   _QuickAction(
                     icon: Icons.handshake_rounded,
-                    label: 'Pr\u00EAts',
+                    label: 'Prêts',
                     onTap: () => context.push(AppRoutes.loanCreate),
+                  ),
+                  _QuickAction(
+                    icon: Icons.hub_rounded,
+                    label: 'Blockchain',
+                    onTap: () => context.push(AppRoutes.transactionExplorer),
                   ),
                 ],
               ),
@@ -268,7 +311,9 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    final width = (MediaQuery.of(context).size.width - 56) / 3;
+    return SizedBox(
+      width: width.clamp(92, 180).toDouble(),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),

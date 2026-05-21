@@ -18,7 +18,10 @@ class MarketItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isUnavailable = !item.isAvailable;
+
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -29,7 +32,7 @@ class MarketItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   item.imageUrl!,
-                  height: 82,
+                  height: 96,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => _Placeholder(item: item),
@@ -60,7 +63,7 @@ class MarketItemCard extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
@@ -70,7 +73,7 @@ class MarketItemCard extends StatelessWidget {
                 fontSize: 11,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const Spacer(),
@@ -91,10 +94,22 @@ class MarketItemCard extends StatelessWidget {
                   ),
                 ),
               ),
+            if (isUnavailable)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Indisponible',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.negative,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
-              height: 36,
+              height: 38,
               child: ElevatedButton(
                 onPressed: item.isAvailable && !isLoading ? onBuy : null,
                 child: isLoading
@@ -106,10 +121,7 @@ class MarketItemCard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       )
-                    : const Padding(
-                        padding: EdgeInsets.only(bottom: 2),
-                        child: Text('Acheter'),
-                      ),
+                    : Text(item.isAvailable ? 'Acheter' : 'Épuisé'),
               ),
             ),
           ],
@@ -121,12 +133,13 @@ class MarketItemCard extends StatelessWidget {
 
 class _Placeholder extends StatelessWidget {
   const _Placeholder({required this.item});
+
   final MarketplaceItem item;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 82,
+      height: 96,
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppTheme.gold.withValues(alpha: 0.08),

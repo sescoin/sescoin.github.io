@@ -71,24 +71,12 @@ class GlobalTransactionTile extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Text(
-                  _dateFormat.format(transaction.createdAt.toLocal()),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '#${transaction.id.substring(0, 8)}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+            Text(
+              _dateFormat.format(transaction.createdAt.toLocal()),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

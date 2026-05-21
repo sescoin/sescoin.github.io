@@ -14,11 +14,11 @@ import '../../core/theme.dart';
 import '../../loan/loan_card.dart';
 import '../../models/loan.dart';
 import '../../models/profile.dart';
+import '../../notification/notification_tile.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/service_providers.dart';
-import '../../notification/notification_tile.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({
@@ -103,9 +103,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               TextField(
                 controller: confirmController,
                 obscureText: obscure,
-                decoration: const InputDecoration(
-                  labelText: 'Confirmer',
-                ),
+                decoration: const InputDecoration(labelText: 'Confirmer'),
               ),
             ],
           ),
@@ -229,9 +227,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Se déconnecter ?'),
-        content: const Text(
-          'Vous serez redirigé vers la page de connexion.',
-        ),
+        content: const Text('Vous serez redirigé vers la page de connexion.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -309,6 +305,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             loanId: loan.id,
             amount: amount,
           );
+      ref.invalidate(userLoansProvider);
       if (!mounted) {
         return;
       }
@@ -358,6 +355,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
     try {
       await action();
+      ref.invalidate(userLoansProvider);
       if (!mounted) {
         return;
       }
@@ -366,6 +364,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           content: Text(successMessage),
           backgroundColor: AppTheme.positive,
         ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  Future<void> _deleteLoan(Loan loan) async {
+    try {
+      await ref.read(loanActionProvider.notifier).deleteLoan(loan.id);
+      ref.invalidate(userLoansProvider);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Prêt supprimé')),
       );
     } catch (error) {
       if (!mounted) {
@@ -421,8 +439,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         }
 
         return LoadingOverlay(
-          isLoading: loanActionState.isLoading ||
-              notificationActions.isLoading,
+          isLoading: loanActionState.isLoading || notificationActions.isLoading,
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Profil'),
@@ -443,13 +460,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   tooltip: 'Déconnexion',
                 ),
               ],
-              bottom: TabBar(
-                controller: _tabController,
-                tabs: const [
-                  Tab(text: 'Prêts'),
-                  Tab(text: 'Notifications'),
-                ],
-              ),
             ),
             body: Column(
               children: [
@@ -457,6 +467,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   profile: profile,
                   onPhotoTap: _requestPhotoChange,
                   onChangePassword: _changePassword,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicator: BoxDecoration(
+                        color: AppTheme.gold.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      labelColor: AppTheme.gold,
+                      tabs: const [
+                        Tab(text: 'Prêts'),
+                        Tab(text: 'Notifications'),
+                      ],
+                    ),
+                  ),
                 ),
                 Expanded(
                   child: TabBarView(
@@ -485,23 +517,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         ),
                         onCancel: (loan) => _confirmLoanAction(
                           title: 'Annuler cette demande ?',
-                          message:
-                              'Cette demande de prêt sera annulée.',
+                          message: 'Cette demande de prêt sera annulée.',
                           successMessage: 'Demande annulée',
                           action: () => ref
                               .read(loanActionProvider.notifier)
                               .cancelLoan(loan.id),
                         ),
                         onRepay: _handleLoanRepay,
-                        onDelete: (loan) => _confirmLoanAction(
-                          title: 'Supprimer ce prêt ?',
-                          message:
-                              'Cette suppression retire l’historique de ce prêt de ton écran.',
-                          successMessage: 'Prêt supprimé',
-                          action: () => ref
-                              .read(loanActionProvider.notifier)
-                              .deleteLoan(loan.id),
-                        ),
+                        onDelete: _deleteLoan,
                       ),
                       _NotificationsTab(
                         onDeleteNotification: _deleteNotification,
@@ -618,24 +641,13 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onPhotoTap,
-                      icon: const Icon(Icons.photo_library_outlined),
-                      label: const Text('Photo'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onChangePassword,
-                      icon: const Icon(Icons.lock_outline_rounded),
-                      label: const Text('Mot de passe'),
-                    ),
-                  ),
-                ],
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onChangePassword,
+                  icon: const Icon(Icons.lock_outline_rounded),
+                  label: const Text('Mot de passe'),
+                ),
               ),
             ],
           ),
@@ -676,11 +688,6 @@ class _LoansTab extends ConsumerWidget {
         onRetry: () => ref.invalidate(userLoansProvider),
       ),
       data: (loans) {
-        final activeLoans =
-            loans.where((loan) => !loan.isArchived).toList(growable: false);
-        final archivedLoans =
-            loans.where((loan) => loan.isArchived).toList(growable: false);
-
         if (loans.isEmpty) {
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -700,6 +707,14 @@ class _LoansTab extends ConsumerWidget {
           );
         }
 
+        final sortedLoans = [...loans]
+          ..sort((a, b) {
+            if (a.isArchived == b.isArchived) {
+              return b.createdAt.compareTo(a.createdAt);
+            }
+            return a.isArchived ? 1 : -1;
+          });
+
         return RefreshIndicator(
           onRefresh: () async => ref.invalidate(userLoansProvider),
           child: ListView(
@@ -714,51 +729,30 @@ class _LoansTab extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              if (activeLoans.isNotEmpty) ...[
-                Text(
-                  'En cours',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 12),
-                ...activeLoans.map(
-                  (loan) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: LoanCard(
-                      loan: loan,
-                      currentUserId: currentUserId,
-                      isLoading: isLoading,
-                      onAccept: () => onAccept(loan),
-                      onReject: () => onReject(loan),
-                      onRepay: () => onRepay(loan),
-                      onCancel: () => onCancel(loan),
-                    ),
+              Text(
+                'Prêts',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              ...sortedLoans.map(
+                (loan) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: LoanCard(
+                    loan: loan,
+                    currentUserId: currentUserId,
+                    isLoading: isLoading,
+                    onAccept: loan.isPending ? () => onAccept(loan) : null,
+                    onReject: loan.isPending ? () => onReject(loan) : null,
+                    onRepay:
+                        loan.isActive && !loan.isFullyRepaid ? () => onRepay(loan) : null,
+                    onCancel: loan.isPending ? () => onCancel(loan) : null,
+                    onDelete: loan.isArchived ? () => onDelete(loan) : null,
                   ),
                 ),
-              ],
-              if (archivedLoans.isNotEmpty) ...[
-                Text(
-                  'Archivés',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 12),
-                ...archivedLoans.map(
-                  (loan) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: LoanCard(
-                      loan: loan,
-                      currentUserId: currentUserId,
-                      isLoading: isLoading,
-                      onDelete: () => onDelete(loan),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         );
@@ -799,19 +793,19 @@ class _NotificationsTab extends ConsumerWidget {
                               .read(notificationActionsProvider.notifier)
                               .markAllAsRead(),
                       icon: const Icon(Icons.done_all_rounded),
-                      label: const Text('Tout lire'),
+                      label: const Text('Tout vu'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: notifications.any((n) => n.isRead)
-                          ? () => ref
+                      onPressed: notifications.isEmpty
+                          ? null
+                          : () => ref
                               .read(notificationActionsProvider.notifier)
-                              .clearRead()
-                          : null,
+                              .clearAll(),
                       icon: const Icon(Icons.delete_sweep_rounded),
-                      label: const Text('Supprimer les lues'),
+                      label: const Text('Tout supprimer'),
                     ),
                   ),
                 ],

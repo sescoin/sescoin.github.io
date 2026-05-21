@@ -19,6 +19,7 @@ class LoanCreateScreen extends ConsumerStatefulWidget {
 class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
+  final _interestController = TextEditingController(text: '0');
   final _noteController = TextEditingController();
   final _searchController = TextEditingController();
 
@@ -37,6 +38,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   @override
   void dispose() {
     _amountController.dispose();
+    _interestController.dispose();
     _noteController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -125,6 +127,8 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
 
     final principal =
         double.parse(_amountController.text.trim().replaceAll(',', '.'));
+    final interestRate =
+        double.parse(_interestController.text.trim().replaceAll(',', '.'));
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -139,6 +143,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
             ),
             const SizedBox(height: 4),
             Text('Montant : ${principal.toStringAsFixed(2)} SC'),
+            Text('Intérêt : ${interestRate.toStringAsFixed(1)} %'),
             if (_dueDate != null)
               Text(
                 'Échéance : ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}',
@@ -170,7 +175,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
         await ref.read(loanActionProvider.notifier).requestLoan(
               lenderUsername: lender['username'] as String,
               principal: principal,
-              interestRate: 0,
+              interestRate: interestRate,
               dueDate: _dueDate,
               note: _noteController.text.trim().isEmpty
                   ? null
@@ -332,7 +337,8 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                                               size: 18,
                                             )
                                           : null,
-                                      onTap: alreadySelected ? null : () => _addLender(user),
+                                      onTap:
+                                          alreadySelected ? null : () => _addLender(user),
                                     );
                                   },
                                 ),
@@ -356,6 +362,29 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                     );
                     if (amount == null || amount < AppConstants.minTransferAmount) {
                       return 'Montant invalide';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                _Label('Taux d’intérêt'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _interestController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    hintText: '0',
+                    suffixText: '%',
+                  ),
+                  validator: (value) {
+                    final rate = double.tryParse(
+                      value?.trim().replaceAll(',', '.') ?? '',
+                    );
+                    if (rate == null ||
+                        rate < AppConstants.minLoanInterestRate ||
+                        rate > AppConstants.maxLoanInterestRate) {
+                      return 'Taux invalide';
                     }
                     return null;
                   },

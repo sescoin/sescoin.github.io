@@ -84,6 +84,21 @@ class NotificationActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  Future<void> clearAll() async {
+    final userId = _ref.read(currentUserIdProvider);
+    if (userId == null) {
+      return;
+    }
+    try {
+      await _ref.read(notificationServiceProvider).clearAllNotifications(userId);
+      _ref.invalidate(notificationsProvider);
+      _ref.invalidate(unreadCountProvider);
+      state = const AsyncValue.data(null);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
   Future<void> updateFcmToken(String fcmToken) async {
     final userId = _ref.read(currentUserIdProvider);
     if (userId == null) {

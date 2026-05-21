@@ -40,6 +40,8 @@ class _PayScreenState extends ConsumerState<PayScreen>
 
   final bool _isIOS = NfcHceService.isIOS;
   final bool _isAndroid = NfcHceService.isAndroid;
+  final bool _isAndroidBrowser =
+      kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   @override
   void initState() {
@@ -136,6 +138,7 @@ class _PayScreenState extends ConsumerState<PayScreen>
                   _SendTab(
                     isAndroid: _isAndroid,
                     isIOS: _isIOS,
+                    isAndroidBrowser: _isAndroidBrowser,
                     nfcAvailable: _nfcAvailable,
                     nfcSupported: _nfcSupported,
                   ),
@@ -274,12 +277,14 @@ class _SendTab extends ConsumerStatefulWidget {
   const _SendTab({
     required this.isAndroid,
     required this.isIOS,
+    required this.isAndroidBrowser,
     required this.nfcAvailable,
     required this.nfcSupported,
   });
 
   final bool isAndroid;
   final bool isIOS;
+  final bool isAndroidBrowser;
   final bool nfcAvailable;
   final bool nfcSupported;
 
@@ -450,8 +455,10 @@ class _SendTabState extends ConsumerState<_SendTab> {
     final canNfc = widget.isAndroid && widget.nfcAvailable;
     final showUnavailableMessage = !widget.isAndroid;
     final showUnsupportedMessage = widget.isAndroid && !widget.nfcSupported;
-    final unavailableMessage = kIsWeb
-        ? 'Sur la web app, le paiement se fait via QR Code.'
+    final unavailableMessage = widget.isAndroidBrowser
+        ? 'Sur Android web, le NFC téléphone-à-téléphone du navigateur reste limité. Utilise le QR pour un paiement fiable.'
+        : kIsWeb
+            ? 'Sur la web app, le paiement se fait via QR Code.'
         : widget.isIOS
             ? 'Sur iPhone, le paiement se fait via QR Code.'
             : 'Le paiement NFC est disponible uniquement sur Android.';

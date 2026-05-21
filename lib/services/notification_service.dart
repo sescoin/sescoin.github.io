@@ -76,6 +76,13 @@ class NotificationService {
         .eq('is_read', true);
   }
 
+  Future<void> clearAllNotifications(String userId) async {
+    await _client
+        .from(AppConstants.tableNotifications)
+        .delete()
+        .eq('user_id', userId);
+  }
+
   Future<AppNotification> sendToUser({
     required String userId,
     required NotificationType type,
