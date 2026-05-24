@@ -1248,8 +1248,8 @@ begin
 
   insert into public.notifications (user_id, type, title, body, data)
   values (
-    p_lender_id, 'loan_requested', 'Demande de pr?t',
-    v_borrower.username || ' te demande un pr?t de ' || p_principal || ' SC.',
+    p_lender_id, 'loan_requested', 'Demande de prêt',
+    v_borrower.username || ' te demande un prêt de ' || p_principal || ' SC.',
     jsonb_build_object('loan_id', v_loan.id)
   );
 

@@ -1,6 +1,7 @@
+import '../core/text_sanitizer.dart';
+
 const _sentinel = Object();
 
-/// Profil d'un utilisateur SES Coin
 class Profile {
   const Profile({
     required this.id,
@@ -15,21 +16,20 @@ class Profile {
     this.fcmToken,
   });
 
-  final String id; // UUID Supabase auth
-  final String username; // prenom.nom (unique)
-  final String displayName; // Prénom Nom (avec accents)
+  final String id;
+  final String username;
+  final String displayName;
   final double balance;
-  final String role; // 'student' | 'admin'
+  final String role;
   final bool isBanned;
   final DateTime createdAt;
   final String? avatarUrl;
   final String? pendingAvatarUrl;
-  final String? fcmToken; // Pour notifications push
+  final String? fcmToken;
 
   bool get isAdmin => role == 'admin';
   bool get isStudent => role == 'student';
 
-  /// Solde formaté : "1 234,56 SC"
   String get formattedBalance {
     final formatted = balance.toStringAsFixed(2).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -42,7 +42,7 @@ class Profile {
     return Profile(
       id: json['id'] as String,
       username: json['username'] as String,
-      displayName: json['display_name'] as String,
+      displayName: TextSanitizer.clean(json['display_name'] as String),
       balance: (json['balance'] as num).toDouble(),
       role: json['role'] as String? ?? 'student',
       isBanned: json['is_banned'] as bool? ?? false,
@@ -105,7 +105,6 @@ class Profile {
   String toString() => 'Profile(username: $username, balance: $balance SC)';
 }
 
-/// Version allégée pour le leaderboard et les listes
 class ProfileSummary {
   const ProfileSummary({
     required this.id,
@@ -127,7 +126,7 @@ class ProfileSummary {
     return ProfileSummary(
       id: json['id'] as String,
       username: json['username'] as String,
-      displayName: json['display_name'] as String,
+      displayName: TextSanitizer.clean(json['display_name'] as String),
       balance: (json['balance'] as num).toDouble(),
       avatarUrl: json['avatar_url'] as String?,
     );

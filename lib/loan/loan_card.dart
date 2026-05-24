@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
+import '../../core/text_sanitizer.dart';
 import '../../models/loan.dart';
 import '../common/user_avatar.dart';
 
@@ -79,7 +80,8 @@ class LoanCard extends StatelessWidget {
             Row(
               children: [
                 UserAvatar(
-                  username: _isLender ? loan.borrowerUsername : loan.lenderUsername,
+                  username:
+                      _isLender ? loan.borrowerUsername : loan.lenderUsername,
                   radius: 16,
                 ),
                 const SizedBox(width: 8),
@@ -183,7 +185,7 @@ class LoanCard extends StatelessWidget {
             if (loan.note != null && loan.note!.trim().isNotEmpty) ...[
               const SizedBox(height: 10),
               Text(
-                '"${loan.note!.trim()}"',
+                '"${TextSanitizer.clean(loan.note!.trim())}"',
                 style: TextStyle(
                   fontSize: 12,
                   fontStyle: FontStyle.italic,

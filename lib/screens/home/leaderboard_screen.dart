@@ -5,6 +5,7 @@ import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/user_avatar.dart';
 import '../../core/theme.dart';
+import '../../models/profile.dart';
 import '../../providers/profile_provider.dart';
 
 class LeaderboardScreen extends ConsumerWidget {
@@ -31,9 +32,10 @@ class LeaderboardScreen extends ConsumerWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 24),
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             itemCount: profiles.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final profile = profiles[index];
               return _RankingTile(
@@ -57,35 +59,43 @@ class _RankingTile extends StatelessWidget {
   });
 
   final int rank;
-  final dynamic profile;
+  final Profile profile;
   final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: highlighted
-          ? Colors.white.withValues(alpha: 0.07)
-          : Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? Colors.white.withValues(alpha: 0.06)
+            : Theme.of(context).colorScheme.surface.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: highlighted
+              ? AppTheme.gold.withValues(alpha: 0.18)
+              : Colors.white.withValues(alpha: 0.04),
+        ),
+      ),
       child: Row(
         children: [
           SizedBox(
-            width: 58,
+            width: 42,
             child: Text(
               '#$rank',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.gold,
                 fontWeight: FontWeight.w800,
-                fontSize: 20,
+                fontSize: rank <= 3 ? 18 : 16,
               ),
             ),
           ),
           UserAvatar(
             username: profile.username,
             avatarUrl: profile.avatarUrl,
-            radius: 28,
+            radius: 22,
           ),
-          const SizedBox(width: 18),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +106,8 @@ class _RankingTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 18,
+                    fontSize: 17,
+                    height: 1.05,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -106,14 +117,16 @@ class _RankingTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 16,
+                    fontSize: 14,
+                    height: 1,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          Flexible(
+          const SizedBox(width: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 132),
             child: Text(
               profile.formattedBalance,
               textAlign: TextAlign.right,
@@ -122,7 +135,8 @@ class _RankingTile extends StatelessWidget {
               style: TextStyle(
                 color: AppTheme.gold,
                 fontWeight: FontWeight.w800,
-                fontSize: highlighted ? 18 : 16,
+                fontSize: highlighted ? 16 : 15,
+                height: 1,
               ),
             ),
           ),

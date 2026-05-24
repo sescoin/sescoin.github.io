@@ -10,6 +10,9 @@ alter table public.payment_requests
   add constraint payment_requests_payment_method_check
   check (payment_method in ('qr', 'nfc'));
 
+drop function if exists public.transfer_funds(uuid, uuid, numeric, text, text);
+drop function if exists public.create_payment_request(uuid, numeric, text);
+
 create or replace function public.transfer_funds(
   p_from_user_id uuid,
   p_to_user_id uuid,
@@ -189,6 +192,10 @@ set
     when 'Remboursement recu' then 'Remboursement reçu'
     when 'Recompense recue' then 'Récompense reçue'
     when 'Pret accepte' then 'Prêt accepté'
+    when 'Demande de pret' then 'Demande de prêt'
+    when 'Demande de pr?t' then 'Demande de prêt'
+    when 'Pret accepte' then 'Prêt accepté'
+    when 'Pret accorde' then 'Prêt accordé'
     else title
   end,
   body = replace(
@@ -197,18 +204,30 @@ set
         replace(
           replace(
             replace(
-              replace(body, 'Tu as recu', 'Tu as reçu'),
-              'Tu as envoye', 'Tu as envoyé'
+              replace(
+                replace(
+                  replace(
+                    replace(
+                      replace(body, 'Tu as recu', 'Tu as reçu'),
+                      'Tu as envoye', 'Tu as envoyé'
+                    ),
+                    'a ete appliquee', 'a été appliquée'
+                  ),
+                  'Paiement a confirmer', 'Paiement à confirmer'
+                ),
+                'a ete effectue', 'a été effectué'
+              ),
+              'Confirme la reception', 'Confirme la réception'
             ),
-            'a ete appliquee', 'a été appliquée'
+            'Tu as gagne', 'Tu as gagné'
           ),
-          'Paiement a confirmer', 'Paiement à confirmer'
+          'pr?t', 'prêt'
         ),
-        'a ete effectue', 'a été effectué'
+        'a ?t?', 'a été'
       ),
-      'Confirme la reception', 'Confirme la réception'
+      'accept?.', 'accepté.'
     ),
-    'Tu as gagne', 'Tu as gagné'
+    'Demande de pret', 'Demande de prêt'
   )
 where title in (
     'Paiement recu',
@@ -217,7 +236,10 @@ where title in (
     'Enchere gagnee',
     'Remboursement recu',
     'Recompense recue',
-    'Pret accepte'
+    'Pret accepte',
+    'Demande de pret',
+    'Demande de pr?t',
+    'Pret accorde'
   )
   or body like '%Tu as recu%'
   or body like '%Tu as envoye%'
@@ -225,7 +247,11 @@ where title in (
   or body like '%Paiement a confirmer%'
   or body like '%a ete effectue%'
   or body like '%Confirme la reception%'
-  or body like '%Tu as gagne%';
+  or body like '%Tu as gagne%'
+  or body like '%pr?t%'
+  or body like '%a ?t?%'
+  or body like '%accept?.%'
+  or body like '%Demande de pret%';
 
 update public.transactions
 set description = case description
@@ -234,5 +260,9 @@ set description = case description
   else description
 end
 where description in ('Pret accorde', 'Remboursement de pr?t');
+
+update public.notifications
+set body = replace(body, 'te demande un pr?t de ', 'te demande un prêt de ')
+where body like '%te demande un pr?t de %';
 
 commit;

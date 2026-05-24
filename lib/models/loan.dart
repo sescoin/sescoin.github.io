@@ -1,3 +1,5 @@
+import '../core/text_sanitizer.dart';
+
 enum LoanStatus { pending, active, repaid, defaulted, rejected, cancelled }
 
 class Loan {
@@ -107,7 +109,7 @@ class Loan {
           : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      note: json['note'] as String?,
+      note: TextSanitizer.nullable(json['note'] as String?),
     );
   }
 

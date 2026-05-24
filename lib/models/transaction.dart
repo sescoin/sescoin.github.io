@@ -1,4 +1,5 @@
 import '../core/constants.dart';
+import '../core/text_sanitizer.dart';
 
 class Transaction {
   const Transaction({
@@ -72,7 +73,7 @@ class Transaction {
           json['from_display_name'] as String?,
       toDisplayName: toProfile?['display_name'] as String? ??
           json['to_display_name'] as String?,
-      description: json['description'] as String?,
+      description: TextSanitizer.nullable(json['description'] as String?),
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }
