@@ -23,6 +23,7 @@ class TransactionExplorerScreen extends ConsumerStatefulWidget {
 
 class _TransactionExplorerScreenState
     extends ConsumerState<TransactionExplorerScreen> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   final _minAmountController = TextEditingController();
   final _maxAmountController = TextEditingController();
@@ -47,124 +48,111 @@ class _TransactionExplorerScreenState
     final feedAsync = ref.watch(globalTransactionsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Blockchain')),
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: const Text('Blockchain'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+              tooltip: 'Filtres',
+              icon: Badge(
+                isLabelVisible: _activeFilterCount > 0,
+                label: Text('$_activeFilterCount'),
+                child: const Icon(Icons.tune_rounded),
+              ),
+            ),
+          ),
+        ],
+      ),
+      endDrawer: _ExplorerDrawer(
+        searchController: _searchController,
+        minAmountController: _minAmountController,
+        maxAmountController: _maxAmountController,
+        query: _query,
+        selectedType: _selectedType,
+        selectedPaymentMethod: _selectedPaymentMethod,
+        sort: _sort,
+        startDate: _startDate,
+        endDate: _endDate,
+        hasActiveFilters: _hasActiveFilters,
+        onQueryChanged: (value) => setState(() => _query = value.trim()),
+        onAmountChanged: () => setState(() {}),
+        onTypeChanged: (value) => setState(() => _selectedType = value),
+        onPaymentMethodChanged: (value) =>
+            setState(() => _selectedPaymentMethod = value),
+        onSortChanged: (value) => setState(() => _sort = value),
+        onPickStartDate: _pickStartDate,
+        onPickEndDate: _pickEndDate,
+        onReset: _resetFilters,
+      ),
       body: LoadingOverlay(
         isLoading: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) => setState(() => _query = value.trim()),
-                decoration: InputDecoration(
-                  hintText: 'Rechercher un utilisateur, une raison ou une note',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: _FilterCard(
-                minAmountController: _minAmountController,
-                maxAmountController: _maxAmountController,
-                selectedType: _selectedType,
-                selectedPaymentMethod: _selectedPaymentMethod,
-                sort: _sort,
-                startDate: _startDate,
-                endDate: _endDate,
-                hasActiveFilters: _hasActiveFilters,
-                onChanged: () => setState(() {}),
-                onTypeChanged: (value) => setState(() => _selectedType = value),
-                onPaymentMethodChanged: (value) =>
-                    setState(() => _selectedPaymentMethod = value),
-                onSortChanged: (value) => setState(() => _sort = value),
-                onPickStartDate: _pickStartDate,
-                onPickEndDate: _pickEndDate,
-                onReset: _resetFilters,
-              ),
-            ),
-            feedAsync.when(
-              loading: () => const Expanded(
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (error, _) => Expanded(
-                child: ErrorRetry(
-                  message: 'Impossible de charger le flux des transactions',
-                  onRetry: () => ref.invalidate(globalTransactionsProvider),
-                ),
-              ),
-              data: (transactions) {
-                final filtered = transactions.where(_matchesFilters).toList()
-                  ..sort(_compareTransactions);
-                final uniqueUsers = <String>{
-                  for (final tx in filtered) ...[
-                    if (tx.fromUsername != null) tx.fromUsername!,
-                    if (tx.toUsername != null) tx.toUsername!,
-                  ],
-                }.length;
+        child: feedAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => ErrorRetry(
+            message: 'Impossible de charger le flux des transactions',
+            onRetry: () => ref.invalidate(globalTransactionsProvider),
+          ),
+          data: (transactions) {
+            final filtered = transactions.where(_matchesFilters).toList()
+              ..sort(_compareTransactions);
+            final uniqueUsers = <String>{
+              for (final tx in filtered) ...[
+                if (tx.fromUsername != null) tx.fromUsername!,
+                if (tx.toUsername != null) tx.toUsername!,
+              ],
+            }.length;
 
-                return Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () async {
-                      ref.invalidate(globalTransactionsProvider);
-                      ref.invalidate(globalTransactionsSnapshotProvider);
-                    },
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      children: [
-                        _ExplorerHeader(
-                          totalTransactions: filtered.length,
-                          totalUsers: uniqueUsers,
-                          isFiltered: _query.isNotEmpty || _hasActiveFilters,
-                        ),
-                        const SizedBox(height: 12),
-                        if (filtered.isEmpty)
-                          const EmptyState(
-                            icon: Icons.hub_rounded,
-                            title: 'Aucune transaction trouvée',
-                            subtitle:
-                                'Essaie un autre filtre ou élargis la recherche',
-                          )
-                        else
-                          ...filtered.map(
-                            (transaction) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: GlobalTransactionTile(
-                                transaction: transaction,
-                                onFromTap: transaction.fromUsername == null
-                                    ? null
-                                    : () =>
-                                        _openProfile(transaction.fromUsername!),
-                                onToTap: transaction.toUsername == null
-                                    ? null
-                                    : () =>
-                                        _openProfile(transaction.toUsername!),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(globalTransactionsProvider);
+                ref.invalidate(globalTransactionsSnapshotProvider);
               },
-            ),
-          ],
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  _ExplorerHeader(
+                    totalTransactions: filtered.length,
+                    totalUsers: uniqueUsers,
+                    query: _query,
+                    activeFilterCount: _activeFilterCount,
+                  ),
+                  const SizedBox(height: 12),
+                  if (filtered.isEmpty)
+                    const EmptyState(
+                      icon: Icons.hub_rounded,
+                      title: 'Aucune transaction trouvée',
+                      subtitle:
+                          'Essaie un autre filtre ou élargis la recherche',
+                    )
+                  else
+                    ...filtered.map(
+                      (transaction) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: GlobalTransactionTile(
+                          transaction: transaction,
+                          onFromTap: transaction.fromUsername == null
+                              ? null
+                              : () => _openProfile(transaction.fromUsername!),
+                          onToTap: transaction.toUsername == null
+                              ? null
+                              : () => _openProfile(transaction.toUsername!),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
   bool get _hasActiveFilters =>
+      _query.isNotEmpty ||
       _selectedType != null ||
       _selectedPaymentMethod != null ||
       _minAmountController.text.trim().isNotEmpty ||
@@ -172,6 +160,35 @@ class _TransactionExplorerScreenState
       _startDate != null ||
       _endDate != null ||
       _sort != _TransactionSort.newest;
+
+  int get _activeFilterCount {
+    var count = 0;
+    if (_query.isNotEmpty) {
+      count++;
+    }
+    if (_selectedType != null) {
+      count++;
+    }
+    if (_selectedPaymentMethod != null) {
+      count++;
+    }
+    if (_minAmountController.text.trim().isNotEmpty) {
+      count++;
+    }
+    if (_maxAmountController.text.trim().isNotEmpty) {
+      count++;
+    }
+    if (_startDate != null) {
+      count++;
+    }
+    if (_endDate != null) {
+      count++;
+    }
+    if (_sort != _TransactionSort.newest) {
+      count++;
+    }
+    return count;
+  }
 
   bool _matchesFilters(Transaction transaction) {
     return _matchesQuery(transaction) &&
@@ -342,9 +359,11 @@ class _TransactionExplorerScreenState
   }
 
   void _resetFilters() {
+    _searchController.clear();
     _minAmountController.clear();
     _maxAmountController.clear();
     setState(() {
+      _query = '';
       _selectedType = null;
       _selectedPaymentMethod = null;
       _sort = _TransactionSort.newest;
@@ -362,15 +381,20 @@ class _ExplorerHeader extends StatelessWidget {
   const _ExplorerHeader({
     required this.totalTransactions,
     required this.totalUsers,
-    required this.isFiltered,
+    required this.query,
+    required this.activeFilterCount,
   });
 
   final int totalTransactions;
   final int totalUsers;
-  final bool isFiltered;
+  final String query;
+  final int activeFilterCount;
 
   @override
   Widget build(BuildContext context) {
+    final hasQuery = query.isNotEmpty;
+    final hasFilters = activeFilterCount > 0;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -383,7 +407,7 @@ class _ExplorerHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isFiltered
+                    hasQuery || hasFilters
                         ? 'Résultats filtrés'
                         : 'Flux global des transactions',
                     style: const TextStyle(
@@ -398,6 +422,16 @@ class _ExplorerHeader extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  if (hasQuery) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Recherche : "$query"',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -408,17 +442,20 @@ class _ExplorerHeader extends StatelessWidget {
   }
 }
 
-class _FilterCard extends StatelessWidget {
-  const _FilterCard({
+class _ExplorerDrawer extends StatelessWidget {
+  const _ExplorerDrawer({
+    required this.searchController,
     required this.minAmountController,
     required this.maxAmountController,
+    required this.query,
     required this.selectedType,
     required this.selectedPaymentMethod,
     required this.sort,
     required this.startDate,
     required this.endDate,
     required this.hasActiveFilters,
-    required this.onChanged,
+    required this.onQueryChanged,
+    required this.onAmountChanged,
     required this.onTypeChanged,
     required this.onPaymentMethodChanged,
     required this.onSortChanged,
@@ -427,15 +464,18 @@ class _FilterCard extends StatelessWidget {
     required this.onReset,
   });
 
+  final TextEditingController searchController;
   final TextEditingController minAmountController;
   final TextEditingController maxAmountController;
+  final String query;
   final TransactionType? selectedType;
   final String? selectedPaymentMethod;
   final _TransactionSort sort;
   final DateTime? startDate;
   final DateTime? endDate;
   final bool hasActiveFilters;
-  final VoidCallback onChanged;
+  final ValueChanged<String> onQueryChanged;
+  final VoidCallback onAmountChanged;
   final ValueChanged<TransactionType?> onTypeChanged;
   final ValueChanged<String?> onPaymentMethodChanged;
   final ValueChanged<_TransactionSort> onSortChanged;
@@ -445,161 +485,194 @@ class _FilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStyle = TextStyle(
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-      fontSize: 12,
-    );
-
-    return Card(
-      child: ExpansionTile(
-        title: const Text(
-          'Filtres et tri',
-          style: TextStyle(fontWeight: FontWeight.w700),
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Filtres blockchain',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                children: [
+                  TextField(
+                    controller: searchController,
+                    onChanged: onQueryChanged,
+                    decoration: InputDecoration(
+                      labelText: 'Utilisateur, raison ou note',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon: query.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: () {
+                                searchController.clear();
+                                onQueryChanged('');
+                              },
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: minAmountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          onChanged: (_) => onAmountChanged(),
+                          decoration: const InputDecoration(
+                            labelText: 'Montant min.',
+                            suffixText: 'SC',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: maxAmountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          onChanged: (_) => onAmountChanged(),
+                          decoration: const InputDecoration(
+                            labelText: 'Montant max.',
+                            suffixText: 'SC',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<_TransactionSort>(
+                    initialValue: sort,
+                    decoration: const InputDecoration(labelText: 'Trier par'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: _TransactionSort.newest,
+                        child: Text('Date décroissante'),
+                      ),
+                      DropdownMenuItem(
+                        value: _TransactionSort.oldest,
+                        child: Text('Date croissante'),
+                      ),
+                      DropdownMenuItem(
+                        value: _TransactionSort.amountHigh,
+                        child: Text('Montant décroissant'),
+                      ),
+                      DropdownMenuItem(
+                        value: _TransactionSort.amountLow,
+                        child: Text('Montant croissant'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        onSortChanged(value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<TransactionType?>(
+                    initialValue: selectedType,
+                    decoration: const InputDecoration(labelText: 'Type'),
+                    items: [
+                      const DropdownMenuItem<TransactionType?>(
+                        value: null,
+                        child: Text('Tous les types'),
+                      ),
+                      ...TransactionType.values.map(
+                        (type) => DropdownMenuItem<TransactionType?>(
+                          value: type,
+                          child: Text(type.label),
+                        ),
+                      ),
+                    ],
+                    onChanged: onTypeChanged,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String?>(
+                    initialValue: selectedPaymentMethod,
+                    decoration: const InputDecoration(
+                      labelText: 'Paiement QR / NFC',
+                    ),
+                    items: const [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('Tous'),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'nfc',
+                        child: Text('NFC'),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'qr',
+                        child: Text('QR'),
+                      ),
+                    ],
+                    onChanged: onPaymentMethodChanged,
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: onPickStartDate,
+                    icon: const Icon(Icons.event_rounded),
+                    label: Text(
+                      startDate == null
+                          ? 'Date minimum'
+                          : 'Depuis le ${startDate!.day.toString().padLeft(2, '0')}/${startDate!.month.toString().padLeft(2, '0')}/${startDate!.year}',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: onPickEndDate,
+                    icon: const Icon(Icons.event_available_rounded),
+                    label: Text(
+                      endDate == null
+                          ? 'Date maximum'
+                          : 'Jusqu\'au ${endDate!.day.toString().padLeft(2, '0')}/${endDate!.month.toString().padLeft(2, '0')}/${endDate!.year}',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.check_rounded),
+                    label: const Text('Appliquer'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: hasActiveFilters ? onReset : null,
+                    child: const Text('Réinitialiser'),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        subtitle: hasActiveFilters
-            ? const Text('Filtres actifs')
-            : const Text('Montant, date, type, utilisateur, raison'),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: minAmountController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (_) => onChanged(),
-                  decoration: const InputDecoration(
-                    labelText: 'Montant min.',
-                    suffixText: 'SC',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: maxAmountController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (_) => onChanged(),
-                  decoration: const InputDecoration(
-                    labelText: 'Montant max.',
-                    suffixText: 'SC',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<_TransactionSort>(
-            initialValue: sort,
-            decoration: const InputDecoration(labelText: 'Trier par'),
-            items: const [
-              DropdownMenuItem(
-                value: _TransactionSort.newest,
-                child: Text('Date décroissante'),
-              ),
-              DropdownMenuItem(
-                value: _TransactionSort.oldest,
-                child: Text('Date croissante'),
-              ),
-              DropdownMenuItem(
-                value: _TransactionSort.amountHigh,
-                child: Text('Montant décroissant'),
-              ),
-              DropdownMenuItem(
-                value: _TransactionSort.amountLow,
-                child: Text('Montant croissant'),
-              ),
-            ],
-            onChanged: (value) {
-              if (value != null) {
-                onSortChanged(value);
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<TransactionType?>(
-            initialValue: selectedType,
-            decoration: const InputDecoration(labelText: 'Type'),
-            items: [
-              const DropdownMenuItem<TransactionType?>(
-                value: null,
-                child: Text('Tous les types'),
-              ),
-              ...TransactionType.values.map(
-                (type) => DropdownMenuItem<TransactionType?>(
-                  value: type,
-                  child: Text(type.label),
-                ),
-              ),
-            ],
-            onChanged: onTypeChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedPaymentMethod,
-            decoration: const InputDecoration(labelText: 'Paiement QR / NFC'),
-            items: const [
-              DropdownMenuItem<String?>(
-                value: null,
-                child: Text('Tous'),
-              ),
-              DropdownMenuItem<String?>(
-                value: 'nfc',
-                child: Text('NFC'),
-              ),
-              DropdownMenuItem<String?>(
-                value: 'qr',
-                child: Text('QR'),
-              ),
-            ],
-            onChanged: onPaymentMethodChanged,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onPickStartDate,
-                  child: Text(
-                    startDate == null
-                        ? 'Date min.'
-                        : '${startDate!.day.toString().padLeft(2, '0')}/${startDate!.month.toString().padLeft(2, '0')}/${startDate!.year}',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onPickEndDate,
-                  child: Text(
-                    endDate == null
-                        ? 'Date max.'
-                        : '${endDate!.day.toString().padLeft(2, '0')}/${endDate!.month.toString().padLeft(2, '0')}/${endDate!.year}',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  hasActiveFilters
-                      ? 'Affinage actif sur la liste.'
-                      : 'Aucun filtre avancé appliqué.',
-                  style: dateStyle,
-                ),
-              ),
-              TextButton(
-                onPressed: hasActiveFilters ? onReset : null,
-                child: const Text('Réinitialiser'),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
