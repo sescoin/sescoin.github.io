@@ -1,9 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../core/constants.dart';
 import '../models/marketplace_item.dart';
 import '../models/transaction.dart';
 
-/// Résultat d'un achat marketplace
 class PurchaseResult {
   final String purchaseId;
   final Transaction transaction;
@@ -21,9 +21,6 @@ class MarketplaceService {
 
   MarketplaceService(this._client);
 
-  // ─── Lecture ─────────────────────────────────────────────────────────────────
-
-  /// Items disponibles à l'achat (actifs + en stock)
   Future<List<MarketplaceItem>> getAvailableItems() async {
     final data = await _client
         .from(AppConstants.tableMarketplaceItems)
@@ -35,7 +32,6 @@ class MarketplaceService {
     return (data as List).map((e) => MarketplaceItem.fromJson(e)).toList();
   }
 
-  /// Tous les items (y compris inactifs — pour l'admin)
   Future<List<MarketplaceItem>> getAllItems() async {
     final data = await _client
         .from(AppConstants.tableMarketplaceItems)
@@ -45,7 +41,6 @@ class MarketplaceService {
     return (data as List).map((e) => MarketplaceItem.fromJson(e)).toList();
   }
 
-  /// Items par catégorie
   Future<List<MarketplaceItem>> getItemsByCategory(String category) async {
     final data = await _client
         .from(AppConstants.tableMarketplaceItems)
@@ -57,7 +52,6 @@ class MarketplaceService {
     return (data as List).map((e) => MarketplaceItem.fromJson(e)).toList();
   }
 
-  /// Un item en particulier
   Future<MarketplaceItem> getItem(String itemId) async {
     final data = await _client
         .from(AppConstants.tableMarketplaceItems)
@@ -68,12 +62,11 @@ class MarketplaceService {
     return MarketplaceItem.fromJson(data);
   }
 
-  /// Historique d'achats d'un utilisateur
   Future<List<Map<String, dynamic>>> getPurchaseHistory(String userId) async {
     final data = await _client.from(AppConstants.tablePurchases).select('''
           *,
           buyer:profiles(id, username, display_name, avatar_url),
-          item:marketplace_items(id, name, description, image_url, category, price)
+          item:marketplace_items(id, name, description, image_url, category, price, max_per_user)
         ''').eq('buyer_id', userId).order('created_at', ascending: false);
 
     return (data as List).cast<Map<String, dynamic>>();
@@ -88,10 +81,12 @@ class MarketplaceService {
     return (data as List).cast<Map<String, dynamic>>();
   }
 
-  // ─── Achat ───────────────────────────────────────────────────────────────────
+  Future<void> deletePurchaseRecord(String purchaseId) async {
+    await _client.rpc('admin_delete_purchase_record', params: {
+      'p_purchase_id': purchaseId,
+    });
+  }
 
-  /// Achète un item du marketplace.
-  /// La RPC vérifie le stock, débite le compte et crée la transaction atomiquement.
   Future<PurchaseResult> purchaseItem({
     required String buyerId,
     required String itemId,
@@ -117,15 +112,13 @@ class MarketplaceService {
     );
   }
 
-  // ─── Admin ───────────────────────────────────────────────────────────────────
-
-  /// Crée un nouvel item
   Future<MarketplaceItem> createItem({
     required String name,
     String? description,
     required double price,
     required String category,
     required int stock,
+    required int maxPerUser,
     String? imageUrl,
   }) async {
     final data = await _client
@@ -136,6 +129,7 @@ class MarketplaceService {
           'price': price,
           'category': category,
           'stock': stock,
+          'max_per_user': maxPerUser,
           'is_active': true,
           'image_url': imageUrl,
         })
@@ -145,7 +139,6 @@ class MarketplaceService {
     return MarketplaceItem.fromJson(data);
   }
 
-  /// Met à jour un item existant
   Future<MarketplaceItem> updateItem({
     required String itemId,
     String? name,
@@ -153,6 +146,7 @@ class MarketplaceService {
     double? price,
     String? category,
     int? stock,
+    int? maxPerUser,
     bool? isActive,
     String? imageUrl,
   }) async {
@@ -164,6 +158,7 @@ class MarketplaceService {
     if (price != null) updates['price'] = price;
     if (category != null) updates['category'] = category;
     if (stock != null) updates['stock'] = stock;
+    if (maxPerUser != null) updates['max_per_user'] = maxPerUser;
     if (isActive != null) updates['is_active'] = isActive;
     if (imageUrl != null) updates['image_url'] = imageUrl;
 
@@ -177,7 +172,6 @@ class MarketplaceService {
     return MarketplaceItem.fromJson(data);
   }
 
-  /// Désactive un item (soft delete)
   Future<void> deactivateItem(String itemId) async {
     await _client.from(AppConstants.tableMarketplaceItems).update({
       'is_active': false,
@@ -185,7 +179,6 @@ class MarketplaceService {
     }).eq('id', itemId);
   }
 
-  /// Supprime définitivement un item (admin seulement)
   Future<void> deleteItem(String itemId) async {
     await _client
         .from(AppConstants.tableMarketplaceItems)
@@ -193,9 +186,6 @@ class MarketplaceService {
         .eq('id', itemId);
   }
 
-  // ─── Realtime ────────────────────────────────────────────────────────────────
-
-  /// Stream des items disponibles (stock mis à jour en temps réel)
   Stream<List<MarketplaceItem>> watchAvailableItems() {
     return _client
         .from(AppConstants.tableMarketplaceItems)

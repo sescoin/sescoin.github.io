@@ -289,6 +289,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
     required double price,
     required String category,
     required int stock,
+    required int maxPerUser,
     String? imageUrl,
   }) async {
     state = state.copyWith(isLoading: true, clearMessages: true);
@@ -299,6 +300,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
             price: price,
             category: category,
             stock: stock,
+            maxPerUser: maxPerUser,
             imageUrl: imageUrl,
           );
       state = state.copyWith(isLoading: false, successMessage: 'Item créé');
@@ -316,6 +318,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
     double? price,
     String? category,
     int? stock,
+    int? maxPerUser,
     bool? isActive,
     String? imageUrl,
   }) async {
@@ -328,6 +331,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
             price: price,
             category: category,
             stock: stock,
+            maxPerUser: maxPerUser,
             isActive: isActive,
             imageUrl: imageUrl,
           );

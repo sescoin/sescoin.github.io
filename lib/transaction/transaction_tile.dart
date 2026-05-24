@@ -107,9 +107,9 @@ class TransactionTile extends ConsumerWidget {
       case TransactionType.tax:
         return 'Taxe';
       case TransactionType.adminCredit:
-        return 'Crédit admin';
+        return 'Crédit';
       case TransactionType.adminDebit:
-        return 'Débit admin';
+        return 'Débit';
       case TransactionType.initialBalance:
         return 'Solde initial';
     }

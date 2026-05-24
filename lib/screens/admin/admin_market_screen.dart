@@ -142,30 +142,63 @@ class _ItemAdminCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _TinyBadge(
+                            label: item.category,
+                            color: AppTheme.gold,
+                          ),
+                          _TinyBadge(
+                            label: item.isUnlimited
+                                ? 'Illimité'
+                                : '${item.stock} restants',
+                            color: item.stock > 3 || item.isUnlimited
+                                ? Colors.white70
+                                : AppTheme.negative,
+                          ),
+                          if (item.hasPurchaseLimit)
+                            _TinyBadge(
+                              label: 'Max ${item.maxPerUser}/pers.',
+                              color: Colors.white70,
+                            ),
+                          if (!item.isActive)
+                            const _TinyBadge(
+                              label: 'Inactif',
+                              color: AppTheme.negative,
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                if (!item.isActive)
-                  const _TinyBadge(
-                    label: 'Inactif',
-                    color: AppTheme.negative,
+                const SizedBox(width: 12),
+                Text(
+                  '${item.price.toStringAsFixed(2)} SC',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.gold,
                   ),
+                ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              '${item.category} · ${item.price.toStringAsFixed(2)} SC · stock ${item.stock}',
-              style: const TextStyle(fontSize: 12),
-            ),
             if (item.description.trim().isNotEmpty) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 item.description,
                 maxLines: 2,
@@ -177,23 +210,23 @@ class _ItemAdminCard extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
               children: [
-                OutlinedButton.icon(
+                IconButton.outlined(
                   onPressed: () => context.push(
                     AppRoutes.adminMarketEditItem.replaceFirst(':itemId', item.id),
                     extra: item,
                   ),
+                  tooltip: 'Modifier',
                   icon: const Icon(Icons.edit_rounded, size: 18),
-                  label: const Text('Modifier'),
                 ),
-                OutlinedButton.icon(
+                const SizedBox(width: 8),
+                IconButton.outlined(
                   onPressed: () => _showBuyers(context, ref, item),
+                  tooltip: 'Acheteurs',
                   icon: const Icon(Icons.groups_rounded, size: 18),
-                  label: const Text('Acheteurs'),
                 ),
+                const Spacer(),
                 OutlinedButton.icon(
                   onPressed: () => ref
                       .read(adminActionsProvider.notifier)
@@ -217,91 +250,118 @@ class _ItemAdminCard extends ConsumerWidget {
     WidgetRef ref,
     MarketplaceItem item,
   ) async {
-    final buyers = await ref.read(marketplaceServiceProvider).getItemBuyers(item.id);
+    final initialBuyers =
+        await ref.read(marketplaceServiceProvider).getItemBuyers(item.id);
     if (!context.mounted) {
       return;
     }
 
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
-    showModalBottomSheet<void>(
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (context) => SafeArea(
-        child: DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.65,
-          maxChildSize: 0.9,
-          builder: (context, scrollController) => Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Acheteurs de ${item.name}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+      builder: (context) {
+        var buyers = List<Map<String, dynamic>>.from(initialBuyers);
+
+        return SafeArea(
+          child: StatefulBuilder(
+            builder: (context, setModalState) => DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.72,
+              maxChildSize: 0.92,
+              builder: (context, scrollController) => Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Achats de ${item.name}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: buyers.isEmpty
+                          ? const EmptyState(
+                              icon: Icons.shopping_bag_outlined,
+                              title: 'Aucun achat',
+                            )
+                          : ListView.separated(
+                              controller: scrollController,
+                              itemCount: buyers.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final purchase = buyers[index];
+                                final buyer = purchase['buyer']
+                                        as Map<String, dynamic>? ??
+                                    {};
+                                final snapshotName =
+                                    purchase['item_name_snapshot'] as String? ??
+                                        item.name;
+                                final unitPrice =
+                                    (purchase['unit_price_snapshot'] as num?)
+                                            ?.toDouble() ??
+                                        item.price;
+                                return ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: UserAvatar(
+                                    username:
+                                        buyer['username'] as String? ?? 'inconnu',
+                                    avatarUrl: buyer['avatar_url'] as String?,
+                                    radius: 18,
+                                  ),
+                                  title: Text(
+                                    buyer['display_name'] as String? ??
+                                        buyer['username'] as String? ??
+                                        'Acheteur inconnu',
+                                  ),
+                                  subtitle: Text(
+                                    '$snapshotName · x${purchase['quantity']} · ${dateFormat.format(DateTime.parse(purchase['created_at'] as String).toLocal())}',
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${unitPrice.toStringAsFixed(2)} SC',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.gold,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        onPressed: () async {
+                                          await ref
+                                              .read(marketplaceServiceProvider)
+                                              .deletePurchaseRecord(
+                                                purchase['id'] as String,
+                                              );
+                                          setModalState(() {
+                                            buyers.removeAt(index);
+                                          });
+                                        },
+                                        icon: const Icon(
+                                          Icons.delete_outline_rounded,
+                                          color: AppTheme.negative,
+                                        ),
+                                        tooltip: 'Supprimer l’info',
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Les achats futurs gardent leur propre snapshot même si l’offre change ensuite.',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: buyers.isEmpty
-                      ? const EmptyState(
-                          icon: Icons.shopping_bag_outlined,
-                          title: 'Aucun achat',
-                        )
-                      : ListView.separated(
-                          controller: scrollController,
-                          itemCount: buyers.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final purchase = buyers[index];
-                            final buyer =
-                                purchase['buyer'] as Map<String, dynamic>? ?? {};
-                            final snapshotName =
-                                purchase['item_name_snapshot'] as String? ?? item.name;
-                            final unitPrice = (purchase['unit_price_snapshot'] as num?)
-                                    ?.toDouble() ??
-                                item.price;
-                            return ListTile(
-                              leading: UserAvatar(
-                                username: buyer['username'] as String? ?? 'inconnu',
-                                avatarUrl: buyer['avatar_url'] as String?,
-                                radius: 18,
-                              ),
-                              title: Text(
-                                buyer['display_name'] as String? ??
-                                    buyer['username'] as String? ??
-                                    'Acheteur inconnu',
-                              ),
-                              subtitle: Text(
-                                '$snapshotName · x${purchase['quantity']} · ${dateFormat.format(DateTime.parse(purchase['created_at'] as String).toLocal())}',
-                              ),
-                              trailing: Text(
-                                '${unitPrice.toStringAsFixed(2)} SC',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.gold,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -369,57 +429,74 @@ class _AuctionAdminCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Text(
-                    auction.itemName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        auction.itemName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _TinyBadge(
+                            label: switch (auction.status) {
+                              AuctionStatus.upcoming => 'À venir',
+                              AuctionStatus.active => 'Active',
+                              AuctionStatus.ended => 'Terminée',
+                              AuctionStatus.cancelled => 'Annulée',
+                            },
+                            color: switch (auction.status) {
+                              AuctionStatus.upcoming => AppTheme.warning,
+                              AuctionStatus.active => AppTheme.positive,
+                              AuctionStatus.ended => AppTheme.gold,
+                              AuctionStatus.cancelled => AppTheme.negative,
+                            },
+                          ),
+                          _TinyBadge(
+                            label:
+                                'Fin ${DateFormat('dd/MM/yyyy HH:mm').format(auction.endsAt)}',
+                            color: Colors.white70,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                _TinyBadge(
-                  label: switch (auction.status) {
-                    AuctionStatus.upcoming => 'À venir',
-                    AuctionStatus.active => 'Active',
-                    AuctionStatus.ended => 'Terminée',
-                    AuctionStatus.cancelled => 'Annulée',
-                  },
-                  color: switch (auction.status) {
-                    AuctionStatus.upcoming => AppTheme.warning,
-                    AuctionStatus.active => AppTheme.positive,
-                    AuctionStatus.ended => AppTheme.gold,
-                    AuctionStatus.cancelled => AppTheme.negative,
-                  },
+                const SizedBox(width: 12),
+                Text(
+                  '${auction.currentPrice.toStringAsFixed(2)} SC',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.gold,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Prix actuel ${auction.currentPrice.toStringAsFixed(2)} SC · fin ${DateFormat('dd/MM/yyyy HH:mm').format(auction.endsAt)}',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 12,
-              ),
-            ),
             if (auction.currentWinnerUsername != null) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Text(
                 'En tête : @${auction.currentWinnerUsername}${auction.currentWinnerEmoji != null ? ' ${auction.currentWinnerEmoji}' : ''}',
                 style: const TextStyle(fontSize: 12),
               ),
             ],
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
               children: [
-                OutlinedButton.icon(
+                IconButton.outlined(
                   onPressed: () => _showAuctionResults(context, ref, auction),
-                  icon: const Icon(Icons.emoji_events_outlined, size: 18),
-                  label: const Text('Résultat'),
+                  tooltip: 'Historique',
+                  icon: const Icon(Icons.groups_rounded, size: 18),
                 ),
+                const Spacer(),
                 if (auction.isActive || auction.isUpcoming)
                   OutlinedButton(
                     onPressed: () => ref
@@ -427,13 +504,15 @@ class _AuctionAdminCard extends ConsumerWidget {
                         .cancelAuction(auction.id),
                     child: const Text('Annuler'),
                   ),
-                if (auction.isActive)
+                if (auction.isActive) ...[
+                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () => ref
                         .read(adminActionsProvider.notifier)
                         .finalizeAuction(auction.id),
                     child: const Text('Clôturer'),
                   ),
+                ],
               ],
             ),
           ],
@@ -447,110 +526,163 @@ class _AuctionAdminCard extends ConsumerWidget {
     WidgetRef ref,
     Auction auction,
   ) async {
-    final bids =
+    final initialBids =
         await ref.read(auctionServiceProvider).getAuctionBidHistory(auction.id);
     if (!context.mounted) {
       return;
     }
 
-    showModalBottomSheet<void>(
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.65,
-          maxChildSize: 0.9,
-          builder: (context, scrollController) => Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Résultat de ${auction.itemName}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (auction.currentWinnerUsername != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.gold.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Gagnant : @${auction.currentWinnerUsername} · ${auction.currentPrice.toStringAsFixed(2)} SC',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                if (auction.currentWinnerUsername == null)
-                  const EmptyState(
-                    icon: Icons.gavel_rounded,
-                    title: 'Aucun gagnant pour le moment',
-                  ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: bids.isEmpty
-                      ? const EmptyState(
-                          icon: Icons.list_alt_rounded,
-                          title: 'Aucune offre enregistrée',
-                        )
-                      : ListView.separated(
-                          controller: scrollController,
-                          itemCount: bids.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final bid = bids[index];
-                            final bidder =
-                                bid['bidder'] as Map<String, dynamic>? ?? {};
-                            final isWinner =
-                                bidder['id'] == auction.currentWinnerId;
-                            return ListTile(
-                              leading: UserAvatar(
-                                username: bidder['username'] as String? ?? 'inconnu',
-                                avatarUrl: bidder['avatar_url'] as String?,
-                                radius: 18,
-                              ),
-                              title: Text(
-                                bidder['display_name'] as String? ??
-                                    bidder['username'] as String? ??
-                                    'Utilisateur inconnu',
-                              ),
-                              subtitle: Text('@${bid['bidder_username']}'),
-                              trailing: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${(bid['amount'] as num).toDouble().toStringAsFixed(2)} SC',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: isWinner ? AppTheme.gold : null,
-                                    ),
-                                  ),
-                                  if (isWinner)
-                                    const Text(
-                                      'Gagnant',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: AppTheme.gold,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            );
-                          },
+      builder: (context) {
+        var bids = List<Map<String, dynamic>>.from(initialBids);
+
+        void sortBids() {
+          bids.sort(
+            (a, b) => ((b['amount'] as num).toDouble())
+                .compareTo((a['amount'] as num).toDouble()),
+          );
+        }
+
+        sortBids();
+
+        return SafeArea(
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              final topBid = bids.isEmpty ? null : bids.first;
+              final topBidder =
+                  topBid?['bidder'] as Map<String, dynamic>? ?? const {};
+
+              return DraggableScrollableSheet(
+                expand: false,
+                initialChildSize: 0.72,
+                maxChildSize: 0.92,
+                builder: (context, scrollController) => Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Historique de ${auction.itemName}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (topBid != null)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.gold.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Gagnant actuel : @${topBidder['username'] ?? topBid['bidder_username']} · ${((topBid['amount'] as num).toDouble()).toStringAsFixed(2)} SC',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        )
+                      else
+                        const EmptyState(
+                          icon: Icons.gavel_rounded,
+                          title: 'Aucune offre enregistrée',
+                        ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: bids.isEmpty
+                            ? const EmptyState(
+                                icon: Icons.list_alt_rounded,
+                                title: 'Aucune offre enregistrée',
+                              )
+                            : ListView.separated(
+                                controller: scrollController,
+                                itemCount: bids.length,
+                                separatorBuilder: (_, __) =>
+                                    const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final bid = bids[index];
+                                  final bidder = bid['bidder']
+                                          as Map<String, dynamic>? ??
+                                      {};
+                                  final isWinner = identical(bid, topBid);
+                                  return ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: UserAvatar(
+                                      username: bidder['username'] as String? ??
+                                          'inconnu',
+                                      avatarUrl: bidder['avatar_url'] as String?,
+                                      radius: 18,
+                                    ),
+                                    title: Text(
+                                      bidder['display_name'] as String? ??
+                                          bidder['username'] as String? ??
+                                          'Utilisateur inconnu',
+                                    ),
+                                    subtitle: Text(
+                                      '@${bid['bidder_username']}',
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              '${(bid['amount'] as num).toDouble().toStringAsFixed(2)} SC',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                color: isWinner
+                                                    ? AppTheme.gold
+                                                    : null,
+                                              ),
+                                            ),
+                                            if (isWinner)
+                                              const Text(
+                                                'Gagnant',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: AppTheme.gold,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        IconButton(
+                                          onPressed: () async {
+                                            await ref
+                                                .read(auctionServiceProvider)
+                                                .deleteAuctionBid(
+                                                  bid['id'] as String,
+                                                );
+                                            setModalState(() {
+                                              bids.removeAt(index);
+                                              sortBids();
+                                            });
+                                          },
+                                          icon: const Icon(
+                                            Icons.delete_outline_rounded,
+                                            color: AppTheme.negative,
+                                          ),
+                                          tooltip: 'Supprimer l’info',
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -22,7 +22,7 @@ class AppConstants {
   static const int maxLoanDurationDays = 365;
 
   static const double minBidIncrement = 0.01;
-  static const int auctionDefaultDurationHours = 24;
+  static const int auctionDefaultDurationHours = 0;
 
   static const double exchangeRateBase = 1.0;
   static const int exchangeRateHistoryDays = 30;
@@ -71,8 +71,8 @@ extension TransactionTypeX on TransactionType {
         TransactionType.loan => 'Prêt',
         TransactionType.reward => 'Récompense',
         TransactionType.tax => 'Taxe',
-        TransactionType.adminCredit => 'Crédit admin',
-        TransactionType.adminDebit => 'Débit admin',
+        TransactionType.adminCredit => 'Crédit',
+        TransactionType.adminDebit => 'Débit',
         TransactionType.initialBalance => 'Solde initial',
       };
 

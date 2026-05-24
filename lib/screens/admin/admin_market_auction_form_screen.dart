@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,7 +25,9 @@ class _AdminMarketAuctionFormScreenState
   final _descCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _imageCtrl = TextEditingController();
-  final _durationHoursCtrl = TextEditingController(text: '24');
+  final _durationHoursCtrl = TextEditingController(
+    text: '${AppConstants.auctionDefaultDurationHours}',
+  );
   final _durationMinutesCtrl = TextEditingController(text: '0');
   bool _isUploadingImage = false;
 
@@ -36,6 +40,39 @@ class _AdminMarketAuctionFormScreenState
     _durationHoursCtrl.dispose();
     _durationMinutesCtrl.dispose();
     super.dispose();
+  }
+
+  Future<String> _uploadImage(Uint8List bytes, String path) async {
+    final storage = Supabase.instance.client.storage;
+    final buckets = [
+      AppConstants.bucketMarketplace,
+      AppConstants.bucketAvatars,
+    ];
+
+    Object? lastError;
+    for (final bucket in buckets) {
+      try {
+        await storage.from(bucket).uploadBinary(
+              path,
+              bytes,
+              fileOptions: const FileOptions(
+                upsert: true,
+                contentType: 'image/jpeg',
+              ),
+            );
+        return storage.from(bucket).getPublicUrl(path);
+      } catch (error) {
+        lastError = error;
+        final message = error.toString().toLowerCase();
+        final isMissingBucket = message.contains('bucket not found') ||
+            message.contains('statuscode: 404');
+        if (!isMissingBucket || bucket == buckets.last) {
+          rethrow;
+        }
+      }
+    }
+
+    throw lastError ?? Exception('Impossible d’envoyer l’image.');
   }
 
   Future<void> _pickImageFromGallery() async {
@@ -52,23 +89,8 @@ class _AdminMarketAuctionFormScreenState
     try {
       final bytes = await picked.readAsBytes();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final path = 'auctions/$timestamp.jpg';
-      await Supabase.instance.client.storage
-          .from(AppConstants.bucketMarketplace)
-          .uploadBinary(
-            path,
-            bytes,
-            fileOptions: const FileOptions(
-              upsert: true,
-              contentType: 'image/jpeg',
-            ),
-          );
-
-      final url = Supabase.instance.client.storage
-          .from(AppConstants.bucketMarketplace)
-          .getPublicUrl(path);
-
-      _imageCtrl.text = url;
+      final path = 'marketplace/auctions/$timestamp.jpg';
+      _imageCtrl.text = await _uploadImage(bytes, path);
       setState(() {});
     } catch (error) {
       if (!mounted) {
@@ -135,7 +157,7 @@ class _AdminMarketAuctionFormScreenState
       return 'Minutes invalides';
     }
     if ((hours * 60) + minutes <= 0) {
-      return 'Entre une durée valide';
+      return 'Entrez une durée valide';
     }
     return null;
   }
@@ -156,8 +178,6 @@ class _AdminMarketAuctionFormScreenState
               children: [
                 _SectionCard(
                   title: 'Objet',
-                  subtitle:
-                      'Prépare une enchère claire avec un nom, un visuel et un texte de contexte.',
                   children: [
                     TextFormField(
                       controller: _nameCtrl,
@@ -167,7 +187,7 @@ class _AdminMarketAuctionFormScreenState
                       textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Entre un nom';
+                          return 'Entrez un nom';
                         }
                         return null;
                       },
@@ -187,7 +207,6 @@ class _AdminMarketAuctionFormScreenState
                       controller: _imageCtrl,
                       decoration: const InputDecoration(
                         labelText: 'URL image',
-                        hintText: 'Optionnelle',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -200,9 +219,7 @@ class _AdminMarketAuctionFormScreenState
                 ),
                 const SizedBox(height: 16),
                 _SectionCard(
-                  title: 'Règles',
-                  subtitle:
-                      'Définis le prix de départ et la durée avant publication.',
+                  title: 'Durée',
                   children: [
                     TextFormField(
                       controller: _priceCtrl,
@@ -216,7 +233,7 @@ class _AdminMarketAuctionFormScreenState
                         final amount =
                             double.tryParse(value?.replaceAll(',', '.') ?? '');
                         if (amount == null || amount <= 0) {
-                          return 'Entre un prix valide';
+                          return 'Entrez un prix valide';
                         }
                         return null;
                       },
@@ -269,12 +286,10 @@ class _AdminMarketAuctionFormScreenState
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
     required this.title,
-    required this.subtitle,
     required this.children,
   });
 
   final String title;
-  final String subtitle;
   final List<Widget> children;
 
   @override
@@ -290,13 +305,6 @@ class _SectionCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),

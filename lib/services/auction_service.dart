@@ -154,6 +154,12 @@ class AuctionService {
     });
   }
 
+  Future<void> deleteAuctionBid(String bidId) async {
+    await _client.rpc('admin_delete_auction_bid', params: {
+      'p_bid_id': bidId,
+    });
+  }
+
   Future<void> finalizeExpiredAuctions() async {
     await _client.rpc('finalize_expired_auctions');
   }

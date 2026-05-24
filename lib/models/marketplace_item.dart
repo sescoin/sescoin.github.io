@@ -6,6 +6,7 @@ class MarketplaceItem {
   final String? imageUrl;
   final String category;
   final int stock; // -1 = illimité
+  final int maxPerUser; // -1 = illimité
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -18,6 +19,7 @@ class MarketplaceItem {
     this.imageUrl,
     required this.category,
     required this.stock,
+    required this.maxPerUser,
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
@@ -25,16 +27,18 @@ class MarketplaceItem {
 
   bool get isUnlimited => stock == -1;
   bool get isAvailable => isActive && (isUnlimited || stock > 0);
+  bool get hasPurchaseLimit => maxPerUser > 0;
 
   factory MarketplaceItem.fromJson(Map<String, dynamic> json) {
     return MarketplaceItem(
       id: json['id'] as String,
       name: json['name'] as String,
-      description: json['description'] as String,
+      description: json['description'] as String? ?? '',
       price: (json['price'] as num).toDouble(),
       imageUrl: json['image_url'] as String?,
       category: json['category'] as String,
       stock: json['stock'] as int,
+      maxPerUser: (json['max_per_user'] as int?) ?? -1,
       isActive: json['is_active'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -50,6 +54,7 @@ class MarketplaceItem {
       'image_url': imageUrl,
       'category': category,
       'stock': stock,
+      'max_per_user': maxPerUser,
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -64,6 +69,7 @@ class MarketplaceItem {
     String? imageUrl,
     String? category,
     int? stock,
+    int? maxPerUser,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -76,6 +82,7 @@ class MarketplaceItem {
       imageUrl: imageUrl ?? this.imageUrl,
       category: category ?? this.category,
       stock: stock ?? this.stock,
+      maxPerUser: maxPerUser ?? this.maxPerUser,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -83,8 +90,9 @@ class MarketplaceItem {
   }
 
   @override
-  String toString() =>
-      'MarketplaceItem(id: $id, name: $name, price: $price, stock: $stock)';
+  String toString() {
+    return 'MarketplaceItem(id: $id, name: $name, price: $price, stock: $stock, maxPerUser: $maxPerUser)';
+  }
 
   @override
   bool operator ==(Object other) =>

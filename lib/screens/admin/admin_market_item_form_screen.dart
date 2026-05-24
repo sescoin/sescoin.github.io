@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -30,6 +32,7 @@ class _AdminMarketItemFormScreenState
   final _priceCtrl = TextEditingController();
   final _categoryCtrl = TextEditingController(text: 'Divers');
   final _stockCtrl = TextEditingController(text: '-1');
+  final _maxPerUserCtrl = TextEditingController(text: '-1');
   final _imageCtrl = TextEditingController();
   bool _isUploadingImage = false;
 
@@ -45,6 +48,7 @@ class _AdminMarketItemFormScreenState
       _priceCtrl.text = item.price.toStringAsFixed(2);
       _categoryCtrl.text = item.category;
       _stockCtrl.text = '${item.stock}';
+      _maxPerUserCtrl.text = '${item.maxPerUser}';
       _imageCtrl.text = item.imageUrl ?? '';
     }
   }
@@ -56,8 +60,42 @@ class _AdminMarketItemFormScreenState
     _priceCtrl.dispose();
     _categoryCtrl.dispose();
     _stockCtrl.dispose();
+    _maxPerUserCtrl.dispose();
     _imageCtrl.dispose();
     super.dispose();
+  }
+
+  Future<String> _uploadImage(Uint8List bytes, String path) async {
+    final storage = Supabase.instance.client.storage;
+    final buckets = [
+      AppConstants.bucketMarketplace,
+      AppConstants.bucketAvatars,
+    ];
+
+    Object? lastError;
+    for (final bucket in buckets) {
+      try {
+        await storage.from(bucket).uploadBinary(
+              path,
+              bytes,
+              fileOptions: const FileOptions(
+                upsert: true,
+                contentType: 'image/jpeg',
+              ),
+            );
+        return storage.from(bucket).getPublicUrl(path);
+      } catch (error) {
+        lastError = error;
+        final message = error.toString().toLowerCase();
+        final isMissingBucket = message.contains('bucket not found') ||
+            message.contains('statuscode: 404');
+        if (!isMissingBucket || bucket == buckets.last) {
+          rethrow;
+        }
+      }
+    }
+
+    throw lastError ?? Exception('Impossible d’envoyer l’image.');
   }
 
   Future<void> _pickImageFromGallery() async {
@@ -74,21 +112,8 @@ class _AdminMarketItemFormScreenState
     try {
       final bytes = await picked.readAsBytes();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final path = 'items/$timestamp.jpg';
-      await Supabase.instance.client.storage
-          .from(AppConstants.bucketMarketplace)
-          .uploadBinary(
-            path,
-            bytes,
-            fileOptions: const FileOptions(
-              upsert: true,
-              contentType: 'image/jpeg',
-            ),
-          );
-
-      _imageCtrl.text = Supabase.instance.client.storage
-          .from(AppConstants.bucketMarketplace)
-          .getPublicUrl(path);
+      final path = 'marketplace/items/$timestamp.jpg';
+      _imageCtrl.text = await _uploadImage(bytes, path);
       setState(() {});
     } catch (error) {
       if (mounted) {
@@ -116,6 +141,7 @@ class _AdminMarketItemFormScreenState
               price: double.parse(_priceCtrl.text.replaceAll(',', '.')),
               category: _categoryCtrl.text.trim(),
               stock: int.parse(_stockCtrl.text.trim()),
+              maxPerUser: int.parse(_maxPerUserCtrl.text.trim()),
               imageUrl:
                   _imageCtrl.text.trim().isEmpty ? null : _imageCtrl.text.trim(),
             );
@@ -126,6 +152,7 @@ class _AdminMarketItemFormScreenState
               price: double.parse(_priceCtrl.text.replaceAll(',', '.')),
               category: _categoryCtrl.text.trim(),
               stock: int.parse(_stockCtrl.text.trim()),
+              maxPerUser: int.parse(_maxPerUserCtrl.text.trim()),
               imageUrl:
                   _imageCtrl.text.trim().isEmpty ? null : _imageCtrl.text.trim(),
             );
@@ -154,6 +181,24 @@ class _AdminMarketItemFormScreenState
     }
   }
 
+  String? _validateIntegerField(
+    String? value, {
+    required String invalidMessage,
+    bool allowUnlimited = false,
+  }) {
+    final parsed = int.tryParse(value?.trim() ?? '');
+    if (parsed == null) {
+      return invalidMessage;
+    }
+    if (allowUnlimited && parsed == -1) {
+      return null;
+    }
+    if (parsed <= 0) {
+      return invalidMessage;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(adminActionsProvider);
@@ -176,8 +221,6 @@ class _AdminMarketItemFormScreenState
               children: [
                 _SectionCard(
                   title: 'Informations',
-                  subtitle:
-                      'Créez une fiche boutique claire avec un titre, une catégorie et un prix.',
                   children: [
                     TextFormField(
                       controller: _nameCtrl,
@@ -225,8 +268,6 @@ class _AdminMarketItemFormScreenState
                 const SizedBox(height: 16),
                 _SectionCard(
                   title: 'Contenu',
-                  subtitle:
-                      'Gardez une carte compacte côté élève avec un texte court et lisible.',
                   children: [
                     TextFormField(
                       controller: _descCtrl,
@@ -241,17 +282,25 @@ class _AdminMarketItemFormScreenState
                     TextFormField(
                       controller: _stockCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Stock',
-                        helperText: '-1 = illimité',
+                      decoration: const InputDecoration(labelText: 'Stock'),
+                      validator: (value) => _validateIntegerField(
+                        value,
+                        invalidMessage: 'Entrez un stock valide',
+                        allowUnlimited: true,
                       ),
-                      validator: (value) {
-                        final stock = int.tryParse(value?.trim() ?? '');
-                        if (stock == null || stock == 0 || stock < -1) {
-                          return 'Entrez un stock valide';
-                        }
-                        return null;
-                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _maxPerUserCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Limite par personne',
+                      ),
+                      validator: (value) => _validateIntegerField(
+                        value,
+                        invalidMessage: 'Entrez une limite valide',
+                        allowUnlimited: true,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -276,7 +325,9 @@ class _AdminMarketItemFormScreenState
           minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: FilledButton.icon(
             onPressed: state.isLoading || _isUploadingImage ? null : _submit,
-            icon: Icon(_isEditing ? Icons.save_rounded : Icons.add_business_rounded),
+            icon: Icon(
+              _isEditing ? Icons.save_rounded : Icons.add_business_rounded,
+            ),
             label: Text(
               _isEditing ? 'Enregistrer l’offre' : 'Créer l’offre',
             ),
@@ -290,12 +341,10 @@ class _AdminMarketItemFormScreenState
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
     required this.title,
-    required this.subtitle,
     required this.children,
   });
 
   final String title;
-  final String subtitle;
   final List<Widget> children;
 
   @override
@@ -311,13 +360,6 @@ class _SectionCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),

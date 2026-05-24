@@ -92,7 +92,7 @@ class _ShopTab extends ConsumerWidget {
         : width >= 680
             ? 3
             : 2;
-    final mainAxisExtent = crossAxisCount == 2 ? 292.0 : 276.0;
+    final mainAxisExtent = crossAxisCount == 2 ? 304.0 : 288.0;
 
     return itemsAsync.when(
       loading: () => const InlineLoader(message: 'Chargement du marché...'),
