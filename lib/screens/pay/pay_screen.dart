@@ -363,6 +363,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
       final tx = await ref.read(paymentProvider.notifier).sendTo(
             recipientId: raw,
             amount: amount,
+            paymentMethod: 'qr',
             description: _descCtrl.text.isEmpty ? null : _descCtrl.text,
           );
 
@@ -442,7 +443,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
       );
       if (mounted) {
         setState(() => _nfcScanning = false);
-        await _onIdScanned(id);
+        await _sendViaNfc(id);
       }
     } catch (e) {
       try {
@@ -465,6 +466,50 @@ class _SendTabState extends ConsumerState<_SendTab> {
     } catch (_) {}
     if (mounted) {
       setState(() => _nfcScanning = false);
+    }
+  }
+
+  Future<void> _sendViaNfc(String recipientId) async {
+    final amount = double.tryParse(_amountCtrl.text.replaceAll(',', '.')) ?? 0;
+
+    setState(() => _sending = true);
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('display_name, username')
+          .eq('id', recipientId)
+          .maybeSingle();
+
+      if (!mounted) {
+        return;
+      }
+      if (profile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Compte introuvable')),
+        );
+        setState(() => _sending = false);
+        return;
+      }
+
+      final tx = await ref.read(paymentProvider.notifier).sendTo(
+            recipientId: recipientId,
+            amount: amount,
+            paymentMethod: 'nfc',
+            description: _descCtrl.text.isEmpty ? null : _descCtrl.text,
+          );
+
+      if (mounted) {
+        _showSuccess(
+          tx.amount,
+          profile['display_name'] as String? ?? profile['username'] as String?,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
+        setState(() => _sending = false);
+      }
     }
   }
 
@@ -501,7 +546,8 @@ class _SendTabState extends ConsumerState<_SendTab> {
                 suffixText: 'SC',
               ),
               validator: (value) {
-                final number = double.tryParse(value?.replaceAll(',', '.') ?? '');
+                final number =
+                    double.tryParse(value?.replaceAll(',', '.') ?? '');
                 if (number == null || number <= 0) {
                   return 'Montant invalide';
                 }

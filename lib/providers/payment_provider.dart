@@ -8,12 +8,9 @@ import 'wallet_provider.dart';
 class PaymentState {
   final bool isLoading;
   final String? error;
-  // Token QR/NFC généré par le destinataire
   final String? paymentToken;
   final double? requestedAmount;
-  // Transaction résultante après confirmation
   final Transaction? lastTransaction;
-  // Étape du flux
   final PaymentStep step;
 
   const PaymentState({
@@ -47,9 +44,9 @@ class PaymentState {
 
 enum PaymentStep {
   idle,
-  requestCreated, // Le destinataire a généré le token
-  confirming, // Le payeur est en train de confirmer
-  success, // Transaction réussie
+  requestCreated,
+  confirming,
+  success,
   error,
 }
 
@@ -63,13 +60,14 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
 
   PaymentNotifier(this._ref) : super(const PaymentState());
 
-  /// [DESTINATAIRE] Crée une demande de paiement → génère le token QR/NFC
   Future<String> createRequest({
     required double amount,
     String? description,
   }) async {
     final userId = _ref.read(supabaseClientProvider).auth.currentUser?.id;
-    if (userId == null) throw Exception('Non connecté');
+    if (userId == null) {
+      throw Exception('Non connecté');
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -96,10 +94,11 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
     }
   }
 
-  /// [PAYEUR] Confirme la transaction après scan NFC/QR
   Future<Transaction> confirmRequest(String paymentToken) async {
     final userId = _ref.read(supabaseClientProvider).auth.currentUser?.id;
-    if (userId == null) throw Exception('Non connecté');
+    if (userId == null) {
+      throw Exception('Non connecté');
+    }
 
     state = state.copyWith(
       isLoading: true,
@@ -117,7 +116,6 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
         lastTransaction: tx,
         step: PaymentStep.success,
       );
-      // Rafraîchit solde + historique
       await _ref.read(currentProfileProvider.notifier).refresh();
       _ref.read(walletProvider.notifier).loadInitial();
       return tx;
@@ -131,10 +129,11 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
     }
   }
 
-  /// [DESTINATAIRE] Confirme la réception (étape finale)
   Future<void> acknowledgePayment(String transactionId) async {
     final userId = _ref.read(supabaseClientProvider).auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      return;
+    }
 
     try {
       await _ref.read(transactionServiceProvider).acknowledgePayment(
@@ -148,14 +147,16 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
     }
   }
 
-  /// [PAYEUR] Envoie directement un montant à un destinataire (via NFC ou QR)
   Future<Transaction> sendTo({
     required String recipientId,
     required double amount,
+    required String paymentMethod,
     String? description,
   }) async {
     final userId = _ref.read(supabaseClientProvider).auth.currentUser?.id;
-    if (userId == null) throw Exception('Non connecté');
+    if (userId == null) {
+      throw Exception('Non connecté');
+    }
     if (userId == recipientId) {
       throw Exception('Tu ne peux pas te payer toi-même');
     }
@@ -172,7 +173,11 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
           'p_from_user_id': userId,
           'p_to_user_id': recipientId,
           'p_amount': amount,
-          'p_description': description ?? 'Paiement NFC/QR',
+          'p_description':
+              description ?? 'Paiement ${paymentMethod.toUpperCase()}',
+          'p_metadata': {
+            'payment_method': paymentMethod.toLowerCase(),
+          },
         },
       );
       final tx = Transaction.fromJson(result as Map<String, dynamic>);

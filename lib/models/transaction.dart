@@ -29,6 +29,17 @@ class Transaction {
   final String? description;
   final Map<String, dynamic>? metadata;
 
+  String? get paymentMethod {
+    final value = metadata?['payment_method'];
+    return value is String ? value.toLowerCase() : null;
+  }
+
+  String? get paymentMethodLabel => switch (paymentMethod) {
+        'nfc' => 'NFC',
+        'qr' => 'QR',
+        _ => null,
+      };
+
   bool isCredit(String userId) => toUserId == userId;
 
   bool isDebit(String userId) => fromUserId == userId;
@@ -53,8 +64,8 @@ class Transaction {
       amount: (json['amount'] as num).toDouble(),
       type: TransactionTypeX.fromDb(json['type'] as String? ?? 'transfer'),
       createdAt: DateTime.parse(json['created_at'] as String),
-      fromUsername:
-          fromProfile?['username'] as String? ?? json['from_username'] as String?,
+      fromUsername: fromProfile?['username'] as String? ??
+          json['from_username'] as String?,
       toUsername:
           toProfile?['username'] as String? ?? json['to_username'] as String?,
       fromDisplayName: fromProfile?['display_name'] as String? ??

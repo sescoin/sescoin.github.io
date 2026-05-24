@@ -23,7 +23,7 @@ class MarketItemCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -32,7 +32,7 @@ class MarketItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   item.imageUrl!,
-                  height: 112,
+                  height: 96,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => _Placeholder(item: item),
@@ -40,7 +40,7 @@ class MarketItemCard extends StatelessWidget {
               )
             else
               _Placeholder(item: item),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
@@ -56,30 +56,31 @@ class MarketItemCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               item.name,
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 16,
+                fontSize: 15,
               ),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               item.description,
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const Spacer(),
+            const SizedBox(height: 10),
             AmountDisplay(
               amount: item.price,
-              fontSize: 18,
+              fontSize: 17,
             ),
             if (!item.isUnlimited)
               Padding(
@@ -106,10 +107,10 @@ class MarketItemCard extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 44,
               child: ElevatedButton(
                 onPressed: item.isAvailable && !isLoading ? onBuy : null,
                 child: isLoading
@@ -125,7 +126,7 @@ class MarketItemCard extends StatelessWidget {
                         item.isAvailable ? 'Acheter' : 'Épuisé',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                           height: 1,
                         ),
@@ -147,7 +148,7 @@ class _Placeholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 112,
+      height: 96,
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppTheme.gold.withValues(alpha: 0.08),
@@ -155,7 +156,7 @@ class _Placeholder extends StatelessWidget {
       ),
       child: const Icon(
         Icons.storefront_rounded,
-        size: 40,
+        size: 36,
         color: AppTheme.gold,
       ),
     );

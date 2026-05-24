@@ -21,8 +21,10 @@ class GlobalTransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fromLabel = transaction.fromDisplayName ?? transaction.fromUsername ?? 'Inconnu';
-    final toLabel = transaction.toDisplayName ?? transaction.toUsername ?? 'Inconnu';
+    final fromLabel =
+        transaction.fromDisplayName ?? transaction.fromUsername ?? 'Inconnu';
+    final toLabel =
+        transaction.toDisplayName ?? transaction.toUsername ?? 'Inconnu';
 
     return Card(
       child: Padding(
@@ -31,9 +33,20 @@ class GlobalTransactionTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _TypeBadge(type: transaction.type),
-                const Spacer(),
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _TypeBadge(type: transaction.type),
+                      if (transaction.paymentMethodLabel != null)
+                        _MethodBadge(label: transaction.paymentMethodLabel!),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Text(
                   '${transaction.amount.toStringAsFixed(2)} SC',
                   style: const TextStyle(
@@ -48,6 +61,7 @@ class GlobalTransactionTile extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _UserChip(
                   label: 'De @$fromLabel',
@@ -115,12 +129,24 @@ class _TypeBadge extends StatelessWidget {
       TransactionType.transfer => (Icons.swap_horiz_rounded, AppTheme.positive),
       TransactionType.purchase => (Icons.storefront_rounded, AppTheme.gold),
       TransactionType.auction => (Icons.gavel_rounded, const Color(0xFF6C5CE7)),
-      TransactionType.loan => (Icons.handshake_rounded, const Color(0xFF0984E3)),
+      TransactionType.loan => (
+          Icons.handshake_rounded,
+          const Color(0xFF0984E3)
+        ),
       TransactionType.reward => (Icons.star_rounded, AppTheme.gold),
       TransactionType.tax => (Icons.percent_rounded, AppTheme.negative),
-      TransactionType.adminCredit => (Icons.add_circle_rounded, AppTheme.positive),
-      TransactionType.adminDebit => (Icons.remove_circle_rounded, AppTheme.negative),
-      TransactionType.initialBalance => (Icons.account_balance_rounded, AppTheme.gold),
+      TransactionType.adminCredit => (
+          Icons.add_circle_rounded,
+          AppTheme.positive
+        ),
+      TransactionType.adminDebit => (
+          Icons.remove_circle_rounded,
+          AppTheme.negative
+        ),
+      TransactionType.initialBalance => (
+          Icons.account_balance_rounded,
+          AppTheme.gold
+        ),
     };
 
     return Container(
@@ -142,6 +168,32 @@ class _TypeBadge extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MethodBadge extends StatelessWidget {
+  const _MethodBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Text(
+        'Paiement $label',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
       ),
     );
   }

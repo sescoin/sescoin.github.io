@@ -53,9 +53,11 @@ class AuthService {
       'Î': 'i',
       'Ï': 'i',
       'Í': 'i',
+      'Ì': 'i',
       'Ô': 'o',
       'Ö': 'o',
       'Ó': 'o',
+      'Ò': 'o',
       'Ù': 'u',
       'Û': 'u',
       'Ü': 'u',
@@ -239,7 +241,8 @@ class AuthService {
       throw Exception('Email introuvable.');
     }
     try {
-      await _client.auth.signInWithPassword(email: email, password: oldPassword);
+      await _client.auth
+          .signInWithPassword(email: email, password: oldPassword);
     } catch (_) {
       throw Exception('Mot de passe actuel incorrect.');
     }

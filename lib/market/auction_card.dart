@@ -54,7 +54,9 @@ class _AuctionCardState extends State<AuctionCard> {
     _remaining = widget.auction.timeRemaining;
     if (widget.auction.isActive) {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         setState(() {
           _remaining = widget.auction.timeRemaining;
         });
@@ -265,7 +267,9 @@ class _TimerBadge extends StatelessWidget {
   final bool isUrgent;
 
   String _format(Duration d) {
-    if (d.inDays > 0) return '${d.inDays}j ${d.inHours.remainder(24)}h';
+    if (d.inDays > 0) {
+      return '${d.inDays}j ${d.inHours.remainder(24)}h';
+    }
     if (d.inHours > 0) {
       return '${d.inHours}h ${d.inMinutes.remainder(60)}m';
     }

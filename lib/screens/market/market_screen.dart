@@ -87,8 +87,12 @@ class _ShopTab extends ConsumerWidget {
     final itemsAsync = ref.watch(marketplaceItemsProvider);
     final purchaseState = ref.watch(purchaseProvider);
     final width = MediaQuery.of(context).size.width;
-    final crossAxisCount = width >= 900 ? 4 : width >= 680 ? 3 : 2;
-    final mainAxisExtent = crossAxisCount == 2 ? 356.0 : 332.0;
+    final crossAxisCount = width >= 900
+        ? 4
+        : width >= 680
+            ? 3
+            : 2;
+    final mainAxisExtent = crossAxisCount == 2 ? 292.0 : 276.0;
 
     return itemsAsync.when(
       loading: () => const InlineLoader(message: 'Chargement du marché...'),

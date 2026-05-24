@@ -3,44 +3,35 @@
 class AppConstants {
   AppConstants._();
 
-  // ── App ────────────────────────────────────────────────────────────────────
   static const String appName = 'SES Coin';
   static const String currencySymbol = 'SC';
   static const String currencyName = 'SES Coin';
 
-  // ── Comptes ────────────────────────────────────────────────────────────────
   static const int passwordMinLength = 8;
   static const int maxAccountRequestsPerDevice = 3;
   static const String adminRole = 'admin';
   static const String studentRole = 'student';
 
-  // ── Transactions ──────────────────────────────────────────────────────────
   static const double minTransferAmount = 0.01;
   static const double maxTransferAmount = 999999.99;
   static const int transactionHistoryPageSize = 20;
 
-  // ── Prêts ─────────────────────────────────────────────────────────────────
   static const double minLoanInterestRate = 0.0;
   static const double maxLoanInterestRate = 100.0;
   static const int minLoanDurationDays = 1;
   static const int maxLoanDurationDays = 365;
 
-  // ── Enchères ──────────────────────────────────────────────────────────────
   static const double minBidIncrement = 0.01;
   static const int auctionDefaultDurationHours = 24;
 
-  // ── Cours de la monnaie ───────────────────────────────────────────────────
   static const double exchangeRateBase = 1.0;
   static const int exchangeRateHistoryDays = 30;
 
-  // ── NFC ───────────────────────────────────────────────────────────────────
   static const String nfcRecordType = 'application/ses-coin';
   static const int nfcTimeoutSeconds = 30;
 
-  // ── Leaderboard ───────────────────────────────────────────────────────────
   static const int leaderboardMaxEntries = 50;
 
-  // ── Supabase Tables ───────────────────────────────────────────────────────
   static const String tableProfiles = 'profiles';
   static const String tableTransactions = 'transactions';
   static const String tableAccountRequests = 'account_requests';
@@ -52,27 +43,24 @@ class AppConstants {
   static const String tableExchangeRates = 'exchange_rates';
   static const String tableNotifications = 'notifications';
 
-  // ── Supabase Storage Buckets ──────────────────────────────────────────────
   static const String bucketAvatars = 'avatars';
   static const String bucketMarketplace = 'marketplace';
 
-  // ── Supabase Realtime Channels ────────────────────────────────────────────
   static const String channelTransactions = 'transactions';
   static const String channelAuctions = 'auctions';
   static const String channelBalances = 'balances';
 }
 
-/// Types de transactions
 enum TransactionType {
-  transfer, // Virement entre élèves
-  purchase, // Achat marketplace
-  auction, // Gain/paiement enchère
-  loan, // Prêt accordé / remboursement
-  reward, // Récompense admin
-  tax, // Taxe admin
-  adminCredit, // Crédit manuel admin
-  adminDebit, // Débit manuel admin
-  initialBalance, // Solde initial à la création
+  transfer,
+  purchase,
+  auction,
+  loan,
+  reward,
+  tax,
+  adminCredit,
+  adminDebit,
+  initialBalance,
 }
 
 extension TransactionTypeX on TransactionType {
@@ -114,7 +102,6 @@ extension TransactionTypeX on TransactionType {
       };
 }
 
-/// Statuts de demande de compte
 enum AccountRequestStatus { pending, approved, refused }
 
 extension AccountRequestStatusX on AccountRequestStatus {
@@ -131,7 +118,6 @@ extension AccountRequestStatusX on AccountRequestStatus {
       };
 }
 
-/// Statuts de prêt
 enum LoanStatus { pending, active, repaid, defaulted }
 
 extension LoanStatusX on LoanStatus {
@@ -150,7 +136,6 @@ extension LoanStatusX on LoanStatus {
       };
 }
 
-/// Statuts d'enchère
 enum AuctionStatus { active, ended, cancelled }
 
 extension AuctionStatusX on AuctionStatus {

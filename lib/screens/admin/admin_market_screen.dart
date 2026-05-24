@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
+import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auction_provider.dart';
@@ -92,7 +94,7 @@ class _AdminShopTab extends ConsumerWidget {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _showCreateItemDialog(context, ref),
+                onPressed: () => context.push(AppRoutes.adminMarketNewItem),
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Ajouter une offre boutique'),
               ),
@@ -135,87 +137,6 @@ class _AdminShopTab extends ConsumerWidget {
     );
   }
 
-  Future<void> _showCreateItemDialog(BuildContext context, WidgetRef ref) async {
-    final nameCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final priceCtrl = TextEditingController();
-    final categoryCtrl = TextEditingController(text: 'Divers');
-    final stockCtrl = TextEditingController(text: '-1');
-    final imageCtrl = TextEditingController();
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (d) => AlertDialog(
-        title: const Text('Nouvelle offre boutique'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Nom'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: descCtrl,
-                decoration: const InputDecoration(labelText: 'Description'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: priceCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Prix (SC)'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: categoryCtrl,
-                decoration: const InputDecoration(labelText: 'Catégorie'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: stockCtrl,
-                keyboardType: TextInputType.number,
-                decoration:
-                    const InputDecoration(labelText: 'Stock (-1 = illimité)'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: imageCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'URL image (optionnel)'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(d, false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(d, true),
-            child: const Text('Créer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await ref.read(adminActionsProvider.notifier).createItem(
-            name: nameCtrl.text.trim(),
-            description: descCtrl.text.trim(),
-            price: double.tryParse(priceCtrl.text.replaceAll(',', '.')) ?? 0,
-            category: categoryCtrl.text.trim().isEmpty
-                ? 'Divers'
-                : categoryCtrl.text.trim(),
-            stock: int.tryParse(stockCtrl.text) ?? -1,
-            imageUrl:
-                imageCtrl.text.trim().isEmpty ? null : imageCtrl.text.trim(),
-          );
-    }
-  }
-
   Future<void> _deleteItem(
     BuildContext context,
     WidgetRef ref,
@@ -245,7 +166,7 @@ class _AdminAuctionsTab extends ConsumerWidget {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _showCreateAuctionDialog(context, ref),
+                onPressed: () => context.push(AppRoutes.adminMarketNewAuction),
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Créer une enchère'),
               ),
@@ -326,85 +247,5 @@ class _AdminAuctionsTab extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _showCreateAuctionDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final nameCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final priceCtrl = TextEditingController();
-    final imageCtrl = TextEditingController();
-    final durationCtrl = TextEditingController(text: '24');
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (d) => AlertDialog(
-        title: const Text('Nouvelle enchère'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Nom de l’objet'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: descCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Description (optionnelle)'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: priceCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration:
-                    const InputDecoration(labelText: 'Prix de départ (SC)'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: durationCtrl,
-                keyboardType: TextInputType.number,
-                decoration:
-                    const InputDecoration(labelText: 'Durée (heures)'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: imageCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'URL image (optionnelle)'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(d, false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(d, true),
-            child: const Text('Créer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      final startsAt = DateTime.now();
-      final durationHours = int.tryParse(durationCtrl.text) ?? 24;
-      await ref.read(adminActionsProvider.notifier).createAuction(
-            itemName: nameCtrl.text.trim(),
-            itemDescription: descCtrl.text.trim(),
-            startingPrice: double.tryParse(priceCtrl.text.replaceAll(',', '.')) ?? 0,
-            startsAt: startsAt,
-            endsAt: startsAt.add(Duration(hours: durationHours)),
-            imageUrl:
-                imageCtrl.text.trim().isEmpty ? null : imageCtrl.text.trim(),
-          );
-    }
   }
 }

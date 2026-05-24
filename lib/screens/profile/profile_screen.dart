@@ -267,7 +267,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             const SizedBox(height: 12),
             TextField(
               controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
                 labelText: 'Montant à rembourser',
                 suffixText: 'SC',
@@ -447,7 +448,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 IconButton(
                   onPressed: () => context.push(AppRoutes.transactionExplorer),
                   icon: const Icon(Icons.hub_rounded),
-                  tooltip: 'Explorateur',
+                  tooltip: 'Blockchain',
                 ),
                 IconButton(
                   onPressed: () => context.push(AppRoutes.leaderboard),
@@ -610,7 +611,8 @@ class _ProfileHeader extends StatelessWidget {
                         Text(
                           '@${profile.username}',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -708,8 +710,7 @@ class _LoansTab extends ConsumerWidget {
           );
         }
 
-        final sortedLoans = [...loans]
-          ..sort((a, b) {
+        final sortedLoans = [...loans]..sort((a, b) {
             if (a.isArchived == b.isArchived) {
               return b.createdAt.compareTo(a.createdAt);
             }
@@ -747,8 +748,9 @@ class _LoansTab extends ConsumerWidget {
                     isLoading: isLoading,
                     onAccept: loan.isPending ? () => onAccept(loan) : null,
                     onReject: loan.isPending ? () => onReject(loan) : null,
-                    onRepay:
-                        loan.isActive && !loan.isFullyRepaid ? () => onRepay(loan) : null,
+                    onRepay: loan.isActive && !loan.isFullyRepaid
+                        ? () => onRepay(loan)
+                        : null,
                     onCancel: loan.isPending ? () => onCancel(loan) : null,
                     onDelete: loan.isArchived ? () => onDelete(loan) : null,
                   ),

@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../screens/admin/admin_accounts_screen.dart';
 import '../screens/admin/admin_market_screen.dart';
+import '../screens/admin/admin_market_auction_form_screen.dart';
+import '../screens/admin/admin_market_item_form_screen.dart';
 import '../screens/admin/admin_rate_screen.dart';
 import '../screens/admin/admin_requests_screen.dart';
 import '../screens/admin/admin_screen.dart';
@@ -52,6 +54,8 @@ class AppRoutes {
   static const String adminRequests = '/admin/requests';
   static const String adminAccounts = '/admin/accounts';
   static const String adminMarketEdit = '/admin/market';
+  static const String adminMarketNewItem = '/admin/market/item/new';
+  static const String adminMarketNewAuction = '/admin/market/auction/new';
   static const String adminTax = '/admin/tax';
   static const String adminRate = '/admin/rate';
 
@@ -146,9 +150,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.profile,
                 name: 'profile',
                 builder: (context, state) => ProfileScreen(
-                  initialTab: state.uri.queryParameters['tab'] == 'notifications'
-                      ? 1
-                      : 0,
+                  initialTab:
+                      state.uri.queryParameters['tab'] == 'notifications'
+                          ? 1
+                          : 0,
                 ),
               ),
             ],
@@ -211,6 +216,19 @@ final routerProvider = Provider<GoRouter>((ref) {
               initialTab:
                   state.uri.queryParameters['tab'] == 'auctions' ? 1 : 0,
             ),
+            routes: [
+              GoRoute(
+                path: 'item/new',
+                name: 'adminMarketNewItem',
+                builder: (context, state) => const AdminMarketItemFormScreen(),
+              ),
+              GoRoute(
+                path: 'auction/new',
+                name: 'adminMarketNewAuction',
+                builder: (context, state) =>
+                    const AdminMarketAuctionFormScreen(),
+              ),
+            ],
           ),
           GoRoute(
             path: 'tax',
