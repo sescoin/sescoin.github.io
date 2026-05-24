@@ -12,6 +12,7 @@ import '../../core/constants.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../loan/loan_card.dart';
+import '../../models/app_notification.dart';
 import '../../models/loan.dart';
 import '../../models/profile.dart';
 import '../../notification/notification_tile.dart';
@@ -417,6 +418,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     }
   }
 
+  Future<void> _openNotification(AppNotification notification) async {
+    if (!notification.isRead) {
+      await ref
+          .read(notificationActionsProvider.notifier)
+          .markAsRead(notification.id);
+    }
+    if (!mounted) {
+      return;
+    }
+
+    if (notification.opensAvatarReview) {
+      context.push(
+        AppRoutes.adminAvatarReview.replaceFirst(
+          ':userId',
+          notification.targetUserId!,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(currentProfileProvider);
@@ -530,6 +551,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       ),
                       _NotificationsTab(
                         onDeleteNotification: _deleteNotification,
+                        onOpenNotification: _openNotification,
                       ),
                     ],
                   ),
@@ -767,9 +789,11 @@ class _LoansTab extends ConsumerWidget {
 class _NotificationsTab extends ConsumerWidget {
   const _NotificationsTab({
     required this.onDeleteNotification,
+    required this.onOpenNotification,
   });
 
   final Future<void> Function(String notificationId) onDeleteNotification;
+  final Future<void> Function(AppNotification notification) onOpenNotification;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -831,13 +855,7 @@ class _NotificationsTab extends ConsumerWidget {
                         final notification = notifications[index];
                         return NotificationTile(
                           notification: notification,
-                          onTap: () async {
-                            if (!notification.isRead) {
-                              await ref
-                                  .read(notificationActionsProvider.notifier)
-                                  .markAsRead(notification.id);
-                            }
-                          },
+                          onTap: () => onOpenNotification(notification),
                           onDelete: () => onDeleteNotification(notification.id),
                         );
                       },

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../screens/admin/admin_accounts_screen.dart';
+import '../screens/admin/admin_avatar_review_screen.dart';
 import '../screens/admin/admin_market_screen.dart';
 import '../screens/admin/admin_market_auction_form_screen.dart';
 import '../screens/admin/admin_market_item_form_screen.dart';
@@ -53,6 +54,7 @@ class AppRoutes {
   static const String adminDashboard = '/admin';
   static const String adminRequests = '/admin/requests';
   static const String adminAccounts = '/admin/accounts';
+  static const String adminAvatarReview = '/admin/accounts/avatar/:userId';
   static const String adminMarketEdit = '/admin/market';
   static const String adminMarketNewItem = '/admin/market/item/new';
   static const String adminMarketNewAuction = '/admin/market/auction/new';
@@ -208,6 +210,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'accounts',
             name: 'adminAccounts',
             builder: (context, state) => const AdminAccountsScreen(),
+            routes: [
+              GoRoute(
+                path: 'avatar/:userId',
+                name: 'adminAvatarReview',
+                builder: (context, state) => AdminAvatarReviewScreen(
+                  userId: state.pathParameters['userId']!,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: 'market',

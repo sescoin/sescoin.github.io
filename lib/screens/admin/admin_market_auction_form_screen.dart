@@ -20,7 +20,8 @@ class _AdminMarketAuctionFormScreenState
   final _descCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _imageCtrl = TextEditingController();
-  final _durationCtrl = TextEditingController(text: '24');
+  final _durationHoursCtrl = TextEditingController(text: '24');
+  final _durationMinutesCtrl = TextEditingController(text: '0');
 
   @override
   void dispose() {
@@ -28,7 +29,8 @@ class _AdminMarketAuctionFormScreenState
     _descCtrl.dispose();
     _priceCtrl.dispose();
     _imageCtrl.dispose();
-    _durationCtrl.dispose();
+    _durationHoursCtrl.dispose();
+    _durationMinutesCtrl.dispose();
     super.dispose();
   }
 
@@ -38,7 +40,9 @@ class _AdminMarketAuctionFormScreenState
     }
 
     final startsAt = DateTime.now();
-    final durationHours = int.parse(_durationCtrl.text.trim());
+    final durationHours = int.parse(_durationHoursCtrl.text.trim());
+    final durationMinutes = int.parse(_durationMinutesCtrl.text.trim());
+    final totalMinutes = (durationHours * 60) + durationMinutes;
 
     try {
       await ref.read(adminActionsProvider.notifier).createAuction(
@@ -46,7 +50,7 @@ class _AdminMarketAuctionFormScreenState
             itemDescription: _descCtrl.text.trim(),
             startingPrice: double.parse(_priceCtrl.text.replaceAll(',', '.')),
             startsAt: startsAt,
-            endsAt: startsAt.add(Duration(hours: durationHours)),
+            endsAt: startsAt.add(Duration(minutes: totalMinutes)),
             imageUrl:
                 _imageCtrl.text.trim().isEmpty ? null : _imageCtrl.text.trim(),
           );
@@ -56,7 +60,7 @@ class _AdminMarketAuctionFormScreenState
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Enchère créée.'),
+          content: Text('Enchère créée'),
           backgroundColor: AppTheme.positive,
         ),
       );
@@ -68,6 +72,22 @@ class _AdminMarketAuctionFormScreenState
         SnackBar(content: Text(error.toString())),
       );
     }
+  }
+
+  String? _validateDuration() {
+    final hours = int.tryParse(_durationHoursCtrl.text.trim());
+    final minutes = int.tryParse(_durationMinutesCtrl.text.trim());
+
+    if (hours == null || hours < 0) {
+      return 'Heures invalides';
+    }
+    if (minutes == null || minutes < 0 || minutes > 59) {
+      return 'Minutes invalides';
+    }
+    if ((hours * 60) + minutes <= 0) {
+      return 'Entre une durée valide';
+    }
+    return null;
   }
 
   @override
@@ -146,20 +166,30 @@ class _AdminMarketAuctionFormScreenState
                       },
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _durationCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Durée',
-                        suffixText: 'heures',
-                      ),
-                      validator: (value) {
-                        final hours = int.tryParse(value?.trim() ?? '');
-                        if (hours == null || hours <= 0) {
-                          return 'Entre une durée valide';
-                        }
-                        return null;
-                      },
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _durationHoursCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Heures',
+                            ),
+                            validator: (_) => _validateDuration(),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _durationMinutesCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Minutes',
+                            ),
+                            validator: (_) => _validateDuration(),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

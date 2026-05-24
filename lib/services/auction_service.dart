@@ -119,8 +119,8 @@ class AuctionService {
           'starting_price': startingPrice,
           'current_price': startingPrice,
           'status': status,
-          'starts_at': startsAt.toIso8601String(),
-          'ends_at': endsAt.toIso8601String(),
+          'starts_at': startsAt.toUtc().toIso8601String(),
+          'ends_at': endsAt.toUtc().toIso8601String(),
           'bid_count': 0,
         })
         .select()

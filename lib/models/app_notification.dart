@@ -41,6 +41,13 @@ class AppNotification {
     required this.createdAt,
   });
 
+  String? get action => data?['action'] as String?;
+
+  String? get targetUserId => data?['user_id'] as String?;
+
+  bool get opensAvatarReview =>
+      action == 'review_avatar' && targetUserId != null;
+
   AppNotification copyWith({
     String? id,
     String? userId,
@@ -142,12 +149,22 @@ class AppNotification {
   }
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
+    String trimTrailingPeriod(String value) {
+      final sanitized = TextSanitizer.clean(value).trim();
+      if (sanitized.endsWith('.') &&
+          !sanitized.endsWith('..') &&
+          !sanitized.endsWith('...')) {
+        return sanitized.substring(0, sanitized.length - 1).trimRight();
+      }
+      return sanitized;
+    }
+
     return AppNotification(
       id: json['id'] as String,
       userId: json['user_id'] as String,
       type: _typeFromString(json['type'] as String),
-      title: TextSanitizer.clean(json['title'] as String),
-      body: TextSanitizer.clean(json['body'] as String),
+      title: trimTrailingPeriod(json['title'] as String),
+      body: trimTrailingPeriod(json['body'] as String),
       data: json['data'] as Map<String, dynamic>?,
       isRead: json['is_read'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String),

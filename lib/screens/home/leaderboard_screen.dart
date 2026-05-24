@@ -62,8 +62,23 @@ class _RankingTile extends StatelessWidget {
   final Profile profile;
   final bool highlighted;
 
+  Color _rankColor() {
+    switch (rank) {
+      case 1:
+        return AppTheme.gold;
+      case 2:
+        return const Color(0xFFC9D1D9);
+      case 3:
+        return const Color(0xFFCD7F32);
+      default:
+        return const Color(0xFF8E9AB3);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final rankColor = _rankColor();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -84,7 +99,7 @@ class _RankingTile extends StatelessWidget {
             child: Text(
               '#$rank',
               style: TextStyle(
-                color: AppTheme.gold,
+                color: rankColor,
                 fontWeight: FontWeight.w800,
                 fontSize: rank <= 3 ? 18 : 16,
               ),

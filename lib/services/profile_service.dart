@@ -123,6 +123,42 @@ class ProfileService {
       'pending_avatar_url': pendingAvatarUrl,
       'updated_at': DateTime.now().toIso8601String(),
     }).eq('id', userId);
+
+    final requester = await getProfile(userId);
+    final admins = await _client
+        .from('profiles')
+        .select('id')
+        .eq('role', 'admin')
+        .eq('is_banned', false);
+
+    final adminIds = (admins as List)
+        .map((row) => row['id'] as String)
+        .where((id) => id != userId)
+        .toList();
+
+    if (adminIds.isEmpty) {
+      return;
+    }
+
+    await _client.from('notifications').insert(
+          adminIds
+              .map(
+                (adminId) => {
+                  'user_id': adminId,
+                  'type': 'system',
+                  'title': 'Changement de photo demandé',
+                  'body':
+                      '${requester.displayName} demande la validation de sa nouvelle photo',
+                  'data': {
+                    'action': 'review_avatar',
+                    'user_id': userId,
+                    'username': requester.username,
+                  },
+                  'is_read': false,
+                },
+              )
+              .toList(),
+        );
   }
 
   /// Admin : approuve la photo de profil en attente

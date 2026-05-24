@@ -86,10 +86,10 @@ class Auction {
       currentWinnerUsername: json['current_winner_username'] as String?,
       currentWinnerEmoji: json['current_winner_emoji'] as String?,
       status: _statusFromString(json['status'] as String),
-      startsAt: DateTime.parse(json['starts_at'] as String),
-      endsAt: DateTime.parse(json['ends_at'] as String),
+      startsAt: DateTime.parse(json['starts_at'] as String).toLocal(),
+      endsAt: DateTime.parse(json['ends_at'] as String).toLocal(),
       bidCount: json['bid_count'] as int? ?? 0,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
     );
   }
 

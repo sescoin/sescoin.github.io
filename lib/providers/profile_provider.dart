@@ -23,6 +23,10 @@ final publicProfileProvider =
   return ref.watch(profileServiceProvider).getProfileByUsername(username);
 });
 
+final profileByIdProvider = FutureProvider.family<Profile, String>((ref, userId) {
+  return ref.watch(profileServiceProvider).getProfile(userId);
+});
+
 // ── Tous les profils (admin) ──────────────────────────────────────────────────
 final allProfilesProvider = FutureProvider<List<Profile>>((ref) {
   return ref.watch(profileServiceProvider).getAllProfiles();
