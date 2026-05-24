@@ -175,8 +175,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     }
 
     try {
+      final profile = ref.read(currentProfileProvider).value;
       final bytes = await picked.readAsBytes();
-      final path = 'pending/$userId.jpg';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final path = profile?.isAdmin == true
+          ? 'profiles/$userId/$timestamp.jpg'
+          : 'pending/$userId/$timestamp.jpg';
       await Supabase.instance.client.storage
           .from(AppConstants.bucketAvatars)
           .uploadBinary(
@@ -192,11 +196,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           .from(AppConstants.bucketAvatars)
           .getPublicUrl(path);
 
-      final profile = ref.read(currentProfileProvider).value;
       if (profile?.isAdmin == true) {
-        await ref.read(profileServiceProvider).updateAvatar(userId, url);
+        final updated =
+            await ref.read(profileServiceProvider).updateAvatar(userId, url);
+        ref.read(currentProfileProvider.notifier).updateLocal(updated);
       } else {
         await ref.read(profileServiceProvider).requestAvatarChange(userId, url);
+        final current = ref.read(currentProfileProvider).value;
+        if (current != null) {
+          ref.read(currentProfileProvider.notifier).updateLocal(
+                current.copyWith(pendingAvatarUrl: url),
+              );
+        }
       }
       await ref.read(currentProfileProvider.notifier).refresh();
 

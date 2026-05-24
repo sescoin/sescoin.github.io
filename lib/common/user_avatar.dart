@@ -44,6 +44,7 @@ class UserAvatar extends StatelessWidget {
 
     final Widget avatar = isUrl
         ? CircleAvatar(
+            key: ValueKey(avatarUrl),
             radius: radius,
             backgroundImage: NetworkImage(avatarUrl!),
             backgroundColor: _colorFromUsername(context),

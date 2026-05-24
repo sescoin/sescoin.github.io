@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,6 +20,7 @@ final currentProfileProvider =
 
 class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
   final Ref _ref;
+  StreamSubscription<Profile>? _profileSubscription;
 
   CurrentProfileNotifier(this._ref) : super(const AsyncValue.loading()) {
     _init();
@@ -40,6 +43,7 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
       }
 
       state = AsyncValue.data(profile);
+      _bindProfileStream(profile?.id);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -50,6 +54,7 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
     try {
       final profile = await _ref.read(authServiceProvider).getCurrentProfile();
       state = AsyncValue.data(profile);
+      _bindProfileStream(profile?.id);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -58,6 +63,23 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
   // Met à jour localement (optimistic update)
   void updateLocal(Profile updated) {
     state = AsyncValue.data(updated);
+  }
+
+  void _bindProfileStream(String? userId) {
+    _profileSubscription?.cancel();
+    if (userId == null) {
+      _profileSubscription = null;
+      return;
+    }
+    _profileSubscription =
+        _ref.read(profileServiceProvider).watchProfile(userId).listen(
+      (profile) {
+        state = AsyncValue.data(profile);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        state = AsyncValue.error(error, stackTrace);
+      },
+    );
   }
 
   // ── Auth actions ────────────────────────────────────────────────────────────
@@ -73,6 +95,7 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
             password: password,
           );
       state = AsyncValue.data(profile);
+      _bindProfileStream(profile.id);
       return profile;
     } catch (e, st) {
       state = const AsyncValue.data(null);
@@ -81,6 +104,8 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
   }
 
   Future<void> signOut() async {
+    await _profileSubscription?.cancel();
+    _profileSubscription = null;
     await _ref.read(authServiceProvider).signOut();
     state = const AsyncValue.data(null);
   }
@@ -103,6 +128,12 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
 
   Future<void> changePassword(String newPassword) async {
     await _ref.read(authServiceProvider).changePassword(newPassword);
+  }
+
+  @override
+  void dispose() {
+    _profileSubscription?.cancel();
+    super.dispose();
   }
 }
 

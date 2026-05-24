@@ -22,27 +22,18 @@ class LoadingOverlay extends StatelessWidget {
         child,
         if (isLoading)
           Positioned.fill(
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.35),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(
+            child: IgnorePointer(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.16),
+                child: const Center(
+                  child: SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: CircularProgressIndicator(
                       color: AppTheme.gold,
                       strokeWidth: 3,
                     ),
-                    if (message != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        message!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -60,18 +51,10 @@ class InlineLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 3),
-          if (message != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              message!,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ],
+      child: const SizedBox(
+        width: 30,
+        height: 30,
+        child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 3),
       ),
     );
   }

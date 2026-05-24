@@ -28,8 +28,8 @@ final profileByIdProvider = FutureProvider.family<Profile, String>((ref, userId)
 });
 
 // ── Tous les profils (admin) ──────────────────────────────────────────────────
-final allProfilesProvider = FutureProvider<List<Profile>>((ref) {
-  return ref.watch(profileServiceProvider).getAllProfiles();
+final allProfilesProvider = StreamProvider<List<Profile>>((ref) {
+  return ref.watch(profileServiceProvider).watchAllProfiles();
 });
 
 // ── Actions profil ────────────────────────────────────────────────────────────

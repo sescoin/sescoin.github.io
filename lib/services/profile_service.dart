@@ -119,46 +119,10 @@ class ProfileService {
 
   /// Demande un changement de photo de profil (nécessite approbation admin)
   Future<void> requestAvatarChange(String userId, String pendingAvatarUrl) async {
-    await _client.from('profiles').update({
-      'pending_avatar_url': pendingAvatarUrl,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', userId);
-
-    final requester = await getProfile(userId);
-    final admins = await _client
-        .from('profiles')
-        .select('id')
-        .eq('role', 'admin')
-        .eq('is_banned', false);
-
-    final adminIds = (admins as List)
-        .map((row) => row['id'] as String)
-        .where((id) => id != userId)
-        .toList();
-
-    if (adminIds.isEmpty) {
-      return;
-    }
-
-    await _client.from('notifications').insert(
-          adminIds
-              .map(
-                (adminId) => {
-                  'user_id': adminId,
-                  'type': 'system',
-                  'title': 'Changement de photo demandé',
-                  'body':
-                      '${requester.displayName} demande la validation de sa nouvelle photo',
-                  'data': {
-                    'action': 'review_avatar',
-                    'user_id': userId,
-                    'username': requester.username,
-                  },
-                  'is_read': false,
-                },
-              )
-              .toList(),
-        );
+    await _client.rpc('request_avatar_change', params: {
+      'p_user_id': userId,
+      'p_pending_avatar_url': pendingAvatarUrl,
+    });
   }
 
   /// Admin : approuve la photo de profil en attente
@@ -264,5 +228,13 @@ class ProfileService {
             .where((r) => r['is_banned'] == false)
             .map((r) => Profile.fromJson(r))
             .toList());
+  }
+
+  Stream<List<Profile>> watchAllProfiles() {
+    return _client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .order('balance', ascending: false)
+        .map((rows) => rows.map((row) => Profile.fromJson(row)).toList());
   }
 }
