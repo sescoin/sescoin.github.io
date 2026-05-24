@@ -9,6 +9,10 @@ final activeAuctionsProvider = StreamProvider<List<Auction>>((ref) {
   return ref.watch(auctionServiceProvider).watchActiveAuctions();
 });
 
+final allAuctionsProvider = StreamProvider<List<Auction>>((ref) {
+  return ref.watch(auctionServiceProvider).watchAllAuctions();
+});
+
 // ── Enchère individuelle (realtime) ───────────────────────────────────────────
 final auctionStreamProvider =
     StreamProvider.family<Auction, String>((ref, auctionId) {

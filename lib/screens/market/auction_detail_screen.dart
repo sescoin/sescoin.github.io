@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,11 +24,18 @@ class AuctionDetailScreen extends ConsumerStatefulWidget {
 class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
   final _amountCtrl = TextEditingController();
   bool _checkedExpired = false;
+  DateTime _now = DateTime.now();
+  Timer? _timer;
   static const _emojiChoices = ['🔥', '😎', '👑', '🚀', '💎', '😈'];
 
   @override
   void initState() {
     super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() => _now = DateTime.now());
+      }
+    });
     Future.microtask(
       () => ref.read(auctionServiceProvider).finalizeExpiredAuctions(),
     );
@@ -34,6 +43,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
 
   @override
   void dispose() {
+    _timer?.cancel();
     _amountCtrl.dispose();
     super.dispose();
   }
@@ -61,7 +71,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
         ref.invalidate(activeAuctionsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Enchère placée !'),
+            content: Text('Enchère placée'),
             backgroundColor: AppTheme.positive,
           ),
         );
@@ -109,9 +119,10 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
         ),
       ),
       data: (auction) {
-        if (!_checkedExpired &&
-            auction.isActive &&
-            auction.timeRemaining == Duration.zero) {
+        final remaining = auction.endsAt.difference(_now);
+        final liveRemaining = remaining.isNegative ? Duration.zero : remaining;
+
+        if (!_checkedExpired && auction.isActive && liveRemaining == Duration.zero) {
           _checkedExpired = true;
           Future.microtask(
             () => ref.read(auctionServiceProvider).finalizeExpiredAuctions(),
@@ -119,6 +130,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
         }
 
         final isCurrentWinner = auction.currentWinnerId == userId;
+
         return Scaffold(
           appBar: AppBar(title: Text(auction.itemName)),
           body: Stack(
@@ -166,7 +178,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                                 ),
                                 _Stat(
                                   label: 'Temps restant',
-                                  value: _formatDuration(auction.timeRemaining),
+                                  value: _formatDuration(liveRemaining),
                                 ),
                               ],
                             ),
@@ -254,7 +266,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(
-                          'Tu es le meilleur enchérisseur.',
+                          'Vous êtes actuellement en tête',
                           style: TextStyle(
                             color: AppTheme.positive,
                             fontWeight: FontWeight.w700,
@@ -263,7 +275,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Choisis un emoji à afficher sur l’enchère',
+                        'Choisissez un emoji à afficher sur l’enchère',
                         style: Theme.of(context)
                             .textTheme
                             .titleSmall
@@ -370,7 +382,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                             ),
                             SizedBox(width: 10),
                             Text(
-                              'Traitement de l’offre...',
+                              'Traitement de l’offre',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ],

@@ -84,14 +84,9 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
 
   Future<void> _save() async {
     final rate = double.tryParse(_rateCtrl.text.replaceAll(',', '.')) ?? 0;
-    if (rate <= 0) return;
-
-    final demandPoints =
-        _demandCtrls.map((ctrl) => _parseValue(ctrl)).toList(growable: false);
-    final supplyPoints =
-        _supplyCtrls.map((ctrl) => _parseValue(ctrl)).toList(growable: false);
-    final pricePoints =
-        _priceCtrls.map((ctrl) => _parseValue(ctrl)).toList(growable: false);
+    if (rate <= 0) {
+      return;
+    }
 
     try {
       await ref.read(adminActionsProvider.notifier).setManualRate(
@@ -99,19 +94,27 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
             reason: _reasonCtrl.text.trim().isEmpty
                 ? 'Modification manuelle du cours'
                 : _reasonCtrl.text.trim(),
-            demandPoints: demandPoints,
-            supplyPoints: supplyPoints,
-            pricePoints: pricePoints,
+            demandPoints:
+                _demandCtrls.map((ctrl) => _parseValue(ctrl)).toList(growable: false),
+            supplyPoints:
+                _supplyCtrls.map((ctrl) => _parseValue(ctrl)).toList(growable: false),
+            pricePoints:
+                _priceCtrls.map((ctrl) => _parseValue(ctrl)).toList(growable: false),
           );
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Cours fixé à ${rate.toStringAsFixed(4)}'),
           backgroundColor: AppTheme.positive,
         ),
       );
+      Navigator.of(context).pop();
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.toString())));
     }
@@ -124,7 +127,6 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
 
     return LoadingOverlay(
       isLoading: state.isLoading,
-      message: 'Traitement...',
       child: Scaffold(
         appBar: AppBar(title: const Text('Modifier le cours')),
         body: ListView(
@@ -147,24 +149,17 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ActionChip(
-                  label: const Text('Vider les points'),
-                  onPressed: _clearPoints,
-                  side: BorderSide(color: AppTheme.gold.withValues(alpha: 0.25)),
-                ),
-              ],
+            ActionChip(
+              label: const Text('Vider les points'),
+              onPressed: _clearPoints,
+              side: BorderSide(color: AppTheme.gold.withValues(alpha: 0.25)),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _rateCtrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
-                labelText: 'Cours affiché en haut',
-                hintText: 'Ex: 8.0000 ou 40.0000',
+                labelText: 'Cours affiché',
               ),
             ),
             const SizedBox(height: 12),
@@ -172,7 +167,6 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
               controller: _reasonCtrl,
               decoration: const InputDecoration(
                 labelText: 'Raison',
-                hintText: 'Ex: Décision de la prof / évolution offre-demande',
               ),
             ),
             const SizedBox(height: 16),
@@ -251,7 +245,6 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
                               ),
                               decoration: const InputDecoration(
                                 isDense: true,
-                                hintText: '0',
                                 contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 12,
@@ -268,7 +261,6 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
                               ),
                               decoration: const InputDecoration(
                                 isDense: true,
-                                hintText: '0',
                                 contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 12,
@@ -285,7 +277,6 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
                               ),
                               decoration: const InputDecoration(
                                 isDense: true,
-                                hintText: '0.00',
                                 contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 12,

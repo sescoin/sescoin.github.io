@@ -18,7 +18,6 @@ class AdminScreen extends ConsumerWidget {
 
     return LoadingOverlay(
       isLoading: state.isLoading,
-      message: 'Traitement...',
       child: Scaffold(
         appBar: AppBar(title: const Text('Administration')),
         body: ListView(
@@ -104,13 +103,13 @@ class AdminScreen extends ConsumerWidget {
             _AdminTile(
               icon: Icons.people_rounded,
               title: 'Tous les comptes',
-              subtitle: 'Voir, bannir, créditer, supprimer',
+              subtitle: 'Voir, bannir, créditer, débiter ou supprimer',
               onTap: () => context.push(AppRoutes.adminAccounts),
             ),
             _AdminTile(
               icon: Icons.mark_email_unread_rounded,
               title: 'Demandes de compte',
-              subtitle: 'Approuver / refuser',
+              subtitle: 'Approuvez ou refusez les demandes',
               onTap: () => context.push(AppRoutes.adminRequests),
             ),
             const SizedBox(height: 16),
@@ -118,13 +117,13 @@ class AdminScreen extends ConsumerWidget {
             _AdminTile(
               icon: Icons.storefront_rounded,
               title: 'Gérer le marché',
-              subtitle: 'Ajouter / modifier / supprimer des offres',
+              subtitle: 'Ajoutez, modifiez ou supprimez des offres',
               onTap: () => context.push(AppRoutes.adminMarketEdit),
             ),
             _AdminTile(
               icon: Icons.gavel_rounded,
               title: 'Créer une enchère',
-              subtitle: 'Mettre une offre aux enchères',
+              subtitle: 'Mettez une offre aux enchères',
               onTap: () => context.push('${AppRoutes.adminMarketEdit}?tab=auctions'),
             ),
             const SizedBox(height: 16),
@@ -132,21 +131,21 @@ class AdminScreen extends ConsumerWidget {
             _AdminTile(
               icon: Icons.percent_rounded,
               title: 'Taxer tout le monde',
-              subtitle: 'Prélever un % sur tous les comptes',
+              subtitle: 'Prélevez un pourcentage sur tous les comptes',
               onTap: () => context.push(AppRoutes.adminTax),
               color: AppTheme.negative,
             ),
             _AdminTile(
               icon: Icons.card_giftcard_rounded,
               title: 'Distribuer une récompense',
-              subtitle: 'Créditer tous les comptes',
-              onTap: () => _showRewardAll(context, ref),
+              subtitle: 'Créditez tous les comptes depuis une vraie interface',
+              onTap: () => context.push(AppRoutes.adminReward),
               color: AppTheme.positive,
             ),
             _AdminTile(
               icon: Icons.trending_up_rounded,
               title: 'Modifier le cours',
-              subtitle: 'Éditer demande, offre et prix',
+              subtitle: 'Éditez la demande, l’offre et le prix',
               onTap: () => context.push(AppRoutes.adminRate),
               color: AppTheme.gold,
             ),
@@ -154,69 +153,6 @@ class AdminScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _showRewardAll(BuildContext ctx, WidgetRef ref) async {
-    final amountCtrl = TextEditingController();
-    final reasonCtrl = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: ctx,
-      builder: (d) => AlertDialog(
-        title: const Text('Distribuer une récompense'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: amountCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Montant par personne',
-                suffixText: 'SC',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonCtrl,
-              decoration: const InputDecoration(labelText: 'Raison'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(d, false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(d, true),
-            child: const Text('Distribuer'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      final amount = double.tryParse(amountCtrl.text) ?? 0;
-      if (amount <= 0) return;
-      try {
-        await ref.read(adminActionsProvider.notifier).rewardAll(
-              amount: amount,
-              reason: reasonCtrl.text,
-            );
-        if (ctx.mounted) {
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            SnackBar(
-              content: Text('$amount SC distribués !'),
-              backgroundColor: AppTheme.positive,
-            ),
-          );
-        }
-      } catch (e) {
-        if (ctx.mounted) {
-          ScaffoldMessenger.of(ctx)
-              .showSnackBar(SnackBar(content: Text(e.toString())));
-        }
-      }
-    }
   }
 }
 
@@ -259,7 +195,7 @@ class _AdminTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? AppTheme.gold;
+    final tileColor = color ?? AppTheme.gold;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -267,10 +203,10 @@ class _AdminTile extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: c.withValues(alpha: 0.12),
+            color: tileColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: c, size: 20),
+          child: Icon(icon, color: tileColor, size: 20),
         ),
         title: Text(
           title,

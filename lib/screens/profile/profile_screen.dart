@@ -64,6 +64,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   }
 
   Future<void> _changePassword() async {
+    context.push(AppRoutes.changePassword);
+    return;
+
+    // ignore: dead_code
     final oldController = TextEditingController();
     final newController = TextEditingController();
     final confirmController = TextEditingController();

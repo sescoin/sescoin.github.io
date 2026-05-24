@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../common/loading_overlay.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../providers/admin_provider.dart';
 
@@ -22,6 +25,7 @@ class _AdminMarketAuctionFormScreenState
   final _imageCtrl = TextEditingController();
   final _durationHoursCtrl = TextEditingController(text: '24');
   final _durationMinutesCtrl = TextEditingController(text: '0');
+  bool _isUploadingImage = false;
 
   @override
   void dispose() {
@@ -32,6 +36,52 @@ class _AdminMarketAuctionFormScreenState
     _durationHoursCtrl.dispose();
     _durationMinutesCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1400,
+    );
+    if (picked == null || !mounted) {
+      return;
+    }
+
+    setState(() => _isUploadingImage = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final path = 'auctions/$timestamp.jpg';
+      await Supabase.instance.client.storage
+          .from(AppConstants.bucketMarketplace)
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              upsert: true,
+              contentType: 'image/jpeg',
+            ),
+          );
+
+      final url = Supabase.instance.client.storage
+          .from(AppConstants.bucketMarketplace)
+          .getPublicUrl(path);
+
+      _imageCtrl.text = url;
+      setState(() {});
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+      }
+    }
   }
 
   Future<void> _submit() async {
@@ -95,7 +145,7 @@ class _AdminMarketAuctionFormScreenState
     final state = ref.watch(adminActionsProvider);
 
     return LoadingOverlay(
-      isLoading: state.isLoading,
+      isLoading: state.isLoading || _isUploadingImage,
       child: Scaffold(
         appBar: AppBar(title: const Text('Nouvelle enchère')),
         body: SafeArea(
@@ -139,6 +189,12 @@ class _AdminMarketAuctionFormScreenState
                         labelText: 'URL image',
                         hintText: 'Optionnelle',
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _isUploadingImage ? null : _pickImageFromGallery,
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: const Text('Choisir depuis la galerie'),
                     ),
                   ],
                 ),
@@ -200,7 +256,7 @@ class _AdminMarketAuctionFormScreenState
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: FilledButton.icon(
-            onPressed: state.isLoading ? null : _submit,
+            onPressed: state.isLoading || _isUploadingImage ? null : _submit,
             icon: const Icon(Icons.gavel_rounded),
             label: const Text('Créer l’enchère'),
           ),

@@ -51,6 +51,19 @@ class AuctionService {
     return (data as List).map((e) => AuctionBid.fromJson(e)).toList();
   }
 
+  Future<List<Map<String, dynamic>>> getAuctionBidHistory(String auctionId) async {
+    final data = await _client
+        .from(AppConstants.tableAuctionBids)
+        .select('''
+          *,
+          bidder:profiles(id, username, display_name, avatar_url)
+        ''')
+        .eq('auction_id', auctionId)
+        .order('amount', ascending: false);
+
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+
   Future<List<Auction>> getUserAuctions(String userId) async {
     await finalizeExpiredAuctions();
     final bidData = await _client
@@ -162,6 +175,10 @@ class AuctionService {
 
   Stream<List<Auction>> watchActiveAuctions() {
     return _poll(getActiveAuctions);
+  }
+
+  Stream<List<Auction>> watchAllAuctions() {
+    return _poll(getAllAuctions);
   }
 
   Stream<List<AuctionBid>> watchBids(String auctionId) {

@@ -72,8 +72,18 @@ class MarketplaceService {
   Future<List<Map<String, dynamic>>> getPurchaseHistory(String userId) async {
     final data = await _client.from(AppConstants.tablePurchases).select('''
           *,
+          buyer:profiles(id, username, display_name, avatar_url),
           item:marketplace_items(id, name, description, image_url, category, price)
         ''').eq('buyer_id', userId).order('created_at', ascending: false);
+
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> getItemBuyers(String itemId) async {
+    final data = await _client.from(AppConstants.tablePurchases).select('''
+          *,
+          buyer:profiles(id, username, display_name, avatar_url)
+        ''').eq('item_id', itemId).order('created_at', ascending: false);
 
     return (data as List).cast<Map<String, dynamic>>();
   }
@@ -112,7 +122,7 @@ class MarketplaceService {
   /// Crée un nouvel item
   Future<MarketplaceItem> createItem({
     required String name,
-    required String description,
+    String? description,
     required double price,
     required String category,
     required int stock,
@@ -122,7 +132,7 @@ class MarketplaceService {
         .from(AppConstants.tableMarketplaceItems)
         .insert({
           'name': name,
-          'description': description,
+          'description': description ?? '',
           'price': price,
           'category': category,
           'stock': stock,

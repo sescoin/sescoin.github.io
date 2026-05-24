@@ -10,6 +10,7 @@ import '../screens/admin/admin_avatar_review_screen.dart';
 import '../screens/admin/admin_market_screen.dart';
 import '../screens/admin/admin_market_auction_form_screen.dart';
 import '../screens/admin/admin_market_item_form_screen.dart';
+import '../screens/admin/admin_reward_screen.dart';
 import '../screens/admin/admin_rate_screen.dart';
 import '../screens/admin/admin_requests_screen.dart';
 import '../screens/admin/admin_screen.dart';
@@ -24,6 +25,7 @@ import '../screens/market/auction_detail_screen.dart';
 import '../screens/market/market_screen.dart';
 import '../screens/pay/pay_screen.dart';
 import '../screens/profile/loan_create_screen.dart';
+import '../screens/profile/change_password_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
 import '../screens/wallet/transfer_screen.dart';
@@ -57,9 +59,12 @@ class AppRoutes {
   static const String adminAvatarReview = '/admin/accounts/avatar/:userId';
   static const String adminMarketEdit = '/admin/market';
   static const String adminMarketNewItem = '/admin/market/item/new';
+  static const String adminMarketEditItem = '/admin/market/item/:itemId';
   static const String adminMarketNewAuction = '/admin/market/auction/new';
   static const String adminTax = '/admin/tax';
+  static const String adminReward = '/admin/reward';
   static const String adminRate = '/admin/rate';
+  static const String changePassword = '/profile/password';
 
   static String publicProfilePath(String username) => '/user/$username';
 }
@@ -185,6 +190,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoanCreateScreen(),
       ),
       GoRoute(
+        path: AppRoutes.changePassword,
+        name: 'changePassword',
+        builder: (context, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.publicProfile,
         name: 'publicProfile',
         builder: (context, state) => PublicProfileScreen(
@@ -234,6 +244,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const AdminMarketItemFormScreen(),
               ),
               GoRoute(
+                path: 'item/:itemId',
+                name: 'adminMarketEditItem',
+                builder: (context, state) => AdminMarketItemFormScreen(
+                  initialItem: state.extra as dynamic,
+                ),
+              ),
+              GoRoute(
                 path: 'auction/new',
                 name: 'adminMarketNewAuction',
                 builder: (context, state) =>
@@ -245,6 +262,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'tax',
             name: 'adminTax',
             builder: (context, state) => const AdminTaxScreen(),
+          ),
+          GoRoute(
+            path: 'reward',
+            name: 'adminReward',
+            builder: (context, state) => const AdminRewardScreen(),
           ),
           GoRoute(
             path: 'rate',

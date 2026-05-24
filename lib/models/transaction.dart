@@ -41,6 +41,16 @@ class Transaction {
         _ => null,
       };
 
+  String? get marketplaceItemName {
+    final value = metadata?['item_name'];
+    return value is String && value.trim().isNotEmpty ? value : null;
+  }
+
+  String? get auctionItemName {
+    final value = metadata?['auction_item_name'];
+    return value is String && value.trim().isNotEmpty ? value : null;
+  }
+
   bool isCredit(String userId) => toUserId == userId;
 
   bool isDebit(String userId) => fromUserId == userId;

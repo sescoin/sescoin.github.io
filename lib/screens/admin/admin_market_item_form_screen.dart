@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../common/loading_overlay.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
+import '../../models/marketplace_item.dart';
 import '../../providers/admin_provider.dart';
 
 class AdminMarketItemFormScreen extends ConsumerStatefulWidget {
-  const AdminMarketItemFormScreen({super.key});
+  const AdminMarketItemFormScreen({
+    super.key,
+    this.initialItem,
+  });
+
+  final MarketplaceItem? initialItem;
 
   @override
   ConsumerState<AdminMarketItemFormScreen> createState() =>
@@ -22,6 +31,23 @@ class _AdminMarketItemFormScreenState
   final _categoryCtrl = TextEditingController(text: 'Divers');
   final _stockCtrl = TextEditingController(text: '-1');
   final _imageCtrl = TextEditingController();
+  bool _isUploadingImage = false;
+
+  bool get _isEditing => widget.initialItem != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.initialItem;
+    if (item != null) {
+      _nameCtrl.text = item.name;
+      _descCtrl.text = item.description;
+      _priceCtrl.text = item.price.toStringAsFixed(2);
+      _categoryCtrl.text = item.category;
+      _stockCtrl.text = '${item.stock}';
+      _imageCtrl.text = item.imageUrl ?? '';
+    }
+  }
 
   @override
   void dispose() {
@@ -34,38 +60,97 @@ class _AdminMarketItemFormScreenState
     super.dispose();
   }
 
+  Future<void> _pickImageFromGallery() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1400,
+    );
+    if (picked == null || !mounted) {
+      return;
+    }
+
+    setState(() => _isUploadingImage = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final path = 'items/$timestamp.jpg';
+      await Supabase.instance.client.storage
+          .from(AppConstants.bucketMarketplace)
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              upsert: true,
+              contentType: 'image/jpeg',
+            ),
+          );
+
+      _imageCtrl.text = Supabase.instance.client.storage
+          .from(AppConstants.bucketMarketplace)
+          .getPublicUrl(path);
+      setState(() {});
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     try {
-      await ref.read(adminActionsProvider.notifier).createItem(
-            name: _nameCtrl.text.trim(),
-            description: _descCtrl.text.trim(),
-            price: double.parse(_priceCtrl.text.replaceAll(',', '.')),
-            category: _categoryCtrl.text.trim(),
-            stock: int.parse(_stockCtrl.text.trim()),
-            imageUrl:
-                _imageCtrl.text.trim().isEmpty ? null : _imageCtrl.text.trim(),
-          );
+      if (_isEditing) {
+        await ref.read(adminActionsProvider.notifier).updateItem(
+              itemId: widget.initialItem!.id,
+              name: _nameCtrl.text.trim(),
+              description: _descCtrl.text.trim(),
+              price: double.parse(_priceCtrl.text.replaceAll(',', '.')),
+              category: _categoryCtrl.text.trim(),
+              stock: int.parse(_stockCtrl.text.trim()),
+              imageUrl:
+                  _imageCtrl.text.trim().isEmpty ? null : _imageCtrl.text.trim(),
+            );
+      } else {
+        await ref.read(adminActionsProvider.notifier).createItem(
+              name: _nameCtrl.text.trim(),
+              description: _descCtrl.text.trim(),
+              price: double.parse(_priceCtrl.text.replaceAll(',', '.')),
+              category: _categoryCtrl.text.trim(),
+              stock: int.parse(_stockCtrl.text.trim()),
+              imageUrl:
+                  _imageCtrl.text.trim().isEmpty ? null : _imageCtrl.text.trim(),
+            );
+      }
+
       if (!mounted) {
         return;
       }
+
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Offre boutique créée.'),
+        SnackBar(
+          content: Text(
+            _isEditing
+                ? 'Offre boutique mise à jour'
+                : 'Offre boutique créée',
+          ),
           backgroundColor: AppTheme.positive,
         ),
       );
     } catch (error) {
-      if (!mounted) {
-        return;
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.toString())));
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
     }
   }
 
@@ -74,9 +159,15 @@ class _AdminMarketItemFormScreenState
     final state = ref.watch(adminActionsProvider);
 
     return LoadingOverlay(
-      isLoading: state.isLoading,
+      isLoading: state.isLoading || _isUploadingImage,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Nouvelle offre boutique')),
+        appBar: AppBar(
+          title: Text(
+            _isEditing
+                ? 'Modifier une offre boutique'
+                : 'Nouvelle offre boutique',
+          ),
+        ),
         body: SafeArea(
           child: Form(
             key: _formKey,
@@ -86,7 +177,7 @@ class _AdminMarketItemFormScreenState
                 _SectionCard(
                   title: 'Informations',
                   subtitle:
-                      'Crée une vraie fiche boutique avec un titre, une catégorie et un prix.',
+                      'Créez une fiche boutique claire avec un titre, une catégorie et un prix.',
                   children: [
                     TextFormField(
                       controller: _nameCtrl,
@@ -94,7 +185,7 @@ class _AdminMarketItemFormScreenState
                       textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Entre un nom';
+                          return 'Entrez un nom';
                         }
                         return null;
                       },
@@ -106,7 +197,7 @@ class _AdminMarketItemFormScreenState
                       textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Entre une catégorie';
+                          return 'Entrez une catégorie';
                         }
                         return null;
                       },
@@ -124,7 +215,7 @@ class _AdminMarketItemFormScreenState
                         final amount =
                             double.tryParse(value?.replaceAll(',', '.') ?? '');
                         if (amount == null || amount <= 0) {
-                          return 'Entre un prix valide';
+                          return 'Entrez un prix valide';
                         }
                         return null;
                       },
@@ -135,7 +226,7 @@ class _AdminMarketItemFormScreenState
                 _SectionCard(
                   title: 'Contenu',
                   subtitle:
-                      'Garde une carte compacte côté élève avec une description courte et lisible.',
+                      'Gardez une carte compacte côté élève avec un texte court et lisible.',
                   children: [
                     TextFormField(
                       controller: _descCtrl,
@@ -145,12 +236,6 @@ class _AdminMarketItemFormScreenState
                         labelText: 'Description',
                         alignLabelWithHint: true,
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Entre une description';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -163,7 +248,7 @@ class _AdminMarketItemFormScreenState
                       validator: (value) {
                         final stock = int.tryParse(value?.trim() ?? '');
                         if (stock == null || stock == 0 || stock < -1) {
-                          return 'Entre un stock valide';
+                          return 'Entrez un stock valide';
                         }
                         return null;
                       },
@@ -173,8 +258,13 @@ class _AdminMarketItemFormScreenState
                       controller: _imageCtrl,
                       decoration: const InputDecoration(
                         labelText: 'URL image',
-                        hintText: 'Optionnelle',
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _isUploadingImage ? null : _pickImageFromGallery,
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: const Text('Choisir depuis la galerie'),
                     ),
                   ],
                 ),
@@ -185,9 +275,11 @@ class _AdminMarketItemFormScreenState
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: FilledButton.icon(
-            onPressed: state.isLoading ? null : _submit,
-            icon: const Icon(Icons.add_business_rounded),
-            label: const Text('Créer l’offre'),
+            onPressed: state.isLoading || _isUploadingImage ? null : _submit,
+            icon: Icon(_isEditing ? Icons.save_rounded : Icons.add_business_rounded),
+            label: Text(
+              _isEditing ? 'Enregistrer l’offre' : 'Créer l’offre',
+            ),
           ),
         ),
       ),

@@ -253,9 +253,6 @@ class TransactionService {
     String userId,
     Map<String, dynamic> row,
   ) {
-    final metadata = row['metadata'] as Map<String, dynamic>?;
-    return row['type'] == 'auction' &&
-        row['from_user_id'] == userId &&
-        metadata?['auction_id'] != null;
+    return false;
   }
 }

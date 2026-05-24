@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/theme.dart';
 import '../../core/text_sanitizer.dart';
+import '../../core/theme.dart';
 import '../../models/loan.dart';
 import '../common/user_avatar.dart';
 
@@ -82,6 +82,8 @@ class LoanCard extends StatelessWidget {
                 UserAvatar(
                   username:
                       _isLender ? loan.borrowerUsername : loan.lenderUsername,
+                  avatarUrl:
+                      _isLender ? loan.borrowerAvatarUrl : loan.lenderAvatarUrl,
                   radius: 16,
                 ),
                 const SizedBox(width: 8),
@@ -194,14 +196,14 @@ class LoanCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 12),
-            _buildActions(context),
+            _buildActions(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActions(BuildContext context) {
+  Widget _buildActions() {
     if (_isLender && loan.isPending) {
       return Row(
         children: [

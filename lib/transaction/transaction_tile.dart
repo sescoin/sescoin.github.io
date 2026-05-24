@@ -90,9 +90,16 @@ class TransactionTile extends ConsumerWidget {
       case TransactionType.transfer:
         return isCredit ? 'De @$otherParty' : 'À @$otherParty';
       case TransactionType.purchase:
-        return 'Achat marketplace';
+        return transaction.marketplaceItemName == null
+            ? 'Achat boutique'
+            : 'Achat boutique : ${transaction.marketplaceItemName}';
       case TransactionType.auction:
-        return isCredit ? 'Gain enchère' : 'Paiement enchère';
+        if (transaction.auctionItemName != null) {
+          return isCredit
+              ? 'Enchère remportée : ${transaction.auctionItemName}'
+              : 'Paiement enchère : ${transaction.auctionItemName}';
+        }
+        return isCredit ? 'Enchère remportée' : 'Paiement enchère';
       case TransactionType.loan:
         return isCredit ? 'Prêt reçu' : 'Remboursement';
       case TransactionType.reward:

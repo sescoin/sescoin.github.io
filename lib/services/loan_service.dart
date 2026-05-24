@@ -7,11 +7,16 @@ class LoanService {
   LoanService(this._client);
 
   final SupabaseClient _client;
+  static const _loanSelect = '''
+    *,
+    lender_profile:profiles!lender_id(avatar_url),
+    borrower_profile:profiles!borrower_id(avatar_url)
+  ''';
 
   Future<List<Loan>> getBorrowedLoans(String userId) async {
     final data = await _client
         .from(AppConstants.tableLoans)
-        .select()
+        .select(_loanSelect)
         .eq('borrower_id', userId)
         .order('created_at', ascending: false);
 
@@ -21,7 +26,7 @@ class LoanService {
   Future<List<Loan>> getLentLoans(String userId) async {
     final data = await _client
         .from(AppConstants.tableLoans)
-        .select()
+        .select(_loanSelect)
         .eq('lender_id', userId)
         .order('created_at', ascending: false);
 
@@ -31,7 +36,7 @@ class LoanService {
   Future<List<Loan>> getAllUserLoans(String userId) async {
     final data = await _client
         .from(AppConstants.tableLoans)
-        .select()
+        .select(_loanSelect)
         .or('borrower_id.eq.$userId,lender_id.eq.$userId')
         .order('created_at', ascending: false);
 
@@ -42,7 +47,7 @@ class LoanService {
     final now = DateTime.now().toIso8601String();
     final data = await _client
         .from(AppConstants.tableLoans)
-        .select()
+        .select(_loanSelect)
         .eq('status', 'active')
         .lt('due_date', now)
         .order('due_date', ascending: true);
@@ -53,7 +58,7 @@ class LoanService {
   Future<Loan> getLoan(String loanId) async {
     final data = await _client
         .from(AppConstants.tableLoans)
-        .select()
+        .select(_loanSelect)
         .eq('id', loanId)
         .single();
 
@@ -182,14 +187,45 @@ class LoanService {
         .from(AppConstants.tableLoans)
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
-        .map(
-          (rows) => rows
+        .asyncMap((rows) async {
+          final filtered = rows
               .where(
                 (row) =>
                     row['borrower_id'] == userId || row['lender_id'] == userId,
               )
-              .map((row) => Loan.fromJson(row))
-              .toList(),
-        );
+              .toList();
+          if (filtered.isEmpty) {
+            return <Loan>[];
+          }
+
+          final profileIds = <String>{
+            for (final row in filtered) row['borrower_id'] as String,
+            for (final row in filtered) row['lender_id'] as String,
+          }.toList();
+
+          final profiles = await _client
+              .from(AppConstants.tableProfiles)
+              .select('id, avatar_url')
+              .inFilter('id', profileIds);
+
+          final avatarById = <String, String?>{};
+          for (final profile in profiles as List) {
+            avatarById[profile['id'] as String] = profile['avatar_url'] as String?;
+          }
+
+          return filtered
+              .map(
+                (row) => Loan.fromJson({
+                  ...row,
+                  'lender_profile': {
+                    'avatar_url': avatarById[row['lender_id'] as String],
+                  },
+                  'borrower_profile': {
+                    'avatar_url': avatarById[row['borrower_id'] as String],
+                  },
+                }),
+              )
+              .toList();
+        });
   }
 }

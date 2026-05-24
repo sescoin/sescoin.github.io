@@ -7,8 +7,10 @@ class Loan {
     required this.id,
     required this.lenderId,
     required this.lenderUsername,
+    this.lenderAvatarUrl,
     required this.borrowerId,
     required this.borrowerUsername,
+    this.borrowerAvatarUrl,
     required this.principal,
     required this.interestRate,
     required this.totalDue,
@@ -23,8 +25,10 @@ class Loan {
   final String id;
   final String lenderId;
   final String lenderUsername;
+  final String? lenderAvatarUrl;
   final String borrowerId;
   final String borrowerUsername;
+  final String? borrowerAvatarUrl;
   final double principal;
   final double interestRate;
   final double totalDue;
@@ -97,8 +101,13 @@ class Loan {
       id: json['id'] as String,
       lenderId: json['lender_id'] as String,
       lenderUsername: json['lender_username'] as String,
+      lenderAvatarUrl: (json['lender_profile'] as Map<String, dynamic>?)?['avatar_url']
+          as String?,
       borrowerId: json['borrower_id'] as String,
       borrowerUsername: json['borrower_username'] as String,
+      borrowerAvatarUrl:
+          (json['borrower_profile'] as Map<String, dynamic>?)?['avatar_url']
+              as String?,
       principal: (json['principal'] as num).toDouble(),
       interestRate: (json['interest_rate'] as num).toDouble(),
       totalDue: (json['total_due'] as num).toDouble(),
@@ -118,8 +127,10 @@ class Loan {
       'id': id,
       'lender_id': lenderId,
       'lender_username': lenderUsername,
+      'lender_avatar_url': lenderAvatarUrl,
       'borrower_id': borrowerId,
       'borrower_username': borrowerUsername,
+      'borrower_avatar_url': borrowerAvatarUrl,
       'principal': principal,
       'interest_rate': interestRate,
       'total_due': totalDue,
@@ -136,8 +147,10 @@ class Loan {
     String? id,
     String? lenderId,
     String? lenderUsername,
+    String? lenderAvatarUrl,
     String? borrowerId,
     String? borrowerUsername,
+    String? borrowerAvatarUrl,
     double? principal,
     double? interestRate,
     double? totalDue,
@@ -152,8 +165,10 @@ class Loan {
       id: id ?? this.id,
       lenderId: lenderId ?? this.lenderId,
       lenderUsername: lenderUsername ?? this.lenderUsername,
+      lenderAvatarUrl: lenderAvatarUrl ?? this.lenderAvatarUrl,
       borrowerId: borrowerId ?? this.borrowerId,
       borrowerUsername: borrowerUsername ?? this.borrowerUsername,
+      borrowerAvatarUrl: borrowerAvatarUrl ?? this.borrowerAvatarUrl,
       principal: principal ?? this.principal,
       interestRate: interestRate ?? this.interestRate,
       totalDue: totalDue ?? this.totalDue,

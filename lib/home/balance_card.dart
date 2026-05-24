@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/currency_provider.dart';
+
 class BalanceCard extends ConsumerWidget {
   const BalanceCard({super.key});
 
@@ -33,7 +34,6 @@ class BalanceCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──────────────────────────────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -46,17 +46,13 @@ class BalanceCard extends ConsumerWidget {
                 ),
               ),
               rateAsync.when(
-                data: (rate) => _RateBadge(
-                  changePercent: rate.changePercent,
-                ),
+                data: (rate) => _RateBadge(rate: rate),
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
               ),
             ],
           ),
           const SizedBox(height: 12),
-
-          // ── Solde ────────────────────────────────────────────────────────────
           profileAsync.when(
             data: (profile) => profile == null
                 ? const Text(
@@ -82,8 +78,6 @@ class BalanceCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-
-          // ── Username ─────────────────────────────────────────────────────────
           profileAsync.when(
             data: (profile) => profile == null
                 ? const SizedBox.shrink()
@@ -106,11 +100,17 @@ class BalanceCard extends ConsumerWidget {
 }
 
 class _RateBadge extends StatelessWidget {
-  const _RateBadge({required this.changePercent});
-  final double changePercent;
+  const _RateBadge({required this.rate});
+
+  final dynamic rate;
 
   @override
   Widget build(BuildContext context) {
+    final pricePoints = (rate.pricePoints as List<double>);
+    final first = pricePoints.isEmpty ? rate.rate as double : pricePoints.first;
+    final last = pricePoints.isEmpty ? rate.rate as double : pricePoints.last;
+    final changePercent =
+        first == 0 ? 0.0 : ((last - first) / first) * 100;
     final isUp = changePercent > 0;
     final isDown = changePercent < 0;
     final color = isUp
