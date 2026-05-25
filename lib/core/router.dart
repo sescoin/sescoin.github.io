@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../screens/admin/admin_accounts_screen.dart';
 import '../screens/admin/admin_avatar_review_screen.dart';
+import '../screens/admin/admin_market_history_screen.dart';
 import '../screens/admin/admin_market_screen.dart';
 import '../screens/admin/admin_market_auction_form_screen.dart';
 import '../screens/admin/admin_market_item_form_screen.dart';
@@ -58,6 +59,7 @@ class AppRoutes {
   static const String adminAccounts = '/admin/accounts';
   static const String adminAvatarReview = '/admin/accounts/avatar/:userId';
   static const String adminMarketEdit = '/admin/market';
+  static const String adminMarketHistory = '/admin/market/history';
   static const String adminMarketNewItem = '/admin/market/item/new';
   static const String adminMarketEditItem = '/admin/market/item/:itemId';
   static const String adminMarketNewAuction = '/admin/market/auction/new';
@@ -238,6 +240,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                   state.uri.queryParameters['tab'] == 'auctions' ? 1 : 0,
             ),
             routes: [
+              GoRoute(
+                path: 'history',
+                name: 'adminMarketHistory',
+                builder: (context, state) => const AdminMarketHistoryScreen(),
+              ),
               GoRoute(
                 path: 'item/new',
                 name: 'adminMarketNewItem',

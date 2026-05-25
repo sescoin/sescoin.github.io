@@ -56,6 +56,13 @@ class _AdminMarketScreenState extends ConsumerState<AdminMarketScreen>
       isLoading: state.isLoading,
       child: Scaffold(
         appBar: AppBar(
+          actions: [
+            IconButton(
+              onPressed: () => context.push(AppRoutes.adminMarketHistory),
+              tooltip: 'Historiques',
+              icon: const Icon(Icons.history_rounded),
+            ),
+          ],
           title: const Text('Gérer le marché'),
           bottom: TabBar(
             controller: _tabCtrl,
@@ -214,7 +221,8 @@ class _ItemAdminCard extends ConsumerWidget {
               children: [
                 IconButton.outlined(
                   onPressed: () => context.push(
-                    AppRoutes.adminMarketEditItem.replaceFirst(':itemId', item.id),
+                    AppRoutes.adminMarketEditItem
+                        .replaceFirst(':itemId', item.id),
                     extra: item,
                   ),
                   tooltip: 'Modifier',
@@ -223,8 +231,8 @@ class _ItemAdminCard extends ConsumerWidget {
                 const SizedBox(width: 8),
                 IconButton.outlined(
                   onPressed: () => _showBuyers(context, ref, item),
-                  tooltip: 'Acheteurs',
-                  icon: const Icon(Icons.groups_rounded, size: 18),
+                  tooltip: 'Historique',
+                  icon: const Icon(Icons.history_rounded, size: 18),
                 ),
                 const Spacer(),
                 OutlinedButton.icon(
@@ -309,8 +317,8 @@ class _ItemAdminCard extends ConsumerWidget {
                                 return ListTile(
                                   contentPadding: EdgeInsets.zero,
                                   leading: UserAvatar(
-                                    username:
-                                        buyer['username'] as String? ?? 'inconnu',
+                                    username: buyer['username'] as String? ??
+                                        'inconnu',
                                     avatarUrl: buyer['avatar_url'] as String?,
                                     radius: 18,
                                   ),
@@ -494,7 +502,7 @@ class _AuctionAdminCard extends ConsumerWidget {
                 IconButton.outlined(
                   onPressed: () => _showAuctionResults(context, ref, auction),
                   tooltip: 'Historique',
-                  icon: const Icon(Icons.groups_rounded, size: 18),
+                  icon: const Icon(Icons.history_rounded, size: 18),
                 ),
                 const Spacer(),
                 if (auction.isActive || auction.isUpcoming)
@@ -504,6 +512,17 @@ class _AuctionAdminCard extends ConsumerWidget {
                         .cancelAuction(auction.id),
                     child: const Text('Annuler'),
                   ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () => ref
+                      .read(adminActionsProvider.notifier)
+                      .deleteAuction(auction.id),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.negative,
+                  ),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                  label: const Text('Supprimer'),
+                ),
                 if (auction.isActive) ...[
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -603,16 +622,17 @@ class _AuctionAdminCard extends ConsumerWidget {
                                     const Divider(height: 1),
                                 itemBuilder: (context, index) {
                                   final bid = bids[index];
-                                  final bidder = bid['bidder']
-                                          as Map<String, dynamic>? ??
-                                      {};
+                                  final bidder =
+                                      bid['bidder'] as Map<String, dynamic>? ??
+                                          {};
                                   final isWinner = identical(bid, topBid);
                                   return ListTile(
                                     contentPadding: EdgeInsets.zero,
                                     leading: UserAvatar(
                                       username: bidder['username'] as String? ??
                                           'inconnu',
-                                      avatarUrl: bidder['avatar_url'] as String?,
+                                      avatarUrl:
+                                          bidder['avatar_url'] as String?,
                                       radius: 18,
                                     ),
                                     title: Text(

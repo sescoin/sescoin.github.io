@@ -182,7 +182,8 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
     state = state.copyWith(isLoading: true, clearMessages: true);
     try {
       await _ref.read(profileServiceProvider).approveAvatarChange(userId);
-      state = state.copyWith(isLoading: false, successMessage: 'Photo approuvée');
+      state =
+          state.copyWith(isLoading: false, successMessage: 'Photo approuvée');
       _ref.invalidate(allProfilesProvider);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -259,9 +260,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
   }) async {
     state = state.copyWith(isLoading: true, clearMessages: true);
     try {
-      await _ref
-          .read(currencyServiceProvider)
-          .setManualRate(
+      await _ref.read(currencyServiceProvider).setManualRate(
             rate: rate,
             reason: reason,
             demandPoints: demandPoints,
@@ -378,6 +377,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
           );
       state = state.copyWith(isLoading: false, successMessage: 'Enchère créée');
       _ref.invalidate(activeAuctionsProvider);
+      _ref.invalidate(allAuctionsProvider);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       rethrow;
@@ -391,6 +391,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
       state =
           state.copyWith(isLoading: false, successMessage: 'Enchère annulée');
       _ref.invalidate(activeAuctionsProvider);
+      _ref.invalidate(allAuctionsProvider);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       rethrow;
@@ -404,6 +405,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
       state =
           state.copyWith(isLoading: false, successMessage: 'Enchère clôturée');
       _ref.invalidate(activeAuctionsProvider);
+      _ref.invalidate(allAuctionsProvider);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       rethrow;
@@ -411,6 +413,20 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
   }
 
   // ── Prêts admin ─────────────────────────────────────────────────────────────
+
+  Future<void> deleteAuction(String auctionId) async {
+    state = state.copyWith(isLoading: true, clearMessages: true);
+    try {
+      await _ref.read(auctionServiceProvider).deleteAuction(auctionId);
+      state = state.copyWith(
+          isLoading: false, successMessage: 'EnchÃ¨re supprimÃ©e');
+      _ref.invalidate(activeAuctionsProvider);
+      _ref.invalidate(allAuctionsProvider);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
 
   Future<void> markLoanDefaulted(String loanId) async {
     state = state.copyWith(isLoading: true, clearMessages: true);

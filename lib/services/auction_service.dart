@@ -14,8 +14,8 @@ class AuctionService {
     final data = await _client
         .from(AppConstants.tableAuctions)
         .select()
-        .inFilter('status', ['active', 'upcoming'])
-        .order('ends_at', ascending: true);
+        .inFilter('status', ['active', 'upcoming']).order('ends_at',
+            ascending: true);
 
     return (data as List).map((e) => Auction.fromJson(e)).toList();
   }
@@ -51,15 +51,22 @@ class AuctionService {
     return (data as List).map((e) => AuctionBid.fromJson(e)).toList();
   }
 
-  Future<List<Map<String, dynamic>>> getAuctionBidHistory(String auctionId) async {
-    final data = await _client
-        .from(AppConstants.tableAuctionBids)
-        .select('''
+  Future<List<Map<String, dynamic>>> getAuctionBidHistory(
+      String auctionId) async {
+    final data = await _client.from(AppConstants.tableAuctionBids).select('''
           *,
           bidder:profiles(id, username, display_name, avatar_url)
-        ''')
-        .eq('auction_id', auctionId)
-        .order('amount', ascending: false);
+        ''').eq('auction_id', auctionId).order('amount', ascending: false);
+
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> getAllAuctionBidHistory() async {
+    final data = await _client.from(AppConstants.tableAuctionBids).select('''
+          *,
+          bidder:profiles(id, username, display_name, avatar_url),
+          auction:auctions(id, item_name, item_image_url, status)
+        ''').order('created_at', ascending: false);
 
     return (data as List).cast<Map<String, dynamic>>();
   }
@@ -150,6 +157,12 @@ class AuctionService {
 
   Future<void> finalizeAuction(String auctionId) async {
     await _client.rpc('finalize_auction', params: {
+      'p_auction_id': auctionId,
+    });
+  }
+
+  Future<void> deleteAuction(String auctionId) async {
+    await _client.rpc('admin_delete_auction', params: {
       'p_auction_id': auctionId,
     });
   }

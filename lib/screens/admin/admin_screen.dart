@@ -51,7 +51,8 @@ class AdminScreen extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        ref.watch(currentProfileProvider).value?.displayName ?? '',
+                        ref.watch(currentProfileProvider).value?.displayName ??
+                            '',
                         style: const TextStyle(
                           color: AppTheme.gold,
                           fontSize: 13,
@@ -86,11 +87,13 @@ class AdminScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               '${requests.length} demande${requests.length > 1 ? 's' : ''} en attente',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
                           TextButton(
-                            onPressed: () => context.push(AppRoutes.adminRequests),
+                            onPressed: () =>
+                                context.push(AppRoutes.adminRequests),
                             child: const Text('Voir'),
                           ),
                         ],
@@ -103,7 +106,7 @@ class AdminScreen extends ConsumerWidget {
             _AdminTile(
               icon: Icons.people_rounded,
               title: 'Tous les comptes',
-              subtitle: 'Voir, bannir, créditer, débiter ou supprimer',
+              subtitle: 'Voir, bannir, crediter, debiter ou supprimer',
               onTap: () => context.push(AppRoutes.adminAccounts),
             ),
             _AdminTile(
@@ -113,39 +116,39 @@ class AdminScreen extends ConsumerWidget {
               onTap: () => context.push(AppRoutes.adminRequests),
             ),
             const SizedBox(height: 16),
-            const _SectionTitle('Marché'),
+            const _SectionTitle('Marche'),
             _AdminTile(
               icon: Icons.storefront_rounded,
-              title: 'Gérer le marché',
-              subtitle: 'Ajoutez, modifiez ou supprimez des offres',
+              title: 'Gerer le marche',
+              subtitle: 'Creez, modifiez ou supprimez des offres et encheres',
               onTap: () => context.push(AppRoutes.adminMarketEdit),
             ),
             _AdminTile(
-              icon: Icons.gavel_rounded,
-              title: 'Créer une enchère',
-              subtitle: 'Mettez une offre aux enchères',
-              onTap: () => context.push('${AppRoutes.adminMarketEdit}?tab=auctions'),
+              icon: Icons.history_rounded,
+              title: 'Historique du marche',
+              subtitle: 'Consultez les achats d offres et les encheres',
+              onTap: () => context.push(AppRoutes.adminMarketHistory),
             ),
             const SizedBox(height: 16),
-            const _SectionTitle('Économie'),
+            const _SectionTitle('Economie'),
             _AdminTile(
               icon: Icons.percent_rounded,
               title: 'Taxer tout le monde',
-              subtitle: 'Prélevez un pourcentage sur tous les comptes',
+              subtitle: 'Prelevez un pourcentage sur tous les comptes',
               onTap: () => context.push(AppRoutes.adminTax),
               color: AppTheme.negative,
             ),
             _AdminTile(
               icon: Icons.card_giftcard_rounded,
-              title: 'Distribuer une récompense',
-              subtitle: 'Créditez tous les comptes depuis une vraie interface',
+              title: 'Distribuer une recompense',
+              subtitle: 'Creditez tous les comptes depuis une vraie interface',
               onTap: () => context.push(AppRoutes.adminReward),
               color: AppTheme.positive,
             ),
             _AdminTile(
               icon: Icons.trending_up_rounded,
               title: 'Modifier le cours',
-              subtitle: 'Éditez la demande, l’offre et le prix',
+              subtitle: 'Editez la demande, l offre et le prix',
               onTap: () => context.push(AppRoutes.adminRate),
               color: AppTheme.gold,
             ),
@@ -193,9 +196,11 @@ class _AdminTile extends StatelessWidget {
   final VoidCallback onTap;
   final Color? color;
 
+  final Color _defaultColor = AppTheme.gold;
+
   @override
   Widget build(BuildContext context) {
-    final tileColor = color ?? AppTheme.gold;
+    final tileColor = color ?? _defaultColor;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(

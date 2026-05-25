@@ -81,6 +81,16 @@ class MarketplaceService {
     return (data as List).cast<Map<String, dynamic>>();
   }
 
+  Future<List<Map<String, dynamic>>> getAllPurchaseHistory() async {
+    final data = await _client.from(AppConstants.tablePurchases).select('''
+          *,
+          buyer:profiles(id, username, display_name, avatar_url),
+          item:marketplace_items(id, name, image_url, category)
+        ''').order('created_at', ascending: false);
+
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+
   Future<void> deletePurchaseRecord(String purchaseId) async {
     await _client.rpc('admin_delete_purchase_record', params: {
       'p_purchase_id': purchaseId,
