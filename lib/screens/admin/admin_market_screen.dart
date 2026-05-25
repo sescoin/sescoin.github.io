@@ -56,13 +56,6 @@ class _AdminMarketScreenState extends ConsumerState<AdminMarketScreen>
       isLoading: state.isLoading,
       child: Scaffold(
         appBar: AppBar(
-          actions: [
-            IconButton(
-              onPressed: () => context.push(AppRoutes.adminMarketHistory),
-              tooltip: 'Historiques',
-              icon: const Icon(Icons.history_rounded),
-            ),
-          ],
           title: const Text('Gérer le marché'),
           bottom: TabBar(
             controller: _tabCtrl,
