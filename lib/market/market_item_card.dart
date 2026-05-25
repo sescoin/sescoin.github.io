@@ -10,11 +10,13 @@ class MarketItemCard extends StatelessWidget {
     required this.item,
     required this.onBuy,
     this.isLoading = false,
+    this.actionLabel,
   });
 
   final MarketplaceItem item;
   final VoidCallback? onBuy;
   final bool isLoading;
+  final String? actionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +131,8 @@ class MarketItemCard extends StatelessWidget {
                         ),
                       )
                     : Text(
-                        item.isAvailable ? 'Acheter' : 'Épuisé',
+                        actionLabel ??
+                            (item.isAvailable ? 'Acheter' : 'Épuisé'),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 15,

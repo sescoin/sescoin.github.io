@@ -85,6 +85,7 @@ class _ShopTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final itemsAsync = ref.watch(marketplaceItemsProvider);
+    final purchaseHistoryAsync = ref.watch(purchaseHistoryProvider);
     final purchaseState = ref.watch(purchaseProvider);
     final width = MediaQuery.of(context).size.width;
     final crossAxisCount = width >= 900
@@ -100,6 +101,22 @@ class _ShopTab extends ConsumerWidget {
         onRetry: () => ref.invalidate(marketplaceItemsProvider),
       ),
       data: (items) {
+        final purchaseCounts = purchaseHistoryAsync.maybeWhen(
+          data: (purchases) {
+            final counts = <String, int>{};
+            for (final purchase in purchases) {
+              final itemId = purchase['item_id'] as String?;
+              if (itemId == null) {
+                continue;
+              }
+              counts[itemId] =
+                  (counts[itemId] ?? 0) + (purchase['quantity'] as int? ?? 0);
+            }
+            return counts;
+          },
+          orElse: () => const <String, int>{},
+        );
+
         if (items.isEmpty) {
           return const EmptyState(
             icon: Icons.storefront_rounded,
@@ -148,12 +165,31 @@ class _ShopTab extends ConsumerWidget {
                             for (final item in categoryItems)
                               SizedBox(
                                 width: itemWidth,
-                                child: MarketItemCard(
-                                  item: item,
-                                  isLoading: purchaseState.isLoading &&
-                                      purchaseState.loadingItemId == item.id,
-                                  onBuy: () =>
-                                      _confirmPurchase(context, ref, item),
+                                child: Builder(
+                                  builder: (context) {
+                                    final alreadyBought =
+                                        purchaseCounts[item.id] ?? 0;
+                                    final hasReachedPurchaseLimit =
+                                        item.hasPurchaseLimit &&
+                                            alreadyBought >= item.maxPerUser;
+
+                                    return MarketItemCard(
+                                      item: item,
+                                      actionLabel: hasReachedPurchaseLimit
+                                          ? 'Limite atteinte'
+                                          : null,
+                                      isLoading: purchaseState.isLoading &&
+                                          purchaseState.loadingItemId ==
+                                              item.id,
+                                      onBuy: hasReachedPurchaseLimit
+                                          ? null
+                                          : () => _confirmPurchase(
+                                                context,
+                                                ref,
+                                                item,
+                                              ),
+                                    );
+                                  },
                                 ),
                               ),
                           ],

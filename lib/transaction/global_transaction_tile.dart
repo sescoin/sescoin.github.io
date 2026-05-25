@@ -25,6 +25,8 @@ class GlobalTransactionTile extends StatelessWidget {
         transaction.fromDisplayName ?? transaction.fromUsername ?? 'Inconnu';
     final toLabel =
         transaction.toDisplayName ?? transaction.toUsername ?? 'Inconnu';
+    final hidesCounterparty = transaction.type == TransactionType.purchase ||
+        transaction.type == TransactionType.auction;
 
     return Card(
       child: Padding(
@@ -58,22 +60,33 @@ class GlobalTransactionTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                _UserChip(
-                  label: 'De @$fromLabel',
-                  onTap: onFromTap,
+            if (hidesCounterparty)
+              Text(
+                transaction.type == TransactionType.purchase
+                    ? 'Achat'
+                    : 'Enchère',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                const Icon(Icons.arrow_forward_rounded, size: 18),
-                _UserChip(
-                  label: 'Vers @$toLabel',
-                  onTap: onToTap,
-                ),
-              ],
-            ),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _UserChip(
+                    label: 'De @$fromLabel',
+                    onTap: onFromTap,
+                  ),
+                  const Icon(Icons.arrow_forward_rounded, size: 18),
+                  _UserChip(
+                    label: 'Vers @$toLabel',
+                    onTap: onToTap,
+                  ),
+                ],
+              ),
             if (transaction.description != null &&
                 transaction.description!.trim().isNotEmpty) ...[
               const SizedBox(height: 10),

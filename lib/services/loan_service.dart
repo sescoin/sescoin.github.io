@@ -13,7 +13,12 @@ class LoanService {
     borrower_profile:profiles!borrower_id(avatar_url)
   ''';
 
+  Future<void> processOverdueLoans() async {
+    await _client.rpc('process_overdue_loans');
+  }
+
   Future<List<Loan>> getBorrowedLoans(String userId) async {
+    await processOverdueLoans();
     final data = await _client
         .from(AppConstants.tableLoans)
         .select(_loanSelect)
@@ -24,6 +29,7 @@ class LoanService {
   }
 
   Future<List<Loan>> getLentLoans(String userId) async {
+    await processOverdueLoans();
     final data = await _client
         .from(AppConstants.tableLoans)
         .select(_loanSelect)
@@ -34,6 +40,7 @@ class LoanService {
   }
 
   Future<List<Loan>> getAllUserLoans(String userId) async {
+    await processOverdueLoans();
     final data = await _client
         .from(AppConstants.tableLoans)
         .select(_loanSelect)
@@ -44,6 +51,7 @@ class LoanService {
   }
 
   Future<List<Loan>> getOverdueLoans() async {
+    await processOverdueLoans();
     final now = DateTime.now().toIso8601String();
     final data = await _client
         .from(AppConstants.tableLoans)
@@ -56,6 +64,7 @@ class LoanService {
   }
 
   Future<Loan> getLoan(String loanId) async {
+    await processOverdueLoans();
     final data = await _client
         .from(AppConstants.tableLoans)
         .select(_loanSelect)
@@ -73,6 +82,8 @@ class LoanService {
     DateTime? dueDate,
     String? note,
   }) async {
+    await processOverdueLoans();
+
     if (principal < AppConstants.minTransferAmount) {
       throw Exception('Montant minimum : ${AppConstants.minTransferAmount} SC');
     }
@@ -188,6 +199,7 @@ class LoanService {
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
         .asyncMap((rows) async {
+          await processOverdueLoans();
           final filtered = rows
               .where(
                 (row) =>
@@ -210,7 +222,8 @@ class LoanService {
 
           final avatarById = <String, String?>{};
           for (final profile in profiles as List) {
-            avatarById[profile['id'] as String] = profile['avatar_url'] as String?;
+            avatarById[profile['id'] as String] =
+                profile['avatar_url'] as String?;
           }
 
           return filtered

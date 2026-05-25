@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/marketplace_item.dart';
 import '../models/transaction.dart';
 import 'auth_provider.dart';
+import 'notification_provider.dart';
 import 'service_providers.dart';
 import 'wallet_provider.dart';
 
@@ -95,6 +96,8 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
       _ref.read(walletProvider.notifier).loadInitial();
       _ref.invalidate(purchaseHistoryProvider);
       _ref.invalidate(marketplaceItemsProvider);
+      _ref.invalidate(notificationsProvider);
+      _ref.invalidate(unreadCountProvider);
     } catch (error, stackTrace) {
       state = state.copyWith(
         isLoading: false,

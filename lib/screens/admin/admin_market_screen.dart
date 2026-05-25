@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -267,7 +269,7 @@ class _ItemAdminCard extends ConsumerWidget {
 
         return SafeArea(
           child: StatefulBuilder(
-            builder: (context, setModalState) => DraggableScrollableSheet(
+            builder: (context, _) => DraggableScrollableSheet(
               expand: false,
               initialChildSize: 0.72,
               maxChildSize: 0.92,
@@ -323,34 +325,12 @@ class _ItemAdminCard extends ConsumerWidget {
                                   subtitle: Text(
                                     '$snapshotName · x${purchase['quantity']} · ${dateFormat.format(DateTime.parse(purchase['created_at'] as String).toLocal())}',
                                   ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '${unitPrice.toStringAsFixed(2)} SC',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: AppTheme.gold,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () async {
-                                          await ref
-                                              .read(marketplaceServiceProvider)
-                                              .deletePurchaseRecord(
-                                                purchase['id'] as String,
-                                              );
-                                          setModalState(() {
-                                            buyers.removeAt(index);
-                                          });
-                                        },
-                                        icon: const Icon(
-                                          Icons.delete_outline_rounded,
-                                          color: AppTheme.negative,
-                                        ),
-                                        tooltip: 'Supprimer l’info',
-                                      ),
-                                    ],
+                                  trailing: Text(
+                                    '${unitPrice.toStringAsFixed(2)} SC',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.gold,
+                                    ),
                                   ),
                                 );
                               },
@@ -416,13 +396,62 @@ class _AdminAuctionsTab extends ConsumerWidget {
   }
 }
 
-class _AuctionAdminCard extends ConsumerWidget {
+class _AuctionAdminCard extends ConsumerStatefulWidget {
   const _AuctionAdminCard({required this.auction});
 
   final Auction auction;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AuctionAdminCard> createState() => _AuctionAdminCardState();
+}
+
+class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
+  Timer? _timer;
+  Duration _remaining = Duration.zero;
+
+  Auction get auction => widget.auction;
+
+  @override
+  void initState() {
+    super.initState();
+    _restartTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AuctionAdminCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.auction.id != widget.auction.id ||
+        oldWidget.auction.endsAt != widget.auction.endsAt ||
+        oldWidget.auction.status != widget.auction.status) {
+      _restartTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _restartTimer() {
+    _timer?.cancel();
+    _remaining = auction.timeRemaining;
+    if (auction.isActive) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _remaining = auction.timeRemaining;
+        });
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isUrgent = _remaining.inMinutes < 5 && auction.isActive;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -467,6 +496,13 @@ class _AuctionAdminCard extends ConsumerWidget {
                                 'Fin ${DateFormat('dd/MM/yyyy HH:mm').format(auction.endsAt)}',
                             color: Colors.white70,
                           ),
+                          if (auction.isActive)
+                            _TinyBadge(
+                              label:
+                                  'Temps restant ${_formatRemaining(_remaining)}',
+                              color:
+                                  isUrgent ? AppTheme.negative : AppTheme.gold,
+                            ),
                         ],
                       ),
                     ],
@@ -490,14 +526,16 @@ class _AuctionAdminCard extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 10),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 IconButton.outlined(
                   onPressed: () => _showAuctionResults(context, ref, auction),
                   tooltip: 'Historique',
                   icon: const Icon(Icons.history_rounded, size: 18),
                 ),
-                const Spacer(),
                 if (auction.isActive || auction.isUpcoming)
                   OutlinedButton(
                     onPressed: () => ref
@@ -505,7 +543,6 @@ class _AuctionAdminCard extends ConsumerWidget {
                         .cancelAuction(auction.id),
                     child: const Text('Annuler'),
                   ),
-                const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () => ref
                       .read(adminActionsProvider.notifier)
@@ -517,7 +554,6 @@ class _AuctionAdminCard extends ConsumerWidget {
                   label: const Text('Supprimer'),
                 ),
                 if (auction.isActive) ...[
-                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () => ref
                         .read(adminActionsProvider.notifier)
@@ -531,6 +567,17 @@ class _AuctionAdminCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _formatRemaining(Duration duration) {
+    if (duration <= Duration.zero) {
+      return '00:00:00';
+    }
+
+    final hours = duration.inHours.toString().padLeft(2, '0');
+    final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
   }
 
   Future<void> _showAuctionResults(
@@ -561,7 +608,7 @@ class _AuctionAdminCard extends ConsumerWidget {
 
         return SafeArea(
           child: StatefulBuilder(
-            builder: (context, setModalState) {
+            builder: (context, _) {
               final topBid = bids.isEmpty ? null : bids.first;
               final topBidder =
                   topBid?['bidder'] as Map<String, dynamic>? ?? const {};
