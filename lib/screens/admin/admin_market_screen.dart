@@ -592,7 +592,7 @@ class _AuctionAdminCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            'Gagnant actuel : @${topBidder['username'] ?? topBid['bidder_username']} · ${((topBid['amount'] as num).toDouble()).toStringAsFixed(2)} SC',
+                            '${auction.status == AuctionStatus.ended ? 'Gagnant' : 'Gagnant actuel'} : @${topBidder['username'] ?? topBid['bidder_username']} - ${((topBid['amount'] as num).toDouble()).toStringAsFixed(2)} SC',
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         )
@@ -636,52 +636,28 @@ class _AuctionAdminCard extends ConsumerWidget {
                                     subtitle: Text(
                                       '@${bid['bidder_username']}',
                                     ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
+                                    trailing: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: [
-                                        Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              '${(bid['amount'] as num).toDouble().toStringAsFixed(2)} SC',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                color: isWinner
-                                                    ? AppTheme.gold
-                                                    : null,
-                                              ),
-                                            ),
-                                            if (isWinner)
-                                              const Text(
-                                                'Gagnant',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: AppTheme.gold,
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        IconButton(
-                                          onPressed: () async {
-                                            await ref
-                                                .read(auctionServiceProvider)
-                                                .deleteAuctionBid(
-                                                  bid['id'] as String,
-                                                );
-                                            setModalState(() {
-                                              bids.removeAt(index);
-                                              sortBids();
-                                            });
-                                          },
-                                          icon: const Icon(
-                                            Icons.delete_outline_rounded,
-                                            color: AppTheme.negative,
+                                        Text(
+                                          '${(bid['amount'] as num).toDouble().toStringAsFixed(2)} SC',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            color:
+                                                isWinner ? AppTheme.gold : null,
                                           ),
-                                          tooltip: 'Supprimer l’info',
                                         ),
+                                        if (isWinner)
+                                          const Text(
+                                            'Gagnant',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: AppTheme.gold,
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   );

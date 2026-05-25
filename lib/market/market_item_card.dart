@@ -26,6 +26,7 @@ class MarketItemCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (item.imageUrl != null)
@@ -33,7 +34,7 @@ class MarketItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   item.imageUrl!,
-                  height: 96,
+                  height: 116,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => _Placeholder(item: item),
@@ -53,8 +54,7 @@ class MarketItemCard extends StatelessWidget {
                 ),
                 if (!item.isUnlimited)
                   _InfoBadge(
-                    label:
-                        '${item.stock} restant${item.stock > 1 ? 's' : ''}',
+                    label: '${item.stock} restant${item.stock > 1 ? 's' : ''}',
                     color: item.stock <= 3
                         ? AppTheme.negative
                         : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -81,7 +81,7 @@ class MarketItemCard extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             if (hasDescription) ...[
@@ -96,7 +96,6 @@ class MarketItemCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-            const Spacer(),
             const SizedBox(height: 10),
             AmountDisplay(
               amount: item.price,
@@ -155,7 +154,7 @@ class _Placeholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 96,
+      height: 116,
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppTheme.gold.withValues(alpha: 0.08),

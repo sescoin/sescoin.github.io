@@ -92,7 +92,6 @@ class _ShopTab extends ConsumerWidget {
         : width >= 680
             ? 3
             : 2;
-    final mainAxisExtent = crossAxisCount == 2 ? 304.0 : 288.0;
 
     return itemsAsync.when(
       loading: () => const InlineLoader(message: 'Chargement du marché...'),
@@ -134,24 +133,30 @@ class _ShopTab extends ConsumerWidget {
                     final categoryItems = items
                         .where((item) => item.category == category)
                         .toList(growable: false);
+                    const spacing = 12.0;
 
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        mainAxisExtent: mainAxisExtent,
-                      ),
-                      itemCount: categoryItems.length,
-                      itemBuilder: (context, index) {
-                        final item = categoryItems[index];
-                        return MarketItemCard(
-                          item: item,
-                          isLoading: purchaseState.isLoading &&
-                              purchaseState.loadingItemId == item.id,
-                          onBuy: () => _confirmPurchase(context, ref, item),
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final itemWidth = (constraints.maxWidth -
+                                (spacing * (crossAxisCount - 1))) /
+                            crossAxisCount;
+
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: spacing,
+                          children: [
+                            for (final item in categoryItems)
+                              SizedBox(
+                                width: itemWidth,
+                                child: MarketItemCard(
+                                  item: item,
+                                  isLoading: purchaseState.isLoading &&
+                                      purchaseState.loadingItemId == item.id,
+                                  onBuy: () =>
+                                      _confirmPurchase(context, ref, item),
+                                ),
+                              ),
+                          ],
                         );
                       },
                     );
