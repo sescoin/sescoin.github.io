@@ -25,7 +25,7 @@ class GlobalTransactionTile extends StatelessWidget {
         transaction.fromDisplayName ?? transaction.fromUsername ?? 'Inconnu';
     final toLabel =
         transaction.toDisplayName ?? transaction.toUsername ?? 'Inconnu';
-    final hidesCounterparty = transaction.type == TransactionType.purchase ||
+    final isBuyerTransaction = transaction.type == TransactionType.purchase ||
         transaction.type == TransactionType.auction;
 
     return Card(
@@ -60,15 +60,10 @@ class GlobalTransactionTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            if (hidesCounterparty)
-              Text(
-                transaction.type == TransactionType.purchase
-                    ? 'Achat'
-                    : 'Enchère',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+            if (isBuyerTransaction)
+              _UserChip(
+                label: 'Acheteur : @$fromLabel',
+                onTap: onFromTap,
               )
             else
               Wrap(
