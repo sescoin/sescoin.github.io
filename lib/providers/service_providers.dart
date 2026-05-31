@@ -9,6 +9,7 @@ import '../services/auction_service.dart';
 import '../services/loan_service.dart';
 import '../services/currency_service.dart';
 import '../services/notification_service.dart';
+import '../services/chat_service.dart';
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
@@ -44,4 +45,8 @@ final currencyServiceProvider = Provider<CurrencyService>((ref) {
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService(ref.watch(supabaseClientProvider));
+});
+
+final chatServiceProvider = Provider<ChatService>((ref) {
+  return ChatService(ref.watch(supabaseClientProvider));
 });

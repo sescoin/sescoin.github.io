@@ -25,6 +25,7 @@ import '../screens/home/leaderboard_screen.dart';
 import '../screens/market/auction_detail_screen.dart';
 import '../screens/market/market_screen.dart';
 import '../screens/pay/pay_screen.dart';
+import '../screens/chat/chat_screen.dart';
 import '../screens/profile/loan_create_screen.dart';
 import '../screens/profile/change_password_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -44,6 +45,7 @@ class AppRoutes {
   static const String wallet = '/wallet';
   static const String pay = '/pay';
   static const String market = '/market';
+  static const String chat = '/chat';
   static const String profile = '/profile';
 
   static const String transferManual = '/transfer';
@@ -150,6 +152,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.market,
                 name: 'market',
                 builder: (context, state) => const MarketScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.chat,
+                name: 'chat',
+                builder: (context, state) => const ChatScreen(),
               ),
             ],
           ),
@@ -326,6 +337,7 @@ class MainShell extends StatelessWidget {
     (icon: Icons.account_balance_wallet_rounded, label: 'Portefeuille'),
     (icon: Icons.qr_code_scanner_rounded, label: 'Payer'),
     (icon: Icons.storefront_rounded, label: 'Marché'),
+    (icon: Icons.chat_rounded, label: 'Chat'),
     (icon: Icons.person_rounded, label: 'Profil'),
   ];
 
