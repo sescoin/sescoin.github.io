@@ -301,6 +301,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                                 borderRadius: BorderRadius.circular(12),
                                 child: ListView.separated(
                                   padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
                                   itemCount: _filteredUsers.length,
                                   separatorBuilder: (_, __) =>
                                       const Divider(height: 1),

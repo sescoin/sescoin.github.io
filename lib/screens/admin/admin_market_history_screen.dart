@@ -33,11 +33,11 @@ class AdminMarketHistoryScreen extends ConsumerWidget {
         length: 2,
         child: Scaffold(
           appBar: AppBar(
-            title: const Text('Historique du marche'),
+            title: const Text('Historique du marché'),
             bottom: const TabBar(
               tabs: [
                 Tab(text: 'Offres', icon: Icon(Icons.storefront_rounded)),
-                Tab(text: 'Encheres', icon: Icon(Icons.gavel_rounded)),
+                Tab(text: 'Enchères', icon: Icon(Icons.gavel_rounded)),
               ],
             ),
           ),
@@ -71,7 +71,7 @@ class _PurchaseHistoryTab extends ConsumerWidget {
           return const EmptyState(
             icon: Icons.shopping_bag_outlined,
             title: 'Aucun achat',
-            subtitle: 'Les achats d offres apparaitront ici',
+            subtitle: "Les achats d'offres apparaîtront ici",
           );
         }
 
@@ -90,7 +90,7 @@ class _PurchaseHistoryTab extends ConsumerWidget {
             final buyerName = buyer['display_name'] as String? ?? buyerUsername;
             final itemName = purchase['item_name_snapshot'] as String? ??
                 item?['name'] as String? ??
-                'Offre supprimee';
+                'Offre supprimée';
 
             return Card(
               child: ListTile(
@@ -104,7 +104,7 @@ class _PurchaseHistoryTab extends ConsumerWidget {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 subtitle: Text(
-                  '$buyerName - x${purchase['quantity']} - '
+                  'Acheté par $buyerName · x${purchase['quantity']} · '
                   '${dateFormat.format(DateTime.parse(purchase['created_at'] as String).toLocal())}',
                 ),
                 trailing: Column(
@@ -120,7 +120,7 @@ class _PurchaseHistoryTab extends ConsumerWidget {
                     ),
                     if (purchase['item_id'] == null)
                       const Text(
-                        'Offre supprimee',
+                        'Offre supprimée',
                         style: TextStyle(
                           fontSize: 11,
                           color: AppTheme.negative,
@@ -154,8 +154,8 @@ class _AuctionHistoryTab extends ConsumerWidget {
         if (bids.isEmpty) {
           return const EmptyState(
             icon: Icons.gavel_rounded,
-            title: 'Aucune enchere',
-            subtitle: 'Les offres d encheres apparaitront ici',
+            title: 'Aucune enchère',
+            subtitle: "Les offres d'enchères apparaîtront ici",
           );
         }
 
@@ -175,7 +175,7 @@ class _AuctionHistoryTab extends ConsumerWidget {
                 bidder['display_name'] as String? ?? bidderUsername;
             final auctionName = auction?['item_name'] as String? ??
                 bid['auction_item_name_snapshot'] as String? ??
-                'Enchere supprimee';
+                'Enchère supprimée';
 
             return Card(
               child: ListTile(
@@ -189,7 +189,7 @@ class _AuctionHistoryTab extends ConsumerWidget {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 subtitle: Text(
-                  '$bidderName - '
+                  'Enchère par $bidderName · '
                   '${dateFormat.format(DateTime.parse(bid['created_at'] as String).toLocal())}',
                 ),
                 trailing: Column(
@@ -205,7 +205,7 @@ class _AuctionHistoryTab extends ConsumerWidget {
                     ),
                     if (bid['auction_id'] == null)
                       const Text(
-                        'Enchere supprimee',
+                        'Enchère supprimée',
                         style: TextStyle(
                           fontSize: 11,
                           color: AppTheme.negative,
