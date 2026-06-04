@@ -243,16 +243,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final currentUserId = ref.watch(currentUserIdProvider);
     final readsMap = ref.watch(chatReadsMapProvider);
 
-    ref.listen(chatMessagesProvider, (_, next) {
-      if (next.hasValue && next.value!.isNotEmpty) {
+    ref.listen(chatMessagesProvider, (prev, next) {
+      if (!next.hasValue || next.value!.isEmpty) return;
+      final prevCount = prev?.valueOrNull?.length ?? 0;
+      final nextCount = next.value!.length;
+      // Scroll automatique uniquement au chargement initial ou si
+      // un nouveau message arrive et qu'on est déjà en bas.
+      final isInitial = prevCount == 0 && nextCount > 0;
+      final isNewMsg = nextCount > prevCount;
+      if (isInitial || (isNewMsg && !_showScrollFab)) {
         _scrollToBottom();
-        _markRead(next.value!.last.id);
       }
+      _markRead(next.value!.last.id);
     });
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat de classe'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Chat de classe',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+            Text(
+              'Messages éphémères · 48h',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[400],
+                  fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline_rounded),
@@ -265,7 +288,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Column(
             children: [
               Expanded(
-                child: messagesAsync.when(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: Theme.of(context).brightness == Brightness.dark
+                          ? [
+                              const Color(0xFF0D0D1A),
+                              const Color(0xFF1A1A2E),
+                            ]
+                          : [
+                              const Color(0xFFF3F4F8),
+                              Colors.white,
+                            ],
+                    ),
+                  ),
+                  child: messagesAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Center(child: Text('Erreur : $e')),
@@ -273,10 +312,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     if (messages.isEmpty) {
                       return _EmptyChat();
                     }
-                    WidgetsBinding.instance
-                        .addPostFrameCallback((_) => _scrollToBottom());
-
                     // Construire la liste d'items (messages + séparateurs)
+
                     final items = <_ChatItem>[];
                     for (int i = 0; i < messages.length; i++) {
                       final msg = messages[i];
@@ -326,8 +363,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       },
                     );
                   },
-                ),
-              ),
+                ),   // messagesAsync.when
+                ),   // DecoratedBox
+              ),     // Expanded
               _InputBar(
                 controller: _controller,
                 chatState: chatState,

@@ -16,7 +16,7 @@ class ChatService {
         .limit(100)
         .map((rows) => rows
             .map(ChatMessage.fromJson)
-            .where((m) => !m.isExpired || m.isDeleted)
+            .where((m) => !m.isExpired && !m.isDeleted)
             .toList());
   }
 
