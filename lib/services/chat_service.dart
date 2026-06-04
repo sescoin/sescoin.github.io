@@ -16,7 +16,7 @@ class ChatService {
         .limit(100)
         .map((rows) => rows
             .map(ChatMessage.fromJson)
-            .where((m) => !m.isExpired)
+            .where((m) => !m.isExpired || m.isDeleted)
             .toList());
   }
 
@@ -35,12 +35,18 @@ class ChatService {
     return ChatSendResult.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<bool> toggleSaveMessage(String messageId) async {
-    final response = await _client.rpc(
-      'toggle_save_message',
+  Future<void> editMessage(String messageId, String content) async {
+    await _client.rpc(
+      'edit_chat_message',
+      params: {'p_message_id': messageId, 'p_content': content},
+    );
+  }
+
+  Future<void> deleteMessage(String messageId) async {
+    await _client.rpc(
+      'delete_chat_message',
       params: {'p_message_id': messageId},
     );
-    return (response as Map<String, dynamic>)['saved'] as bool;
   }
 
   Future<void> markChatRead(String messageId) async {

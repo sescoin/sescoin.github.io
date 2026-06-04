@@ -7,9 +7,10 @@ class ChatMessage {
     this.avatarUrl,
     required this.content,
     required this.isCensored,
+    required this.isDeleted,
     required this.createdAt,
-    required this.savedBy,
     required this.expiresAt,
+    this.editedAt,
   });
 
   final String id;
@@ -19,12 +20,12 @@ class ChatMessage {
   final String? avatarUrl;
   final String content;
   final bool isCensored;
+  final bool isDeleted;
   final DateTime createdAt;
-  final List<String> savedBy;
   final DateTime expiresAt;
+  final DateTime? editedAt;
 
-  bool get isExpired =>
-      savedBy.isEmpty && expiresAt.isBefore(DateTime.now());
+  bool get isExpired => expiresAt.isBefore(DateTime.now());
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
@@ -35,11 +36,14 @@ class ChatMessage {
       avatarUrl: json['avatar_url'] as String?,
       content: json['content'] as String,
       isCensored: json['is_censored'] as bool,
+      isDeleted: json['is_deleted'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
-      savedBy: (json['saved_by'] as List<dynamic>?)?.cast<String>() ?? [],
       expiresAt: json['expires_at'] != null
           ? DateTime.parse(json['expires_at'] as String).toLocal()
-          : DateTime.now().add(const Duration(hours: 24)),
+          : DateTime.now().add(const Duration(hours: 48)),
+      editedAt: json['edited_at'] != null
+          ? DateTime.parse(json['edited_at'] as String).toLocal()
+          : null,
     );
   }
 }

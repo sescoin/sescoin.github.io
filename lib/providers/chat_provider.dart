@@ -86,8 +86,12 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
     }
   }
 
-  Future<bool> toggleSave(String messageId) async {
-    return await _ref.read(chatServiceProvider).toggleSaveMessage(messageId);
+  Future<void> editMessage(String messageId, String content) async {
+    await _ref.read(chatServiceProvider).editMessage(messageId, content);
+  }
+
+  Future<void> deleteMessage(String messageId) async {
+    await _ref.read(chatServiceProvider).deleteMessage(messageId);
   }
 
   Future<void> markRead(String messageId) async {
