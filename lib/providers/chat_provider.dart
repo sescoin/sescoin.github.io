@@ -1,10 +1,27 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chat_message.dart';
+import '../models/chat_read.dart';
 import 'service_providers.dart';
 
 final chatMessagesProvider = StreamProvider<List<ChatMessage>>((ref) {
   return ref.watch(chatServiceProvider).watchMessages();
+});
+
+final chatReadsProvider = StreamProvider<List<ChatRead>>((ref) {
+  return ref.watch(chatServiceProvider).watchReads();
+});
+
+// Map : messageId → utilisateurs qui ont lu jusqu'ici
+final chatReadsMapProvider = Provider<Map<String, List<ChatRead>>>((ref) {
+  final reads = ref.watch(chatReadsProvider).valueOrNull ?? [];
+  final map = <String, List<ChatRead>>{};
+  for (final read in reads) {
+    if (read.lastReadMessageId != null) {
+      map.putIfAbsent(read.lastReadMessageId!, () => []).add(read);
+    }
+  }
+  return map;
 });
 
 class ChatState {
@@ -67,6 +84,14 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
       state = state.copyWith(isSending: false, error: msg);
       return null;
     }
+  }
+
+  Future<bool> toggleSave(String messageId) async {
+    return await _ref.read(chatServiceProvider).toggleSaveMessage(messageId);
+  }
+
+  Future<void> markRead(String messageId) async {
+    await _ref.read(chatServiceProvider).markChatRead(messageId);
   }
 
   void clearMuteIfExpired() {

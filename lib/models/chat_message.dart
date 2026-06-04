@@ -8,6 +8,8 @@ class ChatMessage {
     required this.content,
     required this.isCensored,
     required this.createdAt,
+    required this.savedBy,
+    required this.expiresAt,
   });
 
   final String id;
@@ -18,6 +20,11 @@ class ChatMessage {
   final String content;
   final bool isCensored;
   final DateTime createdAt;
+  final List<String> savedBy;
+  final DateTime expiresAt;
+
+  bool get isExpired =>
+      savedBy.isEmpty && expiresAt.isBefore(DateTime.now());
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
@@ -29,6 +36,10 @@ class ChatMessage {
       content: json['content'] as String,
       isCensored: json['is_censored'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      savedBy: (json['saved_by'] as List<dynamic>?)?.cast<String>() ?? [],
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'] as String).toLocal()
+          : DateTime.now().add(const Duration(hours: 24)),
     );
   }
 }
