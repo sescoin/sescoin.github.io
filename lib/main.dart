@@ -59,6 +59,16 @@ Future<void> main() async {
     debug: false, // Passe à true pour voir les logs réseau
   );
 
+  // Quand le token JWT est renouvelé, on le transmet aux canaux Realtime
+  // pour éviter l'erreur "InvalidJWTToken: Token has expired".
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    if (data.event == AuthChangeEvent.tokenRefreshed &&
+        data.session != null) {
+      Supabase.instance.client.realtime
+          .setAuth(data.session!.accessToken);
+    }
+  });
+
   runApp(
     // ProviderScope = racine obligatoire pour Riverpod
     const ProviderScope(
