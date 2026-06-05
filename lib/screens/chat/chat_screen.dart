@@ -25,6 +25,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Timer? _muteTimer;
   String? _lastReadId;
   bool _showScrollFab = false;
+  bool _isNearBottom = true;
 
   @override
   void initState() {
@@ -44,10 +45,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    final distFromBottom = _scrollController.position.maxScrollExtent -
-        _scrollController.offset;
-    final should = distFromBottom > 180;
-    if (should != _showScrollFab) setState(() => _showScrollFab = should);
+    final distFromBottom =
+        _scrollController.position.maxScrollExtent - _scrollController.offset;
+    final nearBottom = distFromBottom <= 68;
+    final should = !nearBottom;
+    if (should != _showScrollFab || nearBottom != _isNearBottom) {
+      setState(() {
+        _showScrollFab = should;
+        _isNearBottom = nearBottom;
+      });
+    }
   }
 
   void _scrollToBottom() {
@@ -103,8 +110,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final ctrl = TextEditingController(text: message.content);
     final newContent = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Modifier le message'),
+      builder: (ctx) => _ChatDialog(
+        icon: Icons.edit_rounded,
+        title: 'Modifier le message',
+        accentColor: AppTheme.gold,
         content: TextField(
           controller: ctrl,
           maxLength: 500,
@@ -112,7 +121,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           autofocus: true,
           decoration: const InputDecoration(
             counterText: '',
-            border: OutlineInputBorder(),
+            hintText: 'Ton message',
           ),
         ),
         actions: [
@@ -136,9 +145,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     try {
-      await ref
+      final result = await ref
           .read(chatActionProvider.notifier)
           .editMessage(message.id, newContent);
+      if (!mounted || result == null) return;
+      if (result.muted) {
+        _showSnackBar(
+          '🔇 Vous avez été muet 10 minutes pour comportement inapproprié.',
+          Colors.red,
+        );
+      } else if (result.warning) {
+        final remaining = 3 - result.warningCount;
+        _showSnackBar(
+          '⚠️ Avertissement ${result.warningCount}/3 — message censuré.'
+          '${remaining > 0 ? ' Encore $remaining avant d\'être muet.' : ''}',
+          Colors.orange,
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       _showSnackBar('Erreur : $e', Colors.red);
@@ -148,10 +171,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _deleteMessage(ChatMessage message) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Supprimer le message ?'),
-        content:
-            const Text('Cette action est définitive.'),
+      builder: (ctx) => _ChatDialog(
+        icon: Icons.delete_outline_rounded,
+        title: 'Supprimer le message ?',
+        accentColor: Colors.red,
+        content: Text(
+          'Cette action est definitive.',
+          style: TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -168,9 +195,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (confirmed != true) return;
 
     try {
-      await ref
-          .read(chatActionProvider.notifier)
-          .deleteMessage(message.id);
+      await ref.read(chatActionProvider.notifier).deleteMessage(message.id);
     } catch (e) {
       if (!mounted) return;
       _showSnackBar('Erreur : $e', Colors.red);
@@ -180,44 +205,74 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _showMessageActions(BuildContext context, ChatMessage message) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(top: 10, bottom: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      builder: (_) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF171929) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.7),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                  blurRadius: 28,
+                  offset: const Offset(0, 14),
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.edit_rounded),
-              title: const Text('Modifier'),
-              onTap: () {
-                Navigator.pop(context);
-                _editMessage(message);
-              },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 38,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                Text(
+                  'Options du message',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _ChatActionTile(
+                  icon: Icons.edit_rounded,
+                  label: 'Modifier',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _editMessage(message);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ChatActionTile(
+                  icon: Icons.delete_outline_rounded,
+                  label: 'Supprimer',
+                  color: Colors.red,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deleteMessage(message);
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading:
-                  const Icon(Icons.delete_outline_rounded, color: Colors.red),
-              title: const Text('Supprimer',
-                  style: TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                _deleteMessage(message);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -247,11 +302,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (!next.hasValue || next.value!.isEmpty) return;
       final prevCount = prev?.valueOrNull?.length ?? 0;
       final nextCount = next.value!.length;
-      // Scroll automatique uniquement au chargement initial ou si
-      // un nouveau message arrive et qu'on est déjà en bas.
       final isInitial = prevCount == 0 && nextCount > 0;
       final isNewMsg = nextCount > prevCount;
-      if (isInitial || (isNewMsg && !_showScrollFab)) {
+      if (isInitial || (isNewMsg && _isNearBottom)) {
         _scrollToBottom();
       }
       _markRead(next.value!.last.id);
@@ -259,22 +312,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Chat de classe',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-            ),
-            Text(
-              'Messages éphémères · 48h',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[400],
-                  fontWeight: FontWeight.normal),
-            ),
-          ],
+        title: const Text(
+          'Chat de classe',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         actions: [
           IconButton(
@@ -305,67 +345,69 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                   ),
                   child: messagesAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Erreur : $e')),
-                  data: (messages) {
-                    if (messages.isEmpty) {
-                      return _EmptyChat();
-                    }
-                    // Construire la liste d'items (messages + séparateurs)
-
-                    final items = <_ChatItem>[];
-                    for (int i = 0; i < messages.length; i++) {
-                      final msg = messages[i];
-                      final prev = i > 0 ? messages[i - 1] : null;
-                      if (prev == null ||
-                          msg.createdAt
-                                  .difference(prev.createdAt)
-                                  .inMinutes >=
-                              15) {
-                        items.add(_ChatItem.divider(msg.createdAt));
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Center(child: Text('Erreur : $e')),
+                    data: (messages) {
+                      final visibleMessages =
+                          messages.where((msg) => !msg.isDeleted).toList();
+                      if (visibleMessages.isEmpty) {
+                        return _EmptyChat();
                       }
-                      final showHeader =
-                          prev == null || prev.userId != msg.userId;
-                      final readers = (readsMap[msg.id] ?? [])
-                          .where((r) => r.userId != currentUserId)
-                          .toList();
-                      items.add(_ChatItem.message(
-                        msg,
-                        showHeader: showHeader,
-                        readers: readers,
-                      ));
-                    }
+                      // Construire la liste d'items (messages + séparateurs)
 
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        if (item.isDivider) {
-                          return _TimeDivider(time: item.dividerTime!);
+                      final items = <_ChatItem>[];
+                      for (int i = 0; i < visibleMessages.length; i++) {
+                        final msg = visibleMessages[i];
+                        final prev = i > 0 ? visibleMessages[i - 1] : null;
+                        if (prev == null ||
+                            msg.createdAt
+                                    .difference(prev.createdAt)
+                                    .inMinutes >=
+                                15) {
+                          items.add(_ChatItem.divider(msg.createdAt));
                         }
-                        final msg = item.message!;
-                        final isOwn = msg.userId == currentUserId;
-                        return _MessageBubble(
-                          message: msg,
-                          isOwn: isOwn,
-                          showHeader: item.showHeader,
-                          readers: item.readers,
-                          onTapUsername: () =>
-                              context.push('/user/${msg.username}'),
-                          onLongPress: isOwn && !msg.isDeleted
-                              ? () => _showMessageActions(context, msg)
-                              : null,
-                        );
-                      },
-                    );
-                  },
-                ),   // messagesAsync.when
-                ),   // DecoratedBox
-              ),     // Expanded
+                        final showHeader =
+                            prev == null || prev.userId != msg.userId;
+                        final readers = (readsMap[msg.id] ?? [])
+                            .where((r) => r.userId != currentUserId)
+                            .toList();
+                        items.add(_ChatItem.message(
+                          msg,
+                          showHeader: showHeader,
+                          readers: readers,
+                        ));
+                      }
+
+                      return ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          if (item.isDivider) {
+                            return _TimeDivider(time: item.dividerTime!);
+                          }
+                          final msg = item.message!;
+                          final isOwn = msg.userId == currentUserId;
+                          return _MessageBubble(
+                            message: msg,
+                            isOwn: isOwn,
+                            showHeader: item.showHeader,
+                            readers: item.readers,
+                            onTapUsername: () =>
+                                context.push('/user/${msg.username}'),
+                            onLongPress: isOwn && !msg.isDeleted
+                                ? () => _showMessageActions(context, msg)
+                                : null,
+                          );
+                        },
+                      );
+                    },
+                  ), // messagesAsync.when
+                ), // DecoratedBox
+              ), // Expanded
               _InputBar(
                 controller: _controller,
                 chatState: chatState,
@@ -397,21 +439,218 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _showRulesDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Règles du chat'),
-        content: const Text(
-          '• Respectez les autres membres.\n'
-          '• Les insultes et menaces sont automatiquement censurées.\n'
-          '• 3 avertissements = 10 minutes de mute.\n'
-          '• Les messages disparaissent automatiquement après 48h.\n'
-          '• Appuyez longtemps sur vos messages pour les modifier ou supprimer.',
+      builder: (ctx) => _ChatDialog(
+        icon: Icons.info_outline_rounded,
+        title: 'Infos du chat',
+        accentColor: AppTheme.gold,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            _ChatInfoRow(
+              icon: Icons.favorite_border_rounded,
+              text: 'Respecte les autres membres.',
+            ),
+            _ChatInfoRow(
+              icon: Icons.shield_outlined,
+              text: 'Les insultes et menaces sont automatiquement censurees.',
+            ),
+            _ChatInfoRow(
+              icon: Icons.volume_off_outlined,
+              text: '3 avertissements entrainent 10 minutes de mute.',
+            ),
+            _ChatInfoRow(
+              icon: Icons.touch_app_outlined,
+              text:
+                  'Appuie longtemps sur tes messages pour les modifier ou supprimer.',
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Compris'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ChatDialog extends StatelessWidget {
+  const _ChatDialog({
+    required this.icon,
+    required this.title,
+    required this.content,
+    required this.actions,
+    required this.accentColor,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget content;
+  final List<Widget> actions;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF171929) : Colors.white;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      backgroundColor: Colors.transparent,
+      child: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 190),
+        curve: Curves.easeOutBack,
+        tween: Tween(begin: 0.96, end: 1),
+        builder: (context, scale, child) => Transform.scale(
+          scale: scale,
+          child: child,
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.72),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.36 : 0.13),
+                blurRadius: 34,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color:
+                          accentColor.withValues(alpha: isDark ? 0.18 : 0.14),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Icon(icon, color: accentColor, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              content,
+              const SizedBox(height: 18),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: actions,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatInfoRow extends StatelessWidget {
+  const _ChatInfoRow({
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppTheme.gold),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.28,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatActionTile extends StatelessWidget {
+  const _ChatActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final actionColor = color ?? theme.colorScheme.onSurface;
+
+    return Material(
+      color: actionColor.withValues(alpha: 0.07),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          child: Row(
+            children: [
+              Icon(icon, color: actionColor, size: 21),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: actionColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: actionColor.withValues(alpha: 0.55),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -427,8 +666,7 @@ class _ChatItem {
     this.readers = const [],
   });
 
-  factory _ChatItem.divider(DateTime time) =>
-      _ChatItem._(dividerTime: time);
+  factory _ChatItem.divider(DateTime time) => _ChatItem._(dividerTime: time);
 
   factory _ChatItem.message(
     ChatMessage msg, {
@@ -518,11 +756,6 @@ class _EmptyChat extends StatelessWidget {
                 color: Colors.grey[500],
                 fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Soyez le premier à écrire !',
-            style: TextStyle(fontSize: 13, color: Colors.grey[400]),
-          ),
         ],
       ),
     );
@@ -573,6 +806,10 @@ class _MessageBubble extends StatelessWidget {
                 ? Colors.black87
                 : theme.colorScheme.onSurface;
 
+    if (message.isDeleted) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: EdgeInsets.only(top: showHeader ? 10 : 2, bottom: 2),
       child: Row(
@@ -615,36 +852,36 @@ class _MessageBubble extends StatelessWidget {
                   onLongPress: onLongPress,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 9),
+                        horizontal: 14, vertical: 11),
                     decoration: BoxDecoration(
                       color: bubbleColor,
                       borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(18),
-                        topRight: const Radius.circular(18),
-                        bottomLeft: Radius.circular(isOwn ? 18 : 4),
-                        bottomRight: Radius.circular(isOwn ? 4 : 18),
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        bottomLeft: Radius.circular(isOwn ? 20 : 6),
+                        bottomRight: Radius.circular(isOwn ? 6 : 20),
                       ),
                       border: isCensored
                           ? Border.all(
-                              color: Colors.red.withValues(alpha: 0.35),
-                              width: 1.2)
+                              color: Colors.red.withValues(alpha: 0.3),
+                              width: 1.1)
                           : null,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.07),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
                     child: Text(
-                      isDeleted ? 'Message supprimé' : message.content,
+                      message.content,
                       style: TextStyle(
                         color: textColor,
-                        fontSize: 14.5,
-                        fontStyle: (isDeleted || isCensored)
-                            ? FontStyle.italic
-                            : FontStyle.normal,
+                        fontSize: 14.6,
+                        height: 1.38,
+                        fontStyle:
+                            isCensored ? FontStyle.italic : FontStyle.normal,
                       ),
                     ),
                   ),
@@ -656,8 +893,8 @@ class _MessageBubble extends StatelessWidget {
                     children: [
                       Text(
                         timeStr,
-                        style: const TextStyle(
-                            fontSize: 10, color: Colors.grey),
+                        style:
+                            const TextStyle(fontSize: 10, color: Colors.grey),
                       ),
                       if (message.editedAt != null && !isDeleted) ...[
                         const SizedBox(width: 4),
@@ -915,21 +1152,18 @@ class _InputBar extends StatelessWidget {
           Container(
             width: double.infinity,
             color: Colors.red.withValues(alpha: 0.08),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Text(errorMsg,
                 style: const TextStyle(color: Colors.red, fontSize: 12)),
           ),
         if (isMuted)
           Container(
             width: double.infinity,
-            color: Colors.orange.withValues(alpha: 0.08),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.orange.withValues(alpha: 0.1),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: const [
-                Icon(Icons.volume_off_rounded,
-                    color: Colors.orange, size: 15),
+                Icon(Icons.volume_off_rounded, color: Colors.orange, size: 15),
                 SizedBox(width: 8),
                 Text(
                   'Vous êtes muet — comportement inapproprié détecté.',
@@ -940,15 +1174,20 @@ class _InputBar extends StatelessWidget {
           ),
         Container(
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF1A1A2E)
-                : theme.colorScheme.surface,
+            color: isDark ? const Color(0xFF161827) : theme.colorScheme.surface,
             border: Border(
               top: BorderSide(
-                color: Colors.grey.withValues(alpha: 0.15),
+                color: Colors.grey.withValues(alpha: 0.12),
                 width: 1,
               ),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
           ),
           child: SafeArea(
             child: Padding(
@@ -959,10 +1198,9 @@ class _InputBar extends StatelessWidget {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF2A2A3E)
-                            : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(22),
+                        color:
+                            isDark ? const Color(0xFF23273F) : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: TextField(
                         controller: controller,
@@ -1030,8 +1268,7 @@ class _SendButton extends StatelessWidget {
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: Colors.black87),
                 )
-              : const Icon(Icons.send_rounded,
-                  color: Colors.black87, size: 18),
+              : const Icon(Icons.send_rounded, color: Colors.black87, size: 18),
         ),
       ),
     );

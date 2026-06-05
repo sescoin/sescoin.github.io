@@ -86,8 +86,27 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
     }
   }
 
-  Future<void> editMessage(String messageId, String content) async {
-    await _ref.read(chatServiceProvider).editMessage(messageId, content);
+  Future<ChatSendResult?> editMessage(String messageId, String content) async {
+    state = state.copyWith(isSending: true, clearError: true);
+    try {
+      final result = await _ref.read(chatServiceProvider).editMessage(
+            messageId,
+            content,
+          );
+      state = state.copyWith(
+        isSending: false,
+        warningCount: result.warningCount,
+        mutedUntil: result.muted
+            ? DateTime.now().add(const Duration(minutes: 10))
+            : null,
+        clearMute: !result.muted,
+      );
+      return result;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(isSending: false, error: msg);
+      return null;
+    }
   }
 
   Future<void> deleteMessage(String messageId) async {
