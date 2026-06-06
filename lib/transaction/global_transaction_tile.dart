@@ -27,6 +27,7 @@ class GlobalTransactionTile extends StatelessWidget {
         transaction.toDisplayName ?? transaction.toUsername ?? 'Inconnu';
     final isBuyerTransaction = transaction.type == TransactionType.purchase ||
         transaction.type == TransactionType.auction;
+    final description = _visibleDescription;
 
     return Card(
       child: Padding(
@@ -82,11 +83,10 @@ class GlobalTransactionTile extends StatelessWidget {
                   ),
                 ],
               ),
-            if (transaction.description != null &&
-                transaction.description!.trim().isNotEmpty) ...[
+            if (description != null) ...[
               const SizedBox(height: 10),
               Text(
-                transaction.description!.trim(),
+                description,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -104,6 +104,19 @@ class GlobalTransactionTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String? get _visibleDescription {
+    final description = transaction.description?.trim();
+    if (description == null || description.isEmpty) return null;
+
+    final paymentLabel = transaction.paymentMethodLabel;
+    if (paymentLabel != null &&
+        description.toLowerCase() == 'paiement ${paymentLabel.toLowerCase()}') {
+      return null;
+    }
+
+    return description;
   }
 }
 
