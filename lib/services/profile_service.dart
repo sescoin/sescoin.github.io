@@ -105,6 +105,14 @@ class ProfileService {
     });
   }
 
+  /// Modifie la classe choisie sur une demande en attente (admin)
+  Future<void> setAccountRequestClass(String requestId, String? classId) async {
+    await _client.rpc('set_account_request_class', params: {
+      'p_request_id': requestId,
+      'p_class_id': classId,
+    });
+  }
+
   /// Refuse une demande
   Future<void> rejectRequest({
     required String requestId,

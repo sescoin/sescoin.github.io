@@ -14,6 +14,7 @@ class AccountRequest {
     this.refusalReason,
     this.reviewedAt,
     this.reviewedBy,
+    this.classId,
   });
 
   final String id;
@@ -27,6 +28,7 @@ class AccountRequest {
   final String? refusalReason;
   final DateTime? reviewedAt;
   final String? reviewedBy; // ID de l'admin qui a traité
+  final String? classId;
 
   String get displayName => '$firstName $lastName';
   bool get isPending => status == AccountRequestStatus.pending;
@@ -51,6 +53,7 @@ class AccountRequest {
           ? DateTime.parse(json['reviewed_at'] as String)
           : null,
       reviewedBy: json['reviewed_by'] as String?,
+      classId: json['class_id'] as String?,
     );
   }
 

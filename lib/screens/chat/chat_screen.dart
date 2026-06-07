@@ -174,6 +174,7 @@ class _GlobalChatBody extends ConsumerStatefulWidget {
 
 class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
   final _scrollController = ScrollController();
   bool _showScrollFab = false;
   bool _isNearBottom = true;
@@ -188,6 +189,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
@@ -234,6 +236,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
+    _focusNode.requestFocus();
     await ref.read(chatActionProvider.notifier).sendGlobalMessage(text);
   }
 
@@ -259,11 +262,57 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     }
   }
 
+  Future<void> _acceptLoanRequest(ChatMessage msg) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Accepter le prêt'),
+        content: Text(
+          'Vous allez prêter ${msg.loanAmount?.toStringAsFixed(2) ?? '?'} SC à @${msg.username}.'
+          '${msg.loanInterestRate != null ? '\nTaux : ${msg.loanInterestRate}%' : ''}'
+          '${msg.loanDueDate != null ? '\nÉchéance : ${_formatDueDate(msg.loanDueDate!)}' : ''}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(d, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(d, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.gold,
+              foregroundColor: Colors.black87,
+            ),
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _locallyDeletedIds.add(msg.id));
+    try {
+      await ref.read(chatActionProvider.notifier).acceptChatLoanRequest(msg.id);
+      if (!mounted) return;
+      _showSnackBar('Prêt accepté !', AppTheme.positive);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _locallyDeletedIds.remove(msg.id));
+      _showSnackBar('Erreur : $e', Colors.red);
+    }
+  }
+
+  String _formatDueDate(DateTime dt) {
+    final local = dt.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year} '
+        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _showLoanRequestDialog() async {
     final amountCtrl = TextEditingController();
     final rateCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
     DateTime? dueDate;
+    TimeOfDay? dueTime;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -279,7 +328,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
-                    labelText: 'Montant souhaité (SC)',
+                    labelText: 'Montant (SC, max 100 000)',
                     prefixIcon: Icon(Icons.monetization_on_outlined),
                   ),
                   autofocus: true,
@@ -295,16 +344,18 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                // Date picker
                 InkWell(
                   onTap: () async {
+                    final minDate =
+                        DateTime.now().add(const Duration(minutes: 10));
                     final picked = await showDatePicker(
                       context: ctx,
-                      initialDate:
+                      initialDate: dueDate ??
                           DateTime.now().add(const Duration(days: 30)),
-                      firstDate:
-                          DateTime.now().add(const Duration(days: 1)),
-                      lastDate:
-                          DateTime.now().add(const Duration(days: 365 * 5)),
+                      firstDate: minDate,
+                      lastDate: DateTime.now()
+                          .add(const Duration(days: 365 * 5)),
                     );
                     if (picked != null) {
                       setDialogState(() => dueDate = picked);
@@ -331,6 +382,45 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 8),
+                // Time picker (affiché uniquement si une date est choisie)
+                if (dueDate != null)
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: ctx,
+                        initialTime: dueTime ?? TimeOfDay.now(),
+                        builder: (ctx, child) => MediaQuery(
+                          data: MediaQuery.of(ctx)
+                              .copyWith(alwaysUse24HourFormat: true),
+                          child: child!,
+                        ),
+                      );
+                      if (picked != null) {
+                        setDialogState(() => dueTime = picked);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Heure limite (hh:mm)',
+                        prefixIcon: Icon(Icons.access_time_rounded),
+                      ),
+                      child: Text(
+                        dueTime != null
+                            ? '${dueTime!.hour.toString().padLeft(2, '0')}:${dueTime!.minute.toString().padLeft(2, '0')}'
+                            : 'Choisir une heure',
+                        style: TextStyle(
+                          color: dueTime != null
+                              ? null
+                              : Theme.of(ctx)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: noteCtrl,
@@ -369,12 +459,32 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
 
     if (confirmed != true || amount == null || amount <= 0) return;
 
+    if (amount > 100000) {
+      _showSnackBar('Le montant ne peut pas dépasser 100 000 SC.', Colors.red);
+      return;
+    }
+
+    // Combiner date + heure si choisis
+    DateTime? combinedDue;
+    if (dueDate != null) {
+      final h = dueTime?.hour ?? 23;
+      final m = dueTime?.minute ?? 59;
+      combinedDue = DateTime(
+          dueDate!.year, dueDate!.month, dueDate!.day, h, m);
+      final minDue = DateTime.now().add(const Duration(minutes: 10));
+      if (combinedDue.isBefore(minDue)) {
+        _showSnackBar(
+            'L\'échéance doit être au moins dans 10 minutes.', Colors.red);
+        return;
+      }
+    }
+
     final result = await ref
         .read(chatActionProvider.notifier)
         .sendLoanRequestChat(
           amount,
           interestRate: rate,
-          dueDate: dueDate,
+          dueDate: combinedDue,
           note: note.isEmpty ? null : note,
         );
 
@@ -461,6 +571,9 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                                   ? _adminDeleteMessage(msg)
                                   : _deleteOwnLoanRequest(msg)
                               : null,
+                          onAccept: !isOwn
+                              ? () => _acceptLoanRequest(msg)
+                              : null,
                           onTapUsername: () =>
                               context.push('/user/${msg.username}'),
                         );
@@ -485,6 +598,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
             if (widget.isAdmin)
               _InputBar(
                 controller: _controller,
+                focusNode: _focusNode,
                 chatState: chatState,
                 onSend: _sendAdminMessage,
                 hintText: 'Écrire une annonce…',
@@ -523,6 +637,7 @@ class _ClassChatBody extends ConsumerStatefulWidget {
 
 class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
   final _scrollController = ScrollController();
   Timer? _muteTimer;
   bool _showScrollFab = false;
@@ -538,6 +653,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     _muteTimer?.cancel();
     _scrollController
       ..removeListener(_onScroll)
@@ -589,6 +705,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     if (ref.read(chatActionProvider).isMuted) return;
 
     _controller.clear();
+    _focusNode.requestFocus();
     final result = await ref
         .read(chatActionProvider.notifier)
         .sendClassMessage(widget.classId, text);
@@ -885,6 +1002,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
             ),
             _InputBar(
               controller: _controller,
+              focusNode: _focusNode,
               chatState: chatState,
               onSend: _send,
               hintText: 'Écrire un message…',
@@ -956,6 +1074,7 @@ class _LoanRequestBubble extends StatelessWidget {
     required this.showHeader,
     required this.onTapUsername,
     this.onDelete,
+    this.onAccept,
   });
 
   final ChatMessage message;
@@ -963,6 +1082,7 @@ class _LoanRequestBubble extends StatelessWidget {
   final bool showHeader;
   final VoidCallback onTapUsername;
   final VoidCallback? onDelete;
+  final VoidCallback? onAccept;
 
   @override
   Widget build(BuildContext context) {
@@ -1084,6 +1204,24 @@ class _LoanRequestBubble extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+                if (onAccept != null) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: onAccept,
+                      icon: const Icon(Icons.handshake_rounded, size: 16),
+                      label: const Text('Accepter le prêt'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.gold,
+                        foregroundColor: Colors.black87,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        textStyle: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                 ],
@@ -1703,9 +1841,11 @@ class _InputBar extends StatelessWidget {
     required this.chatState,
     required this.onSend,
     required this.hintText,
+    this.focusNode,
   });
 
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final ChatState chatState;
   final VoidCallback onSend;
   final String hintText;
@@ -1789,6 +1929,7 @@ class _InputBar extends StatelessWidget {
                         },
                         child: TextField(
                           controller: controller,
+                          focusNode: focusNode,
                           enabled: !isMuted && !chatState.isSending,
                           maxLength: 500,
                           maxLines: 5,

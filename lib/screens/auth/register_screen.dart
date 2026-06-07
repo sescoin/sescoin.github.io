@@ -610,13 +610,6 @@ class _ClassSelector extends ConsumerWidget {
       data: (classes) {
         if (classes.isEmpty) return const SizedBox.shrink();
 
-        // Auto-sélectionner la première classe si rien n'est sélectionné
-        if (selectedClassId == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            onChanged(classes.first.id);
-          });
-        }
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -175,6 +175,10 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
     await _ref.read(chatServiceProvider).adminDeleteMessage(messageId);
   }
 
+  Future<void> acceptChatLoanRequest(String messageId) async {
+    await _ref.read(chatServiceProvider).acceptChatLoanRequest(messageId);
+  }
+
   Future<void> markRead(String messageId) async {
     await _ref.read(chatServiceProvider).markChatRead(messageId);
   }

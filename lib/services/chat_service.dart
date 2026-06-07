@@ -116,6 +116,13 @@ class ChatService {
     );
   }
 
+  Future<void> acceptChatLoanRequest(String messageId) async {
+    await _client.rpc(
+      'accept_chat_loan_request',
+      params: {'p_message_id': messageId},
+    );
+  }
+
   Future<void> markChatRead(String messageId) async {
     await _client.rpc(
       'mark_chat_read',

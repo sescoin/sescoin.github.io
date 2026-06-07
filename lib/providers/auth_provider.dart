@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/profile.dart';
 import '../models/account_request.dart';
 import 'service_providers.dart';
+import 'wallet_provider.dart';
 
 // ── Stream brut Supabase Auth ─────────────────────────────────────────────────
 final authStateChangesProvider = StreamProvider<AuthState>((ref) {
@@ -96,6 +97,8 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
           );
       state = AsyncValue.data(profile);
       _bindProfileStream(profile.id);
+      // Recharger l'historique portefeuille pour le nouvel utilisateur
+      _ref.read(walletProvider.notifier).loadInitial();
       return profile;
     } catch (e, st) {
       state = const AsyncValue.data(null);

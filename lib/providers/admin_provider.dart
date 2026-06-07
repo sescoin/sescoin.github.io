@@ -419,7 +419,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
     try {
       await _ref.read(auctionServiceProvider).deleteAuction(auctionId);
       state = state.copyWith(
-          isLoading: false, successMessage: 'EnchÃ¨re supprimÃ©e');
+          isLoading: false, successMessage: 'Enchère supprimée');
       _ref.invalidate(activeAuctionsProvider);
       _ref.invalidate(allAuctionsProvider);
     } catch (e) {
