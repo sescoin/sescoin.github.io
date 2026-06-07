@@ -301,11 +301,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     }
   }
 
-  String _formatDueDate(DateTime dt) {
-    final local = dt.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year} '
-        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-  }
+  String _formatDueDate(DateTime dt) => _loanDueDateLabel(dt);
 
   Future<void> _showLoanRequestDialog() async {
     final amountCtrl = TextEditingController();
@@ -364,7 +360,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                   borderRadius: BorderRadius.circular(8),
                   child: InputDecorator(
                     decoration: const InputDecoration(
-                      labelText: 'Date d\'échéance (optionnel)',
+                      labelText: 'Date d\'échéance *',
                       prefixIcon: Icon(Icons.calendar_today_rounded),
                     ),
                     child: Text(
@@ -464,7 +460,12 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
       return;
     }
 
-    // Combiner date + heure si choisis
+    if (dueDate == null) {
+      _showSnackBar('Veuillez choisir une date d\'échéance.', Colors.red);
+      return;
+    }
+
+    // Combiner date + heure
     DateTime? combinedDue;
     if (dueDate != null) {
       final h = dueTime?.hour ?? 23;
@@ -936,7 +937,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
 
                   if (visible.isEmpty) {
                     return const _EmptyChat(
-                      message: 'Aucun message dans cette classe.',
+                      message: 'Aucun message pour l\'instant.',
                     );
                   }
 
@@ -1190,8 +1191,7 @@ class _LoanRequestBubble extends StatelessWidget {
                       if (message.loanDueDate != null)
                         _LoanTag(
                           icon: Icons.calendar_today_rounded,
-                          label:
-                              '${message.loanDueDate!.day.toString().padLeft(2, '0')}/${message.loanDueDate!.month.toString().padLeft(2, '0')}/${message.loanDueDate!.year}',
+                          label: _loanDueDateLabel(message.loanDueDate!),
                         ),
                     ],
                   ),
@@ -1232,6 +1232,17 @@ class _LoanRequestBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+String _loanDueDateLabel(DateTime dt) {
+  final d = dt.toLocal();
+  final date =
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  final time =
+      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}:${d.second.toString().padLeft(2, '0')}';
+  return '$date $time';
 }
 
 // ── Tag compact (taux, échéance) dans une bulle de demande de prêt ────────────

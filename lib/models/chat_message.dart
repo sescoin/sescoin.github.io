@@ -67,7 +67,7 @@ class ChatMessage {
           ? (json['loan_interest_rate'] as num).toDouble()
           : null,
       loanDueDate: json['loan_due_date'] != null
-          ? DateTime.parse(json['loan_due_date'] as String)
+          ? DateTime.parse(json['loan_due_date'] as String).toLocal()
           : null,
     );
   }

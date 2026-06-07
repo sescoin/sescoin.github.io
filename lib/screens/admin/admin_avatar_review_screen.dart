@@ -81,24 +81,40 @@ class AdminAvatarReviewScreen extends ConsumerWidget {
                             Expanded(
                               child: _AvatarPanel(
                                 label: 'Nouvelle photo',
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: AspectRatio(
-                                    aspectRatio: 1,
-                                    child: Image.network(
-                                      pendingAvatarUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: Colors.white.withValues(alpha: 0.04),
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          Icons.broken_image_outlined,
-                                          color: Colors.white54,
-                                          size: 36,
+                                child: Column(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: AspectRatio(
+                                        aspectRatio: 1,
+                                        child: Image.network(
+                                          pendingAvatarUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.04),
+                                            alignment: Alignment.center,
+                                            child: const Icon(
+                                              Icons.broken_image_outlined,
+                                              color: Colors.white54,
+                                              size: 36,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 8),
+                                    GestureDetector(
+                                      onTap: () => _showFullPhoto(
+                                          context, pendingAvatarUrl),
+                                      child: const Icon(
+                                        Icons.open_in_full_rounded,
+                                        size: 18,
+                                        color: AppTheme.gold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -152,6 +168,34 @@ class AdminAvatarReviewScreen extends ConsumerWidget {
                 ),
               )
             : null,
+      ),
+    );
+  }
+
+  void _showFullPhoto(BuildContext context, String url) {
+    showDialog<void>(
+      context: context,
+      builder: (d) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox(
+                  height: 200,
+                  child: Center(child: Icon(Icons.broken_image_rounded, size: 40)),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(d),
+              child: const Text('Fermer'),
+            ),
+          ],
+        ),
       ),
     );
   }

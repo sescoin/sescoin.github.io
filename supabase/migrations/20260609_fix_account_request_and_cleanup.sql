@@ -152,7 +152,7 @@ begin
   values (
     v_user_id, 'account_approved',
     'Compte approuvé',
-    'Ton compte SES Coin a ete approuve',
+    'Ton compte SES Coin a été approuvé.',
     false
   );
 end;

@@ -24,6 +24,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   final _searchController = TextEditingController();
 
   DateTime? _dueDate;
+  TimeOfDay? _dueTime;
   List<Map<String, dynamic>> _allUsers = [];
   final List<Map<String, dynamic>> _selectedLenders = [];
   bool _loadingUsers = true;
@@ -100,18 +101,31 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    final pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 7)),
+      initialDate: _dueDate ??
+          DateTime.now().add(const Duration(days: 7)),
       firstDate:
           DateTime.now().add(Duration(days: AppConstants.minLoanDurationDays)),
       lastDate:
           DateTime.now().add(Duration(days: AppConstants.maxLoanDurationDays)),
     );
+    if (pickedDate == null) return;
 
-    if (picked != null) {
-      setState(() => _dueDate = picked);
-    }
+    if (!mounted) return;
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: _dueTime ?? const TimeOfDay(hour: 23, minute: 59),
+      builder: (ctx, child) => MediaQuery(
+        data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+
+    setState(() {
+      _dueDate = pickedDate;
+      _dueTime = pickedTime ?? const TimeOfDay(hour: 23, minute: 59);
+    });
   }
 
   Future<void> _submit() async {
@@ -121,6 +135,13 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     if (_selectedLenders.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ajoute au moins un prêteur')),
+      );
+      return;
+    }
+
+    if (_dueDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choisis une date d\'échéance')),
       );
       return;
     }
@@ -145,9 +166,12 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
             Text('Montant : ${principal.toStringAsFixed(2)} SC'),
             Text('Intérêt : ${interestRate.toStringAsFixed(1)} %'),
             if (_dueDate != null)
-              Text(
-                'Échéance : ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}',
-              ),
+              Text(() {
+                final d = _dueDate!;
+                final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
+                return 'Échéance : ${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}'
+                    '  ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+              }()),
           ],
         ),
         actions: [
@@ -172,11 +196,15 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
 
     for (final lender in _selectedLenders) {
       try {
+        final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
+        final combinedDue = DateTime(
+          _dueDate!.year, _dueDate!.month, _dueDate!.day, t.hour, t.minute,
+        );
         await ref.read(loanActionProvider.notifier).requestLoan(
               lenderUsername: lender['username'] as String,
               principal: principal,
               interestRate: interestRate,
-              dueDate: _dueDate,
+              dueDate: combinedDue,
               note: _noteController.text.trim().isEmpty
                   ? null
                   : _noteController.text.trim(),
@@ -391,7 +419,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-                _Label('Date d\'échéance (optionnelle)'),
+                _Label('Date d\'échéance *'),
                 const SizedBox(height: 8),
                 InkWell(
                   onTap: _pickDate,
@@ -410,8 +438,14 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                         const SizedBox(width: 12),
                         Text(
                           _dueDate == null
-                              ? 'Aucune date'
-                              : '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}',
+                              ? 'Choisir une date et une heure'
+                              : () {
+                                  final d = _dueDate!;
+                                  final t = _dueTime ??
+                                      const TimeOfDay(hour: 23, minute: 59);
+                                  return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}'
+                                      '  ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+                                }(),
                           style: TextStyle(
                             color: _dueDate == null
                                 ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -421,7 +455,10 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                         if (_dueDate != null) ...[
                           const Spacer(),
                           GestureDetector(
-                            onTap: () => setState(() => _dueDate = null),
+                            onTap: () => setState(() {
+                              _dueDate = null;
+                              _dueTime = null;
+                            }),
                             child: const Icon(
                               Icons.close_rounded,
                               size: 16,
