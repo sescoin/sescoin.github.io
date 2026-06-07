@@ -11,6 +11,10 @@ class ChatMessage {
     required this.createdAt,
     required this.expiresAt,
     this.editedAt,
+    this.classId,
+    this.messageType = 'text',
+    this.loanAmount,
+    this.loanNote,
   });
 
   final String id;
@@ -24,8 +28,13 @@ class ChatMessage {
   final DateTime createdAt;
   final DateTime expiresAt;
   final DateTime? editedAt;
+  final String? classId;
+  final String messageType;
+  final double? loanAmount;
+  final String? loanNote;
 
   bool get isExpired => expiresAt.isBefore(DateTime.now());
+  bool get isLoanRequest => messageType == 'loan_request';
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
@@ -34,8 +43,8 @@ class ChatMessage {
       username: json['username'] as String,
       displayName: json['display_name'] as String,
       avatarUrl: json['avatar_url'] as String?,
-      content: json['content'] as String,
-      isCensored: json['is_censored'] as bool,
+      content: json['content'] as String? ?? '',
+      isCensored: json['is_censored'] as bool? ?? false,
       isDeleted: json['is_deleted'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       expiresAt: json['expires_at'] != null
@@ -44,6 +53,12 @@ class ChatMessage {
       editedAt: json['edited_at'] != null
           ? DateTime.parse(json['edited_at'] as String).toLocal()
           : null,
+      classId: json['class_id'] as String?,
+      messageType: json['message_type'] as String? ?? 'text',
+      loanAmount: json['loan_amount'] != null
+          ? (json['loan_amount'] as num).toDouble()
+          : null,
+      loanNote: json['loan_note'] as String?,
     );
   }
 }

@@ -10,7 +10,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
+import '../../models/class_room.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/class_provider.dart';
 import '../../services/auth_service.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -55,6 +57,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   // Photo personnalisée choisie depuis la galerie
   XFile? _pickedImage;
   Uint8List? _pickedBytes;
+
+  // Classe sélectionnée (optionnel)
+  String? _selectedClassId;
 
   // Valeur sentinelle pour le mode initiales
   static const _initialsKey = '__INITIALS__';
@@ -183,6 +188,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             password: _passwordCtrl.text,
             avatarUrl: avatarUrl,
             deviceId: deviceId,
+            classId: _selectedClassId,
           );
       if (mounted) context.go(AppRoutes.requestSent);
     } catch (e) {
@@ -532,6 +538,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 24),
+
+              // ── Classe (optionnel) ───────────────────────────────────────
+              _ClassSelector(
+                selectedClassId: _selectedClassId,
+                onChanged: (id) => setState(() => _selectedClassId = id),
+              ),
               const SizedBox(height: 32),
 
               // ── Bouton ───────────────────────────────────────────────────
@@ -559,6 +572,105 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Sélecteur de classe optionnel ─────────────────────────────────────────────
+
+class _ClassSelector extends ConsumerWidget {
+  const _ClassSelector({
+    required this.selectedClassId,
+    required this.onChanged,
+  });
+
+  final String? selectedClassId;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final classesAsync = ref.watch(classListProvider);
+
+    return classesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (classes) {
+        if (classes.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Classe (optionnel)',
+              style: Theme.of(context)
+                  .textTheme
+                  .labelLarge
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                // Option "Aucune"
+                _ClassChip(
+                  label: 'Aucune',
+                  selected: selectedClassId == null,
+                  onTap: () => onChanged(null),
+                ),
+                ...classes.map(
+                  (c) => _ClassChip(
+                    label: c.name,
+                    selected: selectedClassId == c.id,
+                    onTap: () => onChanged(c.id),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ClassChip extends StatelessWidget {
+  const _ClassChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppTheme.gold.withValues(alpha: 0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? AppTheme.gold : Colors.grey.withValues(alpha: 0.4),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? AppTheme.gold : Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 13,
           ),
         ),
       ),

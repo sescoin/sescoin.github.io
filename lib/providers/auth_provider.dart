@@ -116,6 +116,7 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
     required String password,
     required String avatarUrl,
     required String deviceId,
+    String? classId,
   }) async {
     return _ref.read(authServiceProvider).submitAccountRequest(
           firstName: firstName,
@@ -123,6 +124,7 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
           password: password,
           avatarUrl: avatarUrl,
           deviceId: deviceId,
+          classId: classId,
         );
   }
 

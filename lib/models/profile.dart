@@ -14,6 +14,7 @@ class Profile {
     this.avatarUrl,
     this.pendingAvatarUrl,
     this.fcmToken,
+    this.classId,
   });
 
   final String id;
@@ -26,6 +27,7 @@ class Profile {
   final String? avatarUrl;
   final String? pendingAvatarUrl;
   final String? fcmToken;
+  final String? classId;
 
   bool get isAdmin => role == 'admin';
   bool get isStudent => role == 'student';
@@ -50,6 +52,7 @@ class Profile {
       avatarUrl: json['avatar_url'] as String?,
       pendingAvatarUrl: json['pending_avatar_url'] as String?,
       fcmToken: json['fcm_token'] as String?,
+      classId: json['class_id'] as String?,
     );
   }
 
@@ -77,6 +80,7 @@ class Profile {
     String? avatarUrl,
     Object? pendingAvatarUrl = _sentinel,
     String? fcmToken,
+    Object? classId = _sentinel,
   }) {
     return Profile(
       id: id ?? this.id,
@@ -91,6 +95,7 @@ class Profile {
           ? this.pendingAvatarUrl
           : pendingAvatarUrl as String?,
       fcmToken: fcmToken ?? this.fcmToken,
+      classId: classId == _sentinel ? this.classId : classId as String?,
     );
   }
 

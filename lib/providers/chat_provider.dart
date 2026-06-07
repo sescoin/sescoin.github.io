@@ -4,15 +4,21 @@ import '../models/chat_message.dart';
 import '../models/chat_read.dart';
 import 'service_providers.dart';
 
-final chatMessagesProvider = StreamProvider<List<ChatMessage>>((ref) {
-  return ref.watch(chatServiceProvider).watchMessages();
+// ── Streams ────────────────────────────────────────────────────────────────────
+
+final globalMessagesProvider = StreamProvider<List<ChatMessage>>((ref) {
+  return ref.watch(chatServiceProvider).watchGlobalMessages();
+});
+
+final classMessagesProvider =
+    StreamProvider.family<List<ChatMessage>, String>((ref, classId) {
+  return ref.watch(chatServiceProvider).watchClassMessages(classId);
 });
 
 final chatReadsProvider = StreamProvider<List<ChatRead>>((ref) {
   return ref.watch(chatServiceProvider).watchReads();
 });
 
-// Map : messageId → utilisateurs qui ont lu jusqu'ici
 final chatReadsMapProvider = Provider<Map<String, List<ChatRead>>>((ref) {
   final reads = ref.watch(chatReadsProvider).valueOrNull ?? [];
   final map = <String, List<ChatRead>>{};
@@ -23,6 +29,8 @@ final chatReadsMapProvider = Provider<Map<String, List<ChatRead>>>((ref) {
   }
   return map;
 });
+
+// ── State ──────────────────────────────────────────────────────────────────────
 
 class ChatState {
   const ChatState({
@@ -66,10 +74,51 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
 
   final Ref _ref;
 
-  Future<ChatSendResult?> sendMessage(String content) async {
+  // ── Global chat ──────────────────────────────────────────────────────────────
+
+  Future<ChatSendResult?> sendGlobalMessage(String content) async {
     state = state.copyWith(isSending: true, clearError: true);
     try {
-      final result = await _ref.read(chatServiceProvider).sendMessage(content);
+      final result =
+          await _ref.read(chatServiceProvider).sendGlobalMessage(content);
+      state = state.copyWith(isSending: false);
+      return result;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(isSending: false, error: msg);
+      return null;
+    }
+  }
+
+  Future<ChatSendResult?> sendLoanRequestChat(
+    double amount, {
+    String? note,
+  }) async {
+    state = state.copyWith(isSending: true, clearError: true);
+    try {
+      final result = await _ref
+          .read(chatServiceProvider)
+          .sendLoanRequestChat(amount, note: note);
+      state = state.copyWith(isSending: false);
+      return result;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(isSending: false, error: msg);
+      return null;
+    }
+  }
+
+  // ── Class chat ───────────────────────────────────────────────────────────────
+
+  Future<ChatSendResult?> sendClassMessage(
+    String classId,
+    String content,
+  ) async {
+    state = state.copyWith(isSending: true, clearError: true);
+    try {
+      final result = await _ref
+          .read(chatServiceProvider)
+          .sendClassMessage(classId, content);
       state = state.copyWith(
         isSending: false,
         warningCount: result.warningCount,
@@ -86,13 +135,15 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
     }
   }
 
-  Future<ChatSendResult?> editMessage(String messageId, String content) async {
+  Future<ChatSendResult?> editClassMessage(
+    String messageId,
+    String content,
+  ) async {
     state = state.copyWith(isSending: true, clearError: true);
     try {
-      final result = await _ref.read(chatServiceProvider).editMessage(
-            messageId,
-            content,
-          );
+      final result = await _ref
+          .read(chatServiceProvider)
+          .editClassMessage(messageId, content);
       state = state.copyWith(
         isSending: false,
         warningCount: result.warningCount,
@@ -108,9 +159,15 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
       return null;
     }
   }
+
+  // ── Shared ───────────────────────────────────────────────────────────────────
 
   Future<void> deleteMessage(String messageId) async {
     await _ref.read(chatServiceProvider).deleteMessage(messageId);
+  }
+
+  Future<void> adminDeleteMessage(String messageId) async {
+    await _ref.read(chatServiceProvider).adminDeleteMessage(messageId);
   }
 
   Future<void> markRead(String messageId) async {

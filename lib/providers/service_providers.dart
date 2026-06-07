@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/auth_service.dart';
+import '../services/class_service.dart';
 import '../services/profile_service.dart';
 import '../services/transaction_service.dart';
 import '../services/marketplace_service.dart';
@@ -49,4 +50,8 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 
 final chatServiceProvider = Provider<ChatService>((ref) {
   return ChatService(ref.watch(supabaseClientProvider));
+});
+
+final classServiceProvider = Provider<ClassService>((ref) {
+  return ClassService(ref.watch(supabaseClientProvider));
 });

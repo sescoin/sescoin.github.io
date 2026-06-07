@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../screens/admin/admin_accounts_screen.dart';
 import '../screens/admin/admin_avatar_review_screen.dart';
+import '../screens/admin/admin_class_detail_screen.dart';
+import '../screens/admin/admin_classes_screen.dart';
 import '../screens/admin/admin_market_history_screen.dart';
 import '../screens/admin/admin_market_screen.dart';
 import '../screens/admin/admin_market_auction_form_screen.dart';
@@ -68,9 +70,14 @@ class AppRoutes {
   static const String adminTax = '/admin/tax';
   static const String adminReward = '/admin/reward';
   static const String adminRate = '/admin/rate';
+  static const String adminClasses = '/admin/classes';
+  static const String adminClassDetailPath = '/admin/classes/:classId';
+  static const String classChatPath = '/chat/class/:classId';
   static const String changePassword = '/profile/password';
 
   static String publicProfilePath(String username) => '/user/$username';
+  static String adminClassDetail(String classId) => '/admin/classes/$classId';
+  static String classChat(String classId) => '/chat/class/$classId';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -220,6 +227,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TransactionExplorerScreen(),
       ),
       GoRoute(
+        path: AppRoutes.classChatPath,
+        name: 'classChat',
+        builder: (context, state) => ChatScreen(
+          classId: state.pathParameters['classId']!,
+          className: state.extra as String? ?? 'Classe',
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.adminDashboard,
         name: 'admin',
         builder: (context, state) => const AdminScreen(),
@@ -277,6 +292,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           GoRoute(
+            path: 'classes',
+            name: 'adminClasses',
+            builder: (context, state) => const AdminClassesScreen(),
+            routes: [
+              GoRoute(
+                path: ':classId',
+                name: 'adminClassDetail',
+                builder: (context, state) {
+                  final extra = state.extra as Map<String, String>?;
+                  return AdminClassDetailScreen(
+                    classId: state.pathParameters['classId']!,
+                    className: extra?['name'] ?? 'Classe',
+                  );
+                },
+              ),
+            ],
+          ),
+          GoRoute(
             path: 'tax',
             name: 'adminTax',
             builder: (context, state) => const AdminTaxScreen(),
@@ -304,7 +337,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             Text('Page introuvable : ${state.matchedLocation}'),
             TextButton(
               onPressed: () => context.go(AppRoutes.home),
-              child: const Text('Retour à l’accueil'),
+              child: const Text('Retour à l\'accueil'),
             ),
           ],
         ),

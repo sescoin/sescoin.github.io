@@ -121,6 +121,7 @@ class AuthService {
     required String password,
     required String avatarUrl,
     required String deviceId,
+    String? classId,
   }) async {
     final username = generateUsername(firstName, lastName);
 
@@ -138,14 +139,17 @@ class AuthService {
       throw Exception('Nombre maximum de demandes atteint pour cet appareil.');
     }
 
-    final response = await _client.rpc('submit_account_request', params: {
+    final params = <String, dynamic>{
       'p_first_name': firstName,
       'p_last_name': lastName,
       'p_username': username,
       'p_password': password,
       'p_avatar_url': avatarUrl,
       'p_device_id': deviceId,
-    });
+    };
+    if (classId != null) params['p_class_id'] = classId;
+
+    final response = await _client.rpc('submit_account_request', params: params);
 
     return AccountRequest.fromJson(response as Map<String, dynamic>);
   }
