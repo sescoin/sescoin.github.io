@@ -53,12 +53,18 @@ class ChatService {
 
   Future<ChatSendResult> sendLoanRequestChat(
     double amount, {
+    double? interestRate,
+    DateTime? dueDate,
     String? note,
   }) async {
-    final response = await _client.rpc(
-      'send_loan_request_chat',
-      params: {'p_amount': amount, 'p_note': note},
-    );
+    final params = <String, dynamic>{'p_amount': amount};
+    if (interestRate != null) params['p_interest_rate'] = interestRate;
+    if (dueDate != null) {
+      params['p_due_date'] =
+          '${dueDate.year}-${dueDate.month.toString().padLeft(2, '0')}-${dueDate.day.toString().padLeft(2, '0')}';
+    }
+    if (note != null) params['p_note'] = note;
+    final response = await _client.rpc('send_loan_request_chat', params: params);
     return ChatSendResult.fromJson(response as Map<String, dynamic>);
   }
 

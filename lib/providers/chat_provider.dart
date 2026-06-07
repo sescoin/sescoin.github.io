@@ -92,13 +92,18 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
 
   Future<ChatSendResult?> sendLoanRequestChat(
     double amount, {
+    double? interestRate,
+    DateTime? dueDate,
     String? note,
   }) async {
     state = state.copyWith(isSending: true, clearError: true);
     try {
-      final result = await _ref
-          .read(chatServiceProvider)
-          .sendLoanRequestChat(amount, note: note);
+      final result = await _ref.read(chatServiceProvider).sendLoanRequestChat(
+            amount,
+            interestRate: interestRate,
+            dueDate: dueDate,
+            note: note,
+          );
       state = state.copyWith(isSending: false);
       return result;
     } catch (e) {

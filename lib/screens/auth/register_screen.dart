@@ -175,6 +175,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Si des classes existent, une doit être sélectionnée
+    final classesValue = ref.read(classListProvider).valueOrNull;
+    if (classesValue != null && classesValue.isNotEmpty && _selectedClassId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez choisir une classe.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       // deviceId simplifié (en prod utiliser device_info_plus)
@@ -540,7 +550,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ── Classe (optionnel) ───────────────────────────────────────
+              // ── Classe ──────────────────────────────────────────────────
               _ClassSelector(
                 selectedClassId: _selectedClassId,
                 onChanged: (id) => setState(() => _selectedClassId = id),
@@ -579,7 +589,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 }
 
-// ── Sélecteur de classe optionnel ─────────────────────────────────────────────
+// ── Sélecteur de classe (obligatoire si des classes existent) ─────────────────
 
 class _ClassSelector extends ConsumerWidget {
   const _ClassSelector({
@@ -600,11 +610,18 @@ class _ClassSelector extends ConsumerWidget {
       data: (classes) {
         if (classes.isEmpty) return const SizedBox.shrink();
 
+        // Auto-sélectionner la première classe si rien n'est sélectionné
+        if (selectedClassId == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onChanged(classes.first.id);
+          });
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Classe (optionnel)',
+              'Classe',
               style: Theme.of(context)
                   .textTheme
                   .labelLarge
@@ -614,21 +631,13 @@ class _ClassSelector extends ConsumerWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [
-                // Option "Aucune"
-                _ClassChip(
-                  label: 'Aucune',
-                  selected: selectedClassId == null,
-                  onTap: () => onChanged(null),
+              children: classes.map(
+                (c) => _ClassChip(
+                  label: c.name,
+                  selected: selectedClassId == c.id,
+                  onTap: () => onChanged(c.id),
                 ),
-                ...classes.map(
-                  (c) => _ClassChip(
-                    label: c.name,
-                    selected: selectedClassId == c.id,
-                    onTap: () => onChanged(c.id),
-                  ),
-                ),
-              ],
+              ).toList(),
             ),
           ],
         );

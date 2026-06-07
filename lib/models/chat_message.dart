@@ -15,6 +15,8 @@ class ChatMessage {
     this.messageType = 'text',
     this.loanAmount,
     this.loanNote,
+    this.loanInterestRate,
+    this.loanDueDate,
   });
 
   final String id;
@@ -32,6 +34,8 @@ class ChatMessage {
   final String messageType;
   final double? loanAmount;
   final String? loanNote;
+  final double? loanInterestRate;
+  final DateTime? loanDueDate;
 
   bool get isExpired => expiresAt.isBefore(DateTime.now());
   bool get isLoanRequest => messageType == 'loan_request';
@@ -59,6 +63,12 @@ class ChatMessage {
           ? (json['loan_amount'] as num).toDouble()
           : null,
       loanNote: json['loan_note'] as String?,
+      loanInterestRate: json['loan_interest_rate'] != null
+          ? (json['loan_interest_rate'] as num).toDouble()
+          : null,
+      loanDueDate: json['loan_due_date'] != null
+          ? DateTime.parse(json['loan_due_date'] as String)
+          : null,
     );
   }
 }

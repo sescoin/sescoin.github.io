@@ -244,15 +244,8 @@ class _EmptyClasses extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Crée une classe pour organiser tes membres.',
+            'Utilise le bouton + pour créer une classe.',
             style: TextStyle(color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 20),
-          FilledButton.icon(
-            onPressed: onCreateTap,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Créer une classe'),
-            style: FilledButton.styleFrom(backgroundColor: AppTheme.gold, foregroundColor: Colors.black87),
           ),
         ],
       ),

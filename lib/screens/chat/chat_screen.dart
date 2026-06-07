@@ -12,6 +12,7 @@ import '../../models/chat_message.dart';
 import '../../models/chat_read.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/class_provider.dart';
 
 // ── Écran principal ────────────────────────────────────────────────────────────
 
@@ -62,6 +63,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       _initTabs(hasClass);
     }
 
+    final classesAsync = ref.watch(classListProvider);
+    final userClassName = classesAsync.valueOrNull
+        ?.where((c) => c.id == userClassId)
+        .map((c) => c.name)
+        .firstOrNull ?? 'Ma Classe';
+
     // ── Mode classe direct (depuis admin panel) ──────────────────────────────
     if (_isClassMode) {
       return _ClassChatScaffold(
@@ -80,7 +87,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             controller: _tabController,
             tabs: [
               const Tab(text: 'Annonces', icon: Icon(Icons.campaign_rounded, size: 18)),
-              Tab(text: 'Ma Classe', icon: const Icon(Icons.school_rounded, size: 18)),
+              Tab(text: userClassName, icon: const Icon(Icons.school_rounded, size: 18)),
             ],
           ),
         ),
@@ -254,51 +261,109 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
 
   Future<void> _showLoanRequestDialog() async {
     final amountCtrl = TextEditingController();
+    final rateCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
+    DateTime? dueDate;
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Demande de prêt'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: amountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Montant souhaité (SC)',
-                prefixIcon: Icon(Icons.monetization_on_outlined),
-              ),
-              autofocus: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Demande de prêt'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Montant souhaité (SC)',
+                    prefixIcon: Icon(Icons.monetization_on_outlined),
+                  ),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: rateCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Taux d\'intérêt (%, optionnel)',
+                    prefixIcon: Icon(Icons.percent_rounded),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate:
+                          DateTime.now().add(const Duration(days: 30)),
+                      firstDate:
+                          DateTime.now().add(const Duration(days: 1)),
+                      lastDate:
+                          DateTime.now().add(const Duration(days: 365 * 5)),
+                    );
+                    if (picked != null) {
+                      setDialogState(() => dueDate = picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Date d\'échéance (optionnel)',
+                      prefixIcon: Icon(Icons.calendar_today_rounded),
+                    ),
+                    child: Text(
+                      dueDate != null
+                          ? '${dueDate!.day.toString().padLeft(2, '0')}/${dueDate!.month.toString().padLeft(2, '0')}/${dueDate!.year}'
+                          : 'Choisir une date',
+                      style: TextStyle(
+                        color: dueDate != null
+                            ? null
+                            : Theme.of(ctx)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteCtrl,
+                  maxLength: 200,
+                  decoration: const InputDecoration(
+                    labelText: 'Motif (optionnel)',
+                    prefixIcon: Icon(Icons.notes_rounded),
+                    counterText: '',
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: noteCtrl,
-              maxLength: 200,
-              decoration: const InputDecoration(
-                labelText: 'Motif (optionnel)',
-                prefixIcon: Icon(Icons.notes_rounded),
-                counterText: '',
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Envoyer'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Envoyer'),
-          ),
-        ],
       ),
     );
 
-    final amount = double.tryParse(amountCtrl.text.trim().replaceAll(',', '.'));
+    final amount =
+        double.tryParse(amountCtrl.text.trim().replaceAll(',', '.'));
     amountCtrl.dispose();
+    final rate =
+        double.tryParse(rateCtrl.text.trim().replaceAll(',', '.'));
+    rateCtrl.dispose();
     final note = noteCtrl.text.trim();
     noteCtrl.dispose();
 
@@ -306,7 +371,12 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
 
     final result = await ref
         .read(chatActionProvider.notifier)
-        .sendLoanRequestChat(amount, note: note.isEmpty ? null : note);
+        .sendLoanRequestChat(
+          amount,
+          interestRate: rate,
+          dueDate: dueDate,
+          note: note.isEmpty ? null : note,
+        );
 
     if (mounted && result == null) {
       _showSnackBar('Erreur lors de l\'envoi.', Colors.red);
@@ -984,6 +1054,28 @@ class _LoanRequestBubble extends StatelessWidget {
                     color: AppTheme.gold,
                   ),
                 ),
+                if (message.loanInterestRate != null ||
+                    message.loanDueDate != null) ...[
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 4,
+                    children: [
+                      if (message.loanInterestRate != null)
+                        _LoanTag(
+                          icon: Icons.percent_rounded,
+                          label:
+                              '${message.loanInterestRate!.toStringAsFixed(message.loanInterestRate! % 1 == 0 ? 0 : 1)}%',
+                        ),
+                      if (message.loanDueDate != null)
+                        _LoanTag(
+                          icon: Icons.calendar_today_rounded,
+                          label:
+                              '${message.loanDueDate!.day.toString().padLeft(2, '0')}/${message.loanDueDate!.month.toString().padLeft(2, '0')}/${message.loanDueDate!.year}',
+                        ),
+                    ],
+                  ),
+                ],
                 if (message.loanNote != null &&
                     message.loanNote!.isNotEmpty) ...[
                   const SizedBox(height: 6),
@@ -1000,6 +1092,34 @@ class _LoanRequestBubble extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Tag compact (taux, échéance) dans une bulle de demande de prêt ────────────
+
+class _LoanTag extends StatelessWidget {
+  const _LoanTag({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: AppTheme.gold),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.gold,
+          ),
+        ),
+      ],
     );
   }
 }
