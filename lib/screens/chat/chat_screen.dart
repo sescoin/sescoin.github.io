@@ -26,6 +26,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   String? _lastReadId;
   bool _showScrollFab = false;
   bool _isNearBottom = true;
+  final Set<String> _locallyDeletedIds = {};
 
   @override
   void initState() {
@@ -194,10 +195,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
     if (confirmed != true) return;
 
+    setState(() => _locallyDeletedIds.add(message.id));
     try {
       await ref.read(chatActionProvider.notifier).deleteMessage(message.id);
     } catch (e) {
       if (!mounted) return;
+      setState(() => _locallyDeletedIds.remove(message.id));
       _showSnackBar('Erreur : $e', Colors.red);
     }
   }
@@ -349,8 +352,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Center(child: Text('Erreur : $e')),
                     data: (messages) {
-                      final visibleMessages =
-                          messages.where((msg) => !msg.isDeleted).toList();
+                      final visibleMessages = messages
+                          .where((msg) =>
+                              !msg.isDeleted &&
+                              !_locallyDeletedIds.contains(msg.id))
+                          .toList();
                       if (visibleMessages.isEmpty) {
                         return _EmptyChat();
                       }
