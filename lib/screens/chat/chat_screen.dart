@@ -304,6 +304,12 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   String _formatDueDate(DateTime dt) => _loanDueDateLabel(dt);
 
   Future<void> _showLoanRequestDialog() async {
+    final profile = ref.read(currentProfileProvider).value;
+    if (profile != null && profile.balance < 0) {
+      _showSnackBar('Impossible de demander un prêt avec un solde négatif.', Colors.red);
+      return;
+    }
+
     final amountCtrl = TextEditingController();
     final rateCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
@@ -340,83 +346,53 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Date picker
+                // Sélecteur date + heure (séquentiel : heure s'ouvre automatiquement après la date)
                 InkWell(
                   onTap: () async {
-                    final minDate =
-                        DateTime.now().add(const Duration(minutes: 10));
-                    final picked = await showDatePicker(
+                    final now = DateTime.now();
+                    final pickedDate = await showDatePicker(
                       context: ctx,
-                      initialDate: dueDate ??
-                          DateTime.now().add(const Duration(days: 30)),
-                      firstDate: minDate,
-                      lastDate: DateTime.now()
-                          .add(const Duration(days: 365 * 5)),
+                      initialDate: dueDate ?? now.add(const Duration(days: 30)),
+                      firstDate: now,
+                      lastDate: now.add(const Duration(days: 365 * 5)),
                     );
-                    if (picked != null) {
-                      setDialogState(() => dueDate = picked);
-                    }
+                    if (pickedDate == null || !ctx.mounted) return;
+                    final pickedTime = await showTimePicker(
+                      context: ctx,
+                      initialTime: dueTime ?? const TimeOfDay(hour: 23, minute: 59),
+                      builder: (tCtx, child) => MediaQuery(
+                        data: MediaQuery.of(tCtx).copyWith(alwaysUse24HourFormat: true),
+                        child: child!,
+                      ),
+                    );
+                    setDialogState(() {
+                      dueDate = pickedDate;
+                      dueTime = pickedTime ?? const TimeOfDay(hour: 23, minute: 59);
+                    });
                   },
                   borderRadius: BorderRadius.circular(8),
                   child: InputDecorator(
                     decoration: const InputDecoration(
-                      labelText: 'Date d\'échéance *',
+                      labelText: 'Date et heure d\'échéance *',
                       prefixIcon: Icon(Icons.calendar_today_rounded),
                     ),
                     child: Text(
                       dueDate != null
-                          ? '${dueDate!.day.toString().padLeft(2, '0')}/${dueDate!.month.toString().padLeft(2, '0')}/${dueDate!.year}'
-                          : 'Choisir une date',
+                          ? () {
+                              final d = dueDate!;
+                              final t = dueTime ?? const TimeOfDay(hour: 23, minute: 59);
+                              return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}'
+                                  '  ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+                            }()
+                          : 'Choisir une date et une heure',
                       style: TextStyle(
                         color: dueDate != null
                             ? null
-                            : Theme.of(ctx)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.5),
+                            : Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                // Time picker (affiché uniquement si une date est choisie)
-                if (dueDate != null)
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showTimePicker(
-                        context: ctx,
-                        initialTime: dueTime ?? TimeOfDay.now(),
-                        builder: (ctx, child) => MediaQuery(
-                          data: MediaQuery.of(ctx)
-                              .copyWith(alwaysUse24HourFormat: true),
-                          child: child!,
-                        ),
-                      );
-                      if (picked != null) {
-                        setDialogState(() => dueTime = picked);
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Heure limite (hh:mm)',
-                        prefixIcon: Icon(Icons.access_time_rounded),
-                      ),
-                      child: Text(
-                        dueTime != null
-                            ? '${dueTime!.hour.toString().padLeft(2, '0')}:${dueTime!.minute.toString().padLeft(2, '0')}'
-                            : 'Choisir une heure',
-                        style: TextStyle(
-                          color: dueTime != null
-                              ? null
-                              : Theme.of(ctx)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ),
-                  ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: noteCtrl,

@@ -20,6 +20,8 @@ class AppConstants {
   static const double maxLoanInterestRate = 100.0;
   static const int minLoanDurationDays = 1;
   static const int maxLoanDurationDays = 365;
+  static const double maxLoanAmountPerDay = 5000.0;
+  static const double maxLoanAmountPerWeek = 1000.0;
 
   static const double minBidIncrement = 0.01;
   static const int auctionDefaultDurationHours = 0;

@@ -132,6 +132,18 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    final profile = ref.read(currentProfileProvider).value;
+    if (profile != null && profile.balance < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible de demander un prêt avec un solde négatif.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (_selectedLenders.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ajoute au moins un prêteur')),
