@@ -357,17 +357,47 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                       lastDate: now.add(const Duration(days: 365 * 5)),
                     );
                     if (pickedDate == null || !ctx.mounted) return;
+
+                    final isToday = pickedDate.year == now.year &&
+                        pickedDate.month == now.month &&
+                        pickedDate.day == now.day;
+
+                    final minTime = now.add(const Duration(minutes: 5));
+                    final defaultTime = isToday
+                        ? TimeOfDay(hour: minTime.hour, minute: minTime.minute)
+                        : const TimeOfDay(hour: 23, minute: 59);
+
                     final pickedTime = await showTimePicker(
                       context: ctx,
-                      initialTime: dueTime ?? const TimeOfDay(hour: 23, minute: 59),
+                      initialTime: (dueTime != null && !isToday) ? dueTime! : defaultTime,
                       builder: (tCtx, child) => MediaQuery(
                         data: MediaQuery.of(tCtx).copyWith(alwaysUse24HourFormat: true),
                         child: child!,
                       ),
                     );
+
+                    if (!ctx.mounted) return;
+
+                    TimeOfDay finalTime = pickedTime ?? defaultTime;
+
+                    if (isToday) {
+                      final selected = DateTime(
+                          now.year, now.month, now.day, finalTime.hour, finalTime.minute);
+                      if (selected.isBefore(minTime)) {
+                        finalTime = TimeOfDay(hour: minTime.hour, minute: minTime.minute);
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(
+                            content: Text('Heure ajustée : minimum maintenant + 5 min.'),
+                            backgroundColor: Colors.orange,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    }
+
                     setDialogState(() {
                       dueDate = pickedDate;
-                      dueTime = pickedTime ?? const TimeOfDay(hour: 23, minute: 59);
+                      dueTime = finalTime;
                     });
                   },
                   borderRadius: BorderRadius.circular(8),
