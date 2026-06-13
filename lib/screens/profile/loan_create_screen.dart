@@ -141,7 +141,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
         finalTime = TimeOfDay(hour: minTime.hour, minute: minTime.minute);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Heure ajustée : minimum maintenant + 5 min.'),
+            content: Text('Heure ajustée : minimum heure actuelle + 5 min.'),
             backgroundColor: Colors.orange,
             duration: Duration(seconds: 2),
           ),

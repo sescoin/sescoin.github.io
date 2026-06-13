@@ -7,12 +7,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../common/user_avatar.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/chat_message.dart';
 import '../../models/chat_read.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/class_provider.dart';
+import '../../providers/service_providers.dart';
 
 // ── Écran principal ────────────────────────────────────────────────────────────
 
@@ -354,7 +356,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                       context: ctx,
                       initialDate: dueDate ?? now.add(const Duration(days: 30)),
                       firstDate: now,
-                      lastDate: now.add(const Duration(days: 365 * 5)),
+                      lastDate: now.add(Duration(days: AppConstants.maxLoanDurationDays)),
                     );
                     if (pickedDate == null || !ctx.mounted) return;
 
@@ -469,6 +471,22 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     if (dueDate == null) {
       _showSnackBar('Veuillez choisir une date d\'échéance.', Colors.red);
       return;
+    }
+
+    final userId = ref.read(currentUserIdProvider);
+    if (userId != null) {
+      final activeCount = await ref
+          .read(loanServiceProvider)
+          .countActiveBorrowedLoans(userId);
+      if (activeCount >= AppConstants.maxActiveLoansBorrowed) {
+        if (mounted) {
+          _showSnackBar(
+            'Tu as déjà ${AppConstants.maxActiveLoansBorrowed} prêts actifs ou en attente. Rembourse-en un avant d\'en demander un nouveau.',
+            Colors.red,
+          );
+        }
+        return;
+      }
     }
 
     // Combiner date + heure

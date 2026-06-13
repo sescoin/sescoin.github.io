@@ -74,6 +74,15 @@ class LoanService {
     return Loan.fromJson(data);
   }
 
+  Future<int> countActiveBorrowedLoans(String borrowerId) async {
+    final data = await _client
+        .from(AppConstants.tableLoans)
+        .select('id')
+        .eq('borrower_id', borrowerId)
+        .inFilter('status', ['pending', 'active']);
+    return (data as List).length;
+  }
+
   Future<Loan> requestLoan({
     required String borrowerId,
     required String lenderUsername,
@@ -95,6 +104,25 @@ class LoanService {
     }
     if (dueDate != null && dueDate.isBefore(DateTime.now())) {
       throw Exception('La date d\'échéance doit être dans le futur.');
+    }
+    if (dueDate != null) {
+      final maxDue = DateTime.now().add(Duration(days: AppConstants.maxLoanDurationDays));
+      if (dueDate.isAfter(maxDue)) {
+        throw Exception(
+          'L\'échéance ne peut pas dépasser ${AppConstants.maxLoanDurationDays} jours.',
+        );
+      }
+    }
+
+    final activeLoans = await _client
+        .from(AppConstants.tableLoans)
+        .select('id')
+        .eq('borrower_id', borrowerId)
+        .inFilter('status', ['pending', 'active']);
+    if ((activeLoans as List).length >= AppConstants.maxActiveLoansBorrowed) {
+      throw Exception(
+        'Tu as déjà ${AppConstants.maxActiveLoansBorrowed} prêts actifs ou en attente. Rembourse-en un avant d\'en demander un nouveau.',
+      );
     }
 
     final lenderData = await _client
