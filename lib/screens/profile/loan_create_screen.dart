@@ -250,7 +250,12 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
             );
         sent++;
       } catch (error) {
-        errors.add('${lender['display_name']} : $error');
+        final reason = error.toString().replaceFirst('Exception: ', '');
+        errors.add(
+          _selectedLenders.length == 1
+              ? reason
+              : '${lender['display_name']} : $reason',
+        );
       }
     }
 
@@ -259,9 +264,12 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     }
 
     if (errors.isNotEmpty) {
+      final message = sent > 0
+          ? '$sent envoyée(s)\n${errors.join('\n')}'
+          : errors.join('\n');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$sent envoyée(s), ${errors.length} échec(s)'),
+          content: Text(message),
           backgroundColor:
               errors.length == _selectedLenders.length ? Colors.red : Colors.orange,
         ),
