@@ -88,6 +88,14 @@ class LoanService {
     return (data as List).length;
   }
 
+  Future<List<Loan>> getAllLoansAdmin() async {
+    final data = await _client
+        .from(AppConstants.tableLoans)
+        .select(_loanSelect)
+        .order('created_at', ascending: false);
+    return (data as List).map((row) => Loan.fromJson(row)).toList();
+  }
+
   Future<LoanConfig> getLoanConfig() async {
     try {
       final data = await _client

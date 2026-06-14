@@ -6,6 +6,10 @@ import 'auth_provider.dart';
 import 'service_providers.dart';
 import 'wallet_provider.dart';
 
+final allLoansAdminProvider = FutureProvider<List<Loan>>((ref) {
+  return ref.watch(loanServiceProvider).getAllLoansAdmin();
+});
+
 final loanConfigProvider = FutureProvider<LoanConfig>((ref) {
   return ref.watch(loanServiceProvider).getLoanConfig();
 });

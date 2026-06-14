@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,11 +63,25 @@ Future<void> main() async {
 
   // Quand le token JWT est renouvelé, on le transmet aux canaux Realtime
   // pour éviter l'erreur "InvalidJWTToken: Token has expired".
+  // On profite aussi de cet listener pour traiter les prêts en retard.
+  Timer? overdueTimer;
   Supabase.instance.client.auth.onAuthStateChange.listen((data) {
     if (data.event == AuthChangeEvent.tokenRefreshed &&
         data.session != null) {
       Supabase.instance.client.realtime
           .setAuth(data.session!.accessToken);
+    }
+    if (data.event == AuthChangeEvent.signedIn) {
+      _processOverdueLoans();
+      overdueTimer?.cancel();
+      overdueTimer = Timer.periodic(
+        const Duration(minutes: 5),
+        (_) => _processOverdueLoans(),
+      );
+    }
+    if (data.event == AuthChangeEvent.signedOut) {
+      overdueTimer?.cancel();
+      overdueTimer = null;
     }
   });
 
@@ -107,3 +123,10 @@ class SESCoinApp extends ConsumerWidget {
 /// Raccourci global pour accéder au client Supabase
 /// Usage: supabase.from('profiles').select()
 final supabase = Supabase.instance.client;
+
+void _processOverdueLoans() {
+  Supabase.instance.client
+      .rpc('process_overdue_loans')
+      .then((_) {})
+      .catchError((_) {});
+}

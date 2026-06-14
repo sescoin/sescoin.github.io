@@ -164,7 +164,8 @@ begin
 
   if v_daily_total + p_principal > v_cfg.max_daily_sc then
     raise exception
-      'Impossible d''emprunter plus de % SC par jour, quota restant : % SC.',
+      'Impossible d''emprunter plus de % SC par jour.
+quota restant : % SC.',
       v_cfg.max_daily_sc::int,
       greatest(0, floor(v_cfg.max_daily_sc - v_daily_total))::int;
   end if;
