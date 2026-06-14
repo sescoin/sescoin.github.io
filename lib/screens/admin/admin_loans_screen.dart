@@ -34,7 +34,7 @@ class _AdminLoansScreenState extends ConsumerState<AdminLoansScreen>
   late final TextEditingController _interestCtrl;
   late final TextEditingController _minBalanceCtrl;
 
-  static final _dateFmt = DateFormat('dd/MM/yyyy HH:mm');
+  static final _dateFmt = DateFormat('dd/MM/yyyy, HH:mm');
 
   @override
   void initState() {
@@ -310,8 +310,14 @@ class _AdminLoanTile extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.arrow_circle_up_rounded,
-                    size: 14, color: AppTheme.negative),
+                const Text(
+                  '−',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.negative,
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '@${loan.borrowerUsername}',
@@ -319,12 +325,20 @@ class _AdminLoanTile extends StatelessWidget {
                       fontSize: 13, fontWeight: FontWeight.w600),
                 ),
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6),
-                  child: Icon(Icons.arrow_forward_rounded,
-                      size: 14, color: Colors.grey),
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    '·',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
                 ),
-                const Icon(Icons.arrow_circle_down_rounded,
-                    size: 14, color: AppTheme.positive),
+                const Text(
+                  '+',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.positive,
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '@${loan.lenderUsername}',

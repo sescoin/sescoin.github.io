@@ -96,6 +96,8 @@ class LoanActionNotifier extends StateNotifier<LoanActionState> {
             note: note,
           );
       state = state.copyWith(isLoading: false, lastLoan: loan);
+      _ref.invalidate(userLoansProvider);
+      _ref.invalidate(allLoansAdminProvider);
       return loan;
     } catch (error, stackTrace) {
       state = state.copyWith(isLoading: false, error: error.toString());

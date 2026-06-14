@@ -135,13 +135,6 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
           now.year, now.month, now.day, finalTime.hour, finalTime.minute);
       if (selected.isBefore(minTime)) {
         finalTime = TimeOfDay(hour: minTime.hour, minute: minTime.minute);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Heure ajustée : minimum heure actuelle + 5 min.'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
-          ),
-        );
       }
     }
 
