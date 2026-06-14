@@ -191,7 +191,7 @@ class LoanService {
         'p_principal': principal,
         'p_interest_rate': interestRate,
         'p_total_due': totalDue,
-        'p_due_date': dueDate?.toIso8601String(),
+        'p_due_date': dueDate?.toUtc().toIso8601String(),
         'p_note': note,
       });
       return Loan.fromJson(data as Map<String, dynamic>);
