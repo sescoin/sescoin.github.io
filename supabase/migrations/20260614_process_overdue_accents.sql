@@ -51,7 +51,7 @@ begin
           v_loan.lender_id,
           v_actual_debit,
           'loan',
-          'Prélèvement automatique prêt en retard',
+          'Prélèvement automatique, prêt en retard',
           jsonb_build_object(
             'loan_id',      v_loan.id,
             'auto_default', true,

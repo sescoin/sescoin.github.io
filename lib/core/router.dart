@@ -209,7 +209,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.loanCreate,
         name: 'loanCreate',
-        builder: (context, state) => const LoanCreateScreen(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return LoanCreateScreen(
+            isChatMode: extra?['chatMode'] == true,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.changePassword,

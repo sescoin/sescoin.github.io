@@ -7,14 +7,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../common/user_avatar.dart';
-import '../../core/constants.dart';
+import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../models/chat_message.dart';
 import '../../models/chat_read.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/class_provider.dart';
-import '../../providers/service_providers.dart';
 
 // ── Écran principal ────────────────────────────────────────────────────────────
 
@@ -265,6 +264,15 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   }
 
   Future<void> _acceptLoanRequest(ChatMessage msg) async {
+    if (msg.loanDueDate != null &&
+        msg.loanDueDate!.isBefore(DateTime.now())) {
+      _showSnackBar(
+        'Impossible d\'accepter : la date d\'échéance est déjà dépassée.',
+        Colors.red,
+      );
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
@@ -304,219 +312,6 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   }
 
   String _formatDueDate(DateTime dt) => _loanDueDateLabel(dt);
-
-  Future<void> _showLoanRequestDialog() async {
-    final profile = ref.read(currentProfileProvider).value;
-    if (profile != null && profile.balance < 0) {
-      _showSnackBar('Impossible de demander un prêt avec un solde négatif.', Colors.red);
-      return;
-    }
-
-    final amountCtrl = TextEditingController();
-    final rateCtrl = TextEditingController();
-    final noteCtrl = TextEditingController();
-    DateTime? dueDate;
-    TimeOfDay? dueTime;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Demande de prêt'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: amountCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Montant (SC, max 100 000)',
-                    prefixIcon: Icon(Icons.monetization_on_outlined),
-                  ),
-                  autofocus: true,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: rateCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Taux d\'intérêt (%, optionnel)',
-                    prefixIcon: Icon(Icons.percent_rounded),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Sélecteur date + heure (séquentiel : heure s'ouvre automatiquement après la date)
-                InkWell(
-                  onTap: () async {
-                    final now = DateTime.now();
-                    final pickedDate = await showDatePicker(
-                      context: ctx,
-                      initialDate: dueDate ?? now.add(const Duration(days: 30)),
-                      firstDate: now,
-                      lastDate: now.add(Duration(days: AppConstants.maxLoanDurationDays)),
-                    );
-                    if (pickedDate == null || !ctx.mounted) return;
-
-                    final isToday = pickedDate.year == now.year &&
-                        pickedDate.month == now.month &&
-                        pickedDate.day == now.day;
-
-                    final minTime = now.add(const Duration(minutes: 5));
-                    final defaultTime = isToday
-                        ? TimeOfDay(hour: minTime.hour, minute: minTime.minute)
-                        : const TimeOfDay(hour: 23, minute: 59);
-
-                    final pickedTime = await showTimePicker(
-                      context: ctx,
-                      initialTime: (dueTime != null && !isToday) ? dueTime! : defaultTime,
-                      builder: (tCtx, child) => MediaQuery(
-                        data: MediaQuery.of(tCtx).copyWith(alwaysUse24HourFormat: true),
-                        child: child!,
-                      ),
-                    );
-
-                    if (!ctx.mounted) return;
-
-                    TimeOfDay finalTime = pickedTime ?? defaultTime;
-
-                    if (isToday) {
-                      final selected = DateTime(
-                          now.year, now.month, now.day, finalTime.hour, finalTime.minute);
-                      if (selected.isBefore(minTime)) {
-                        finalTime = TimeOfDay(hour: minTime.hour, minute: minTime.minute);
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(
-                            content: Text('Heure ajustée : minimum maintenant + 5 min.'),
-                            backgroundColor: Colors.orange,
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      }
-                    }
-
-                    setDialogState(() {
-                      dueDate = pickedDate;
-                      dueTime = finalTime;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Date et heure d\'échéance *',
-                      prefixIcon: Icon(Icons.calendar_today_rounded),
-                    ),
-                    child: Text(
-                      dueDate != null
-                          ? () {
-                              final d = dueDate!;
-                              final t = dueTime ?? const TimeOfDay(hour: 23, minute: 59);
-                              return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}'
-                                  '  ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-                            }()
-                          : 'Choisir une date et une heure',
-                      style: TextStyle(
-                        color: dueDate != null
-                            ? null
-                            : Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: noteCtrl,
-                  maxLength: 200,
-                  decoration: const InputDecoration(
-                    labelText: 'Motif (optionnel)',
-                    prefixIcon: Icon(Icons.notes_rounded),
-                    counterText: '',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Envoyer'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    final amount =
-        double.tryParse(amountCtrl.text.trim().replaceAll(',', '.'));
-    amountCtrl.dispose();
-    final rate =
-        double.tryParse(rateCtrl.text.trim().replaceAll(',', '.'));
-    rateCtrl.dispose();
-    final note = noteCtrl.text.trim();
-    noteCtrl.dispose();
-
-    if (confirmed != true || amount == null || amount <= 0) return;
-
-    if (amount > 100000) {
-      _showSnackBar('Le montant ne peut pas dépasser 100 000 SC.', Colors.red);
-      return;
-    }
-
-    if (dueDate == null) {
-      _showSnackBar('Veuillez choisir une date d\'échéance.', Colors.red);
-      return;
-    }
-
-    final userId = ref.read(currentUserIdProvider);
-    if (userId != null) {
-      final activeCount = await ref
-          .read(loanServiceProvider)
-          .countActiveBorrowedLoans(userId);
-      if (activeCount >= AppConstants.maxActiveLoansBorrowed) {
-        if (mounted) {
-          _showSnackBar(
-            'Tu as déjà ${AppConstants.maxActiveLoansBorrowed} prêts actifs ou en attente. Rembourse-en un avant d\'en demander un nouveau.',
-            Colors.red,
-          );
-        }
-        return;
-      }
-    }
-
-    // Combiner date + heure
-    DateTime? combinedDue;
-    if (dueDate != null) {
-      final h = dueTime?.hour ?? 23;
-      final m = dueTime?.minute ?? 59;
-      combinedDue = DateTime(
-          dueDate!.year, dueDate!.month, dueDate!.day, h, m);
-      final minDue = DateTime.now().add(const Duration(minutes: 10));
-      if (combinedDue.isBefore(minDue)) {
-        _showSnackBar(
-            'L\'échéance doit être au moins dans 10 minutes.', Colors.red);
-        return;
-      }
-    }
-
-    final result = await ref
-        .read(chatActionProvider.notifier)
-        .sendLoanRequestChat(
-          amount,
-          interestRate: rate,
-          dueDate: combinedDue,
-          note: note.isEmpty ? null : note,
-        );
-
-    if (mounted && result == null) {
-      _showSnackBar('Erreur lors de l\'envoi.', Colors.red);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -629,7 +424,12 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                 hintText: 'Écrire une annonce…',
               )
             else
-              _LoanRequestBar(onTap: _showLoanRequestDialog),
+              _LoanRequestBar(
+                onTap: () => context.push(
+                  AppRoutes.loanCreate,
+                  extra: {'chatMode': true},
+                ),
+              ),
           ],
         ),
         if (_showScrollFab)

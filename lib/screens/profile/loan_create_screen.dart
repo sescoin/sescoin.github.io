@@ -7,10 +7,13 @@ import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/loan_provider.dart';
 
 class LoanCreateScreen extends ConsumerStatefulWidget {
-  const LoanCreateScreen({super.key});
+  const LoanCreateScreen({super.key, this.isChatMode = false});
+
+  final bool isChatMode;
 
   @override
   ConsumerState<LoanCreateScreen> createState() => _LoanCreateScreenState();
@@ -27,13 +30,16 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   TimeOfDay? _dueTime;
   List<Map<String, dynamic>> _allUsers = [];
   final List<Map<String, dynamic>> _selectedLenders = [];
-  bool _loadingUsers = true;
+  bool _loadingUsers = false;
   String _searchQuery = '';
+  bool _isSubmitting = false;
+
+  bool get _isChatMode => widget.isChatMode;
 
   @override
   void initState() {
     super.initState();
-    _loadUsers();
+    if (!_isChatMode) _loadUsers();
   }
 
   @override
@@ -46,6 +52,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   }
 
   Future<void> _loadUsers() async {
+    setState(() => _loadingUsers = true);
     try {
       final myId = ref.read(currentUserIdProvider) ??
           Supabase.instance.client.auth.currentUser?.id;
@@ -57,25 +64,19 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
           .neq('role', 'admin')
           .order('display_name');
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       setState(() {
         _allUsers = List<Map<String, dynamic>>.from(data as List);
         _loadingUsers = false;
       });
     } catch (_) {
-      if (mounted) {
-        setState(() => _loadingUsers = false);
-      }
+      if (mounted) setState(() => _loadingUsers = false);
     }
   }
 
   List<Map<String, dynamic>> get _filteredUsers {
     final query = _searchQuery.toLowerCase();
-    if (query.isEmpty) {
-      return _allUsers;
-    }
+    if (query.isEmpty) return _allUsers;
     return _allUsers.where((user) {
       final username = (user['username'] as String).toLowerCase();
       final name = (user['display_name'] as String).toLowerCase();
@@ -84,9 +85,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   }
 
   void _addLender(Map<String, dynamic> user) {
-    if (_selectedLenders.any((lender) => lender['id'] == user['id'])) {
-      return;
-    }
+    if (_selectedLenders.any((lender) => lender['id'] == user['id'])) return;
     setState(() {
       _selectedLenders.add(user);
       _searchController.clear();
@@ -95,9 +94,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   }
 
   void _removeLender(String id) {
-    setState(() {
-      _selectedLenders.removeWhere((lender) => lender['id'] == id);
-    });
+    setState(() => _selectedLenders.removeWhere((lender) => lender['id'] == id));
   }
 
   Future<void> _pickDate() async {
@@ -109,7 +106,6 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
       lastDate: now.add(Duration(days: AppConstants.maxLoanDurationDays)),
     );
     if (pickedDate == null) return;
-
     if (!mounted) return;
 
     final isToday = pickedDate.year == now.year &&
@@ -155,10 +151,15 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     });
   }
 
+  String _formatDue() {
+    final d = _dueDate!;
+    final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}'
+        '  ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final profile = ref.read(currentProfileProvider).value;
     if (profile != null && profile.balance < 0) {
@@ -171,7 +172,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
       return;
     }
 
-    if (_selectedLenders.isEmpty) {
+    if (!_isChatMode && _selectedLenders.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ajoute au moins un prêteur')),
       );
@@ -198,19 +199,15 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Prêteurs : ${_selectedLenders.map((l) => l['display_name']).join(', ')}',
-            ),
-            const SizedBox(height: 4),
+            if (!_isChatMode) ...[
+              Text(
+                'Prêteurs : ${_selectedLenders.map((l) => l['display_name']).join(', ')}',
+              ),
+              const SizedBox(height: 4),
+            ],
             Text('Montant : ${principal.toStringAsFixed(2)} SC'),
             Text('Intérêt : ${interestRate.toStringAsFixed(1)} %'),
-            if (_dueDate != null)
-              Text(() {
-                final d = _dueDate!;
-                final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
-                return 'Échéance : ${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}'
-                    '  ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-              }()),
+            Text('Échéance : ${_formatDue()}'),
           ],
         ),
         actions: [
@@ -226,27 +223,62 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
       ),
     );
 
-    if (confirmed != true || !mounted) {
+    if (confirmed != true || !mounted) return;
+
+    final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
+    final combinedDue = DateTime(
+      _dueDate!.year, _dueDate!.month, _dueDate!.day, t.hour, t.minute,
+    );
+    final note =
+        _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
+
+    // ── Mode chat : envoie dans le chat global ────────────────────────────────
+    if (_isChatMode) {
+      setState(() => _isSubmitting = true);
+      try {
+        final result = await ref
+            .read(chatActionProvider.notifier)
+            .sendLoanRequestChat(
+              principal,
+              interestRate: interestRate > 0 ? interestRate : null,
+              dueDate: combinedDue,
+              note: note,
+            );
+        if (!mounted) return;
+        if (result == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Erreur lors de l\'envoi.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Demande de prêt publiée dans le chat !'),
+              backgroundColor: AppTheme.positive,
+            ),
+          );
+          context.pop();
+        }
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
+      }
       return;
     }
 
+    // ── Mode normal : envoie à des prêteurs ciblés ────────────────────────────
     var sent = 0;
     final errors = <String>[];
 
     for (final lender in _selectedLenders) {
       try {
-        final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
-        final combinedDue = DateTime(
-          _dueDate!.year, _dueDate!.month, _dueDate!.day, t.hour, t.minute,
-        );
         await ref.read(loanActionProvider.notifier).requestLoan(
               lenderUsername: lender['username'] as String,
               principal: principal,
               interestRate: interestRate,
               dueDate: combinedDue,
-              note: _noteController.text.trim().isEmpty
-                  ? null
-                  : _noteController.text.trim(),
+              note: note,
             );
         sent++;
       } catch (error) {
@@ -259,9 +291,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
       }
     }
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     if (errors.isNotEmpty) {
       final message = sent > 0
@@ -288,11 +318,12 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(loanActionProvider);
+    final loanState = ref.watch(loanActionProvider);
+    final isLoading = _isChatMode ? _isSubmitting : loanState.isLoading;
 
     return LoadingOverlay(
-      isLoading: state.isLoading,
-      message: 'Envoi des demandes...',
+      isLoading: isLoading,
+      message: 'Envoi de la demande...',
       child: Scaffold(
         appBar: AppBar(title: const Text('Demander un prêt')),
         body: SingleChildScrollView(
@@ -308,120 +339,133 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Label('Prêteur(s)'),
-                const SizedBox(height: 8),
-                if (_selectedLenders.isNotEmpty) ...[
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: _selectedLenders
-                        .map(
-                          (lender) => Chip(
-                            avatar: CircleAvatar(
-                              backgroundColor:
-                                  AppTheme.gold.withValues(alpha: 0.2),
-                              child: Text(
-                                (lender['display_name'] as String)[0].toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.gold,
+                // ── Sélection prêteur (mode normal uniquement) ─────────────────
+                if (!_isChatMode) ...[
+                  _Label('Prêteur(s)'),
+                  const SizedBox(height: 8),
+                  if (_selectedLenders.isNotEmpty) ...[
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: _selectedLenders
+                          .map(
+                            (lender) => Chip(
+                              avatar: CircleAvatar(
+                                backgroundColor:
+                                    AppTheme.gold.withValues(alpha: 0.2),
+                                child: Text(
+                                  (lender['display_name'] as String)[0]
+                                      .toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.gold,
+                                  ),
                                 ),
                               ),
+                              label: Text(lender['display_name'] as String),
+                              onDeleted: () =>
+                                  _removeLender(lender['id'] as String),
                             ),
-                            label: Text(lender['display_name'] as String),
-                            onDeleted: () => _removeLender(lender['id'] as String),
-                          ),
-                        )
-                        .toList(),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (value) =>
+                        setState(() => _searchQuery = value),
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher un utilisateur…',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon: _searchQuery.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                            ),
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                ],
-                TextField(
-                  controller: _searchController,
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                  decoration: InputDecoration(
-                    hintText: 'Rechercher un utilisateur…',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: _searchQuery.isEmpty
-                        ? null
-                        : IconButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _searchQuery = '');
-                            },
-                            icon: const Icon(Icons.close_rounded, size: 18),
-                          ),
-                  ),
-                ),
-                if (_searchQuery.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  _loadingUsers
-                      ? const Center(child: CircularProgressIndicator())
-                      : _filteredUsers.isEmpty
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: Text(
-                                'Aucun utilisateur trouvé',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            )
-                          : Container(
-                              constraints: const BoxConstraints(maxHeight: 220),
-                              decoration: BoxDecoration(
-                                border:
-                                    Border.all(color: Theme.of(context).dividerColor),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: ListView.separated(
-                                  padding: EdgeInsets.zero,
-                                  shrinkWrap: true,
-                                  itemCount: _filteredUsers.length,
-                                  separatorBuilder: (_, __) =>
-                                      const Divider(height: 1),
-                                  itemBuilder: (context, index) {
-                                    final user = _filteredUsers[index];
-                                    final alreadySelected = _selectedLenders.any(
-                                      (lender) => lender['id'] == user['id'],
-                                    );
-
-                                    return ListTile(
-                                      dense: true,
-                                      leading: CircleAvatar(
-                                        radius: 18,
-                                        backgroundColor:
-                                            AppTheme.gold.withValues(alpha: 0.15),
-                                        child: Text(
-                                          (user['display_name'] as String)[0]
-                                              .toUpperCase(),
-                                          style: const TextStyle(
-                                            color: AppTheme.gold,
-                                            fontWeight: FontWeight.w700,
+                  if (_searchQuery.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    _loadingUsers
+                        ? const Center(child: CircularProgressIndicator())
+                        : _filteredUsers.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Text(
+                                  'Aucun utilisateur trouvé',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              )
+                            : Container(
+                                constraints:
+                                    const BoxConstraints(maxHeight: 220),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: Theme.of(context).dividerColor),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: ListView.separated(
+                                    padding: EdgeInsets.zero,
+                                    shrinkWrap: true,
+                                    itemCount: _filteredUsers.length,
+                                    separatorBuilder: (_, __) =>
+                                        const Divider(height: 1),
+                                    itemBuilder: (context, index) {
+                                      final user = _filteredUsers[index];
+                                      final alreadySelected =
+                                          _selectedLenders.any(
+                                        (lender) =>
+                                            lender['id'] == user['id'],
+                                      );
+                                      return ListTile(
+                                        dense: true,
+                                        leading: CircleAvatar(
+                                          radius: 18,
+                                          backgroundColor: AppTheme.gold
+                                              .withValues(alpha: 0.15),
+                                          child: Text(
+                                            (user['display_name']
+                                                    as String)[0]
+                                                .toUpperCase(),
+                                            style: const TextStyle(
+                                              color: AppTheme.gold,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      title: Text(user['display_name'] as String),
-                                      subtitle: Text(
-                                        '@${user['username']}',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                      trailing: alreadySelected
-                                          ? const Icon(
-                                              Icons.check_rounded,
-                                              color: AppTheme.positive,
-                                              size: 18,
-                                            )
-                                          : null,
-                                      onTap:
-                                          alreadySelected ? null : () => _addLender(user),
-                                    );
-                                  },
+                                        title: Text(
+                                            user['display_name'] as String),
+                                        subtitle: Text(
+                                          '@${user['username']}',
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                        trailing: alreadySelected
+                                            ? const Icon(
+                                                Icons.check_rounded,
+                                                color: AppTheme.positive,
+                                                size: 18,
+                                              )
+                                            : null,
+                                        onTap: alreadySelected
+                                            ? null
+                                            : () => _addLender(user),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
+                  ],
+                  const SizedBox(height: 20),
                 ],
-                const SizedBox(height: 20),
+
+                // ── Montant ────────────────────────────────────────────────────
                 _Label('Montant emprunté'),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -436,14 +480,17 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                     final amount = double.tryParse(
                       value?.trim().replaceAll(',', '.') ?? '',
                     );
-                    if (amount == null || amount < AppConstants.minTransferAmount) {
+                    if (amount == null ||
+                        amount < AppConstants.minTransferAmount) {
                       return 'Montant invalide';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
-                _Label('Taux d’intérêt'),
+
+                // ── Taux d'intérêt ─────────────────────────────────────────────
+                _Label('Taux d\'intérêt'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _interestController,
@@ -466,6 +513,8 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
+
+                // ── Date d'échéance ────────────────────────────────────────────
                 _Label('Date d\'échéance *'),
                 const SizedBox(height: 8),
                 InkWell(
@@ -473,10 +522,11 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).inputDecorationTheme.fillColor,
+                      color:
+                          Theme.of(context).inputDecorationTheme.fillColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -486,16 +536,12 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                         Text(
                           _dueDate == null
                               ? 'Choisir une date et une heure'
-                              : () {
-                                  final d = _dueDate!;
-                                  final t = _dueTime ??
-                                      const TimeOfDay(hour: 23, minute: 59);
-                                  return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}'
-                                      '  ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-                                }(),
+                              : _formatDue(),
                           style: TextStyle(
                             color: _dueDate == null
-                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                ? Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant
                                 : null,
                           ),
                         ),
@@ -518,6 +564,8 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+
+                // ── Note ───────────────────────────────────────────────────────
                 _Label('Note (optionnelle)'),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -529,10 +577,11 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
+
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: state.isLoading ? null : _submit,
+                    onPressed: isLoading ? null : _submit,
                     icon: const Icon(Icons.send_rounded),
                     label: const Text('Envoyer la demande'),
                   ),
