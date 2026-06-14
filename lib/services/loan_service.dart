@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/constants.dart';
 import '../models/loan.dart';
+import '../models/loan_config.dart';
 
 class LoanService {
   LoanService(this._client);
@@ -14,7 +15,11 @@ class LoanService {
   ''';
 
   Future<void> processOverdueLoans() async {
-    await _client.rpc('process_overdue_loans');
+    try {
+      await _client.rpc('process_overdue_loans');
+    } on PostgrestException {
+      // traitement silencieux, non bloquant
+    }
   }
 
   Future<List<Loan>> getBorrowedLoans(String userId) async {
@@ -83,6 +88,34 @@ class LoanService {
     return (data as List).length;
   }
 
+  Future<LoanConfig> getLoanConfig() async {
+    try {
+      final data = await _client
+          .from('loan_config')
+          .select()
+          .eq('id', 1)
+          .single();
+      return LoanConfig.fromJson(data);
+    } on PostgrestException {
+      return LoanConfig.defaults;
+    }
+  }
+
+  Future<void> updateLoanConfig(LoanConfig config) async {
+    try {
+      await _client.rpc('update_loan_config', params: {
+        'p_max_daily_sc': config.maxDailySc,
+        'p_max_weekly_sc': config.maxWeeklySc,
+        'p_max_active_loans': config.maxActiveLoans,
+        'p_max_duration_days': config.maxDurationDays,
+        'p_max_interest_rate': config.maxInterestRate,
+        'p_min_balance_sc': config.minBalanceSc,
+      });
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
   Future<Loan> requestLoan({
     required String borrowerId,
     required String lenderUsername,
@@ -143,50 +176,66 @@ class LoanService {
     }
 
     final totalDue = Loan.calculateTotalDue(principal, interestRate);
-    final data = await _client.rpc('request_loan', params: {
-      'p_borrower_id': borrowerId,
-      'p_lender_id': lenderData['id'],
-      'p_principal': principal,
-      'p_interest_rate': interestRate,
-      'p_total_due': totalDue,
-      'p_due_date': dueDate?.toIso8601String(),
-      'p_note': note,
-    });
-
-    return Loan.fromJson(data as Map<String, dynamic>);
+    try {
+      final data = await _client.rpc('request_loan', params: {
+        'p_borrower_id': borrowerId,
+        'p_lender_id': lenderData['id'],
+        'p_principal': principal,
+        'p_interest_rate': interestRate,
+        'p_total_due': totalDue,
+        'p_due_date': dueDate?.toIso8601String(),
+        'p_note': note,
+      });
+      return Loan.fromJson(data as Map<String, dynamic>);
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
   }
 
   Future<Loan> acceptLoan(String loanId, String lenderId) async {
-    final data = await _client.rpc('accept_loan', params: {
-      'p_loan_id': loanId,
-      'p_lender_id': lenderId,
-    });
-
-    return Loan.fromJson(data as Map<String, dynamic>);
+    try {
+      final data = await _client.rpc('accept_loan', params: {
+        'p_loan_id': loanId,
+        'p_lender_id': lenderId,
+      });
+      return Loan.fromJson(data as Map<String, dynamic>);
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
   }
 
   Future<Loan> rejectLoan(String loanId, String lenderId) async {
-    final data = await _client.rpc('reject_loan', params: {
-      'p_loan_id': loanId,
-      'p_lender_id': lenderId,
-    });
-
-    return Loan.fromJson(data as Map<String, dynamic>);
+    try {
+      final data = await _client.rpc('reject_loan', params: {
+        'p_loan_id': loanId,
+        'p_lender_id': lenderId,
+      });
+      return Loan.fromJson(data as Map<String, dynamic>);
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
   }
 
   Future<Loan> cancelLoan(String loanId, String borrowerId) async {
-    final data = await _client.rpc('cancel_loan', params: {
-      'p_loan_id': loanId,
-      'p_borrower_id': borrowerId,
-    });
-
-    return Loan.fromJson(data as Map<String, dynamic>);
+    try {
+      final data = await _client.rpc('cancel_loan', params: {
+        'p_loan_id': loanId,
+        'p_borrower_id': borrowerId,
+      });
+      return Loan.fromJson(data as Map<String, dynamic>);
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
   }
 
   Future<void> deleteLoan(String loanId) async {
-    await _client.rpc('delete_loan', params: {
-      'p_loan_id': loanId,
-    });
+    try {
+      await _client.rpc('delete_loan', params: {
+        'p_loan_id': loanId,
+      });
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
   }
 
   Future<Loan> repayLoan({
@@ -197,14 +246,16 @@ class LoanService {
     if (amount <= 0) {
       throw Exception('Le montant de remboursement doit être positif.');
     }
-
-    final data = await _client.rpc('repay_loan', params: {
-      'p_loan_id': loanId,
-      'p_borrower_id': borrowerId,
-      'p_amount': amount,
-    });
-
-    return Loan.fromJson(data as Map<String, dynamic>);
+    try {
+      final data = await _client.rpc('repay_loan', params: {
+        'p_loan_id': loanId,
+        'p_borrower_id': borrowerId,
+        'p_amount': amount,
+      });
+      return Loan.fromJson(data as Map<String, dynamic>);
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
   }
 
   Future<Loan> markAsDefaulted(String loanId) async {

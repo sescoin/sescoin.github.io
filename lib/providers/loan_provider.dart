@@ -1,9 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/loan.dart';
+import '../models/loan_config.dart';
 import 'auth_provider.dart';
 import 'service_providers.dart';
 import 'wallet_provider.dart';
+
+final loanConfigProvider = FutureProvider<LoanConfig>((ref) {
+  return ref.watch(loanServiceProvider).getLoanConfig();
+});
 
 final userLoansProvider = StreamProvider<List<Loan>>((ref) {
   final userId = ref.watch(currentUserIdProvider);

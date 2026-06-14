@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auction_provider.dart';
 import '../models/account_request.dart';
 import '../models/loan.dart';
+import '../models/loan_config.dart';
 import 'auth_provider.dart';
 import 'currency_provider.dart';
+import 'loan_provider.dart';
 import 'marketplace_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
@@ -435,6 +437,21 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
       state = state.copyWith(
           isLoading: false, successMessage: 'Prêt marqué en défaut');
       _ref.invalidate(overdueLoansProvider);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> updateLoanConfig(LoanConfig config) async {
+    state = state.copyWith(isLoading: true, clearMessages: true);
+    try {
+      await _ref.read(loanServiceProvider).updateLoanConfig(config);
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Configuration des prêts enregistrée',
+      );
+      _ref.invalidate(loanConfigProvider);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       rethrow;

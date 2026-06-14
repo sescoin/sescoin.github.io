@@ -132,6 +132,15 @@ class AdminScreen extends ConsumerWidget {
               onTap: () => context.push(AppRoutes.adminClasses),
             ),
             const SizedBox(height: 16),
+            const _SectionTitle('Prêts'),
+            _AdminTile(
+              icon: Icons.account_balance_rounded,
+              title: 'Paramètres des prêts',
+              subtitle: 'Limites quotidiennes, hebdomadaires, durée max…',
+              onTap: () => context.push(AppRoutes.adminLoans),
+              color: Colors.blueAccent,
+            ),
+            const SizedBox(height: 16),
             const _SectionTitle('Économie'),
             _AdminTile(
               icon: Icons.percent_rounded,

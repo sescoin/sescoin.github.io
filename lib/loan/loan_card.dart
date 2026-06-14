@@ -28,7 +28,7 @@ class LoanCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final bool isLoading;
 
-  static final _dateFormat = DateFormat('dd/MM/yyyy');
+  static final _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
   bool get _isBorrower => loan.borrowerId == currentUserId;
   bool get _isLender => loan.lenderId == currentUserId;

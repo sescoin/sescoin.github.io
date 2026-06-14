@@ -13,6 +13,7 @@ import '../screens/admin/admin_market_history_screen.dart';
 import '../screens/admin/admin_market_screen.dart';
 import '../screens/admin/admin_market_auction_form_screen.dart';
 import '../screens/admin/admin_market_item_form_screen.dart';
+import '../screens/admin/admin_loans_screen.dart';
 import '../screens/admin/admin_reward_screen.dart';
 import '../screens/admin/admin_rate_screen.dart';
 import '../screens/admin/admin_requests_screen.dart';
@@ -67,6 +68,7 @@ class AppRoutes {
   static const String adminMarketNewItem = '/admin/market/item/new';
   static const String adminMarketEditItem = '/admin/market/item/:itemId';
   static const String adminMarketNewAuction = '/admin/market/auction/new';
+  static const String adminLoans = '/admin/loans';
   static const String adminTax = '/admin/tax';
   static const String adminReward = '/admin/reward';
   static const String adminRate = '/admin/rate';
@@ -308,6 +310,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          GoRoute(
+            path: 'loans',
+            name: 'adminLoans',
+            builder: (context, state) => const AdminLoansScreen(),
           ),
           GoRoute(
             path: 'tax',
