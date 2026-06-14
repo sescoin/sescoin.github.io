@@ -50,6 +50,9 @@ class Loan {
       status == LoanStatus.cancelled ||
       status == LoanStatus.defaulted;
 
+  bool get isExpiredPending =>
+      isPending && dueDate != null && DateTime.now().isAfter(dueDate!);
+
   bool get isOverdue =>
       isActive && dueDate != null && DateTime.now().isAfter(dueDate!);
 

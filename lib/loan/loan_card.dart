@@ -43,7 +43,10 @@ class LoanCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                _LoanStatusBadge(status: loan.status),
+                _LoanStatusBadge(
+                  status: loan.status,
+                  isExpired: loan.isExpiredPending,
+                ),
                 const Spacer(),
                 if (loan.isOverdue)
                   Container(
@@ -204,7 +207,7 @@ class LoanCard extends StatelessWidget {
   }
 
   Widget _buildActions() {
-    if (_isLender && loan.isPending) {
+    if (_isLender && loan.isPending && !loan.isExpiredPending) {
       return Row(
         children: [
           Expanded(
@@ -228,7 +231,7 @@ class LoanCard extends StatelessWidget {
       );
     }
 
-    if (_isBorrower && loan.isPending) {
+    if (_isBorrower && loan.isPending && !loan.isExpiredPending) {
       return SizedBox(
         width: double.infinity,
         child: OutlinedButton(
@@ -258,14 +261,17 @@ class LoanCard extends StatelessWidget {
 }
 
 class _LoanStatusBadge extends StatelessWidget {
-  const _LoanStatusBadge({required this.status});
+  const _LoanStatusBadge({required this.status, this.isExpired = false});
 
   final LoanStatus status;
+  final bool isExpired;
 
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      LoanStatus.pending => ('En attente', AppTheme.warning),
+      LoanStatus.pending => isExpired
+          ? ('Expirée', Colors.grey)
+          : ('En attente', AppTheme.warning),
       LoanStatus.active => ('Actif', AppTheme.positive),
       LoanStatus.repaid => ('Remboursé', Colors.grey),
       LoanStatus.defaulted => ('En retard', AppTheme.negative),
