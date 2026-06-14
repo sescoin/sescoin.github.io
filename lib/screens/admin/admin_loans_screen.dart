@@ -278,7 +278,7 @@ class _AdminLoanTile extends StatelessWidget {
       LoanStatus.pending => ('En attente', AppTheme.warning),
       LoanStatus.active => ('Actif', AppTheme.positive),
       LoanStatus.repaid => ('Remboursé', Colors.grey),
-      LoanStatus.defaulted => ('En défaut', AppTheme.negative),
+      LoanStatus.defaulted => ('En retard', AppTheme.negative),
       LoanStatus.rejected => ('Refusé', AppTheme.negative),
       LoanStatus.cancelled => ('Annulé', Colors.grey),
     };

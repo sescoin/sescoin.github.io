@@ -114,10 +114,10 @@ class Loan {
       amountRepaid: (json['amount_repaid'] as num).toDouble(),
       status: _statusFromString(json['status'] as String),
       dueDate: json['due_date'] != null
-          ? DateTime.parse(json['due_date'] as String)
+          ? DateTime.parse(json['due_date'] as String).toLocal()
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
       note: TextSanitizer.nullable(json['note'] as String?),
     );
   }
