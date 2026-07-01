@@ -17,6 +17,9 @@ class ChatMessage {
     this.loanNote,
     this.loanInterestRate,
     this.loanDueDate,
+    this.loanStatus,
+    this.loanId,
+    this.loanAcceptedBy,
   });
 
   final String id;
@@ -36,9 +39,13 @@ class ChatMessage {
   final String? loanNote;
   final double? loanInterestRate;
   final DateTime? loanDueDate;
+  final String? loanStatus;
+  final String? loanId;
+  final String? loanAcceptedBy;
 
   bool get isExpired => expiresAt.isBefore(DateTime.now());
   bool get isLoanRequest => messageType == 'loan_request';
+  bool get isLoanRequestAccepted => isLoanRequest && loanStatus == 'accepted';
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
@@ -69,6 +76,9 @@ class ChatMessage {
       loanDueDate: json['loan_due_date'] != null
           ? DateTime.parse(json['loan_due_date'] as String).toLocal()
           : null,
+      loanStatus: json['loan_status'] as String?,
+      loanId: json['loan_id'] as String?,
+      loanAcceptedBy: json['loan_accepted_by'] as String?,
     );
   }
 }

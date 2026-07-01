@@ -66,9 +66,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
     final classesAsync = ref.watch(classListProvider);
     final userClassName = classesAsync.valueOrNull
-        ?.where((c) => c.id == userClassId)
-        .map((c) => c.name)
-        .firstOrNull ?? 'Ma Classe';
+            ?.where((c) => c.id == userClassId)
+            .map((c) => c.name)
+            .firstOrNull ??
+        'Ma Classe';
 
     // ── Mode classe direct (depuis admin panel) ──────────────────────────────
     if (_isClassMode) {
@@ -87,8 +88,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
           bottom: TabBar(
             controller: _tabController,
             tabs: [
-              const Tab(text: 'Annonces', icon: Icon(Icons.campaign_rounded, size: 18)),
-              Tab(text: userClassName, icon: const Icon(Icons.school_rounded, size: 18)),
+              const Tab(
+                  text: 'Annonces',
+                  icon: Icon(Icons.campaign_rounded, size: 18)),
+              Tab(
+                  text: userClassName,
+                  icon: const Icon(Icons.school_rounded, size: 18)),
             ],
           ),
         ),
@@ -180,6 +185,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   bool _showScrollFab = false;
   bool _isNearBottom = true;
   final Set<String> _locallyDeletedIds = {};
+  final Set<String> _locallyAcceptedLoanRequestIds = {};
 
   @override
   void initState() {
@@ -239,6 +245,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     _controller.clear();
     _focusNode.requestFocus();
     await ref.read(chatActionProvider.notifier).sendGlobalMessage(text);
+    if (mounted) _focusNode.requestFocus();
   }
 
   Future<void> _adminDeleteMessage(ChatMessage msg) async {
@@ -264,8 +271,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   }
 
   Future<void> _acceptLoanRequest(ChatMessage msg) async {
-    if (msg.loanDueDate != null &&
-        msg.loanDueDate!.isBefore(DateTime.now())) {
+    if (msg.loanDueDate != null && msg.loanDueDate!.isBefore(DateTime.now())) {
       _showSnackBar(
         'Impossible d\'accepter : la date d\'échéance est déjà dépassée.',
         Colors.red,
@@ -299,14 +305,14 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
       ),
     );
     if (confirmed != true) return;
-    setState(() => _locallyDeletedIds.add(msg.id));
+    setState(() => _locallyAcceptedLoanRequestIds.add(msg.id));
     try {
       await ref.read(chatActionProvider.notifier).acceptChatLoanRequest(msg.id);
       if (!mounted) return;
       _showSnackBar('Prêt accepté !', AppTheme.positive);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _locallyDeletedIds.remove(msg.id));
+      setState(() => _locallyAcceptedLoanRequestIds.remove(msg.id));
       _showSnackBar('Erreur : $e', Colors.red);
     }
   }
@@ -317,8 +323,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(globalMessagesProvider);
     final chatState = ref.watch(chatActionProvider);
-    final currentUserId =
-        ref.watch(currentUserIdProvider) ?? '';
+    final currentUserId = ref.watch(currentUserIdProvider) ?? '';
 
     return Stack(
       children: [
@@ -326,15 +331,12 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
           children: [
             Expanded(
               child: messagesAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) =>
-                    Center(child: Text('Erreur : $e')),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Erreur : $e')),
                 data: (messages) {
                   final visible = messages
                       .where((m) =>
-                          !m.isDeleted &&
-                          !_locallyDeletedIds.contains(m.id))
+                          !m.isDeleted && !_locallyDeletedIds.contains(m.id))
                       .toList();
 
                   if (visible.isEmpty) {
@@ -355,9 +357,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                     final msg = visible[i];
                     final prev = i > 0 ? visible[i - 1] : null;
                     if (prev == null ||
-                        msg.createdAt
-                                .difference(prev.createdAt)
-                                .inMinutes >=
+                        msg.createdAt.difference(prev.createdAt).inMinutes >=
                             15) {
                       items.add(_ChatItem.divider(msg.createdAt));
                     }
@@ -368,8 +368,8 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
 
                   return ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       final item = items[index];
@@ -378,20 +378,23 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                       }
                       final msg = item.message!;
                       final isOwn = msg.userId == currentUserId;
+                      final isAccepted = msg.isLoanRequestAccepted ||
+                          _locallyAcceptedLoanRequestIds.contains(msg.id);
                       final canDelete = widget.isAdmin ||
-                          (isOwn && msg.isLoanRequest);
+                          (isOwn && msg.isLoanRequest && !isAccepted);
 
                       if (msg.isLoanRequest) {
                         return _LoanRequestBubble(
                           message: msg,
                           isOwn: isOwn,
+                          isAccepted: isAccepted,
                           showHeader: item.showHeader,
                           onDelete: canDelete
                               ? () => widget.isAdmin
                                   ? _adminDeleteMessage(msg)
                                   : _deleteOwnLoanRequest(msg)
                               : null,
-                          onAccept: !isOwn
+                          onAccept: !isOwn && !isAccepted
                               ? () => _acceptLoanRequest(msg)
                               : null,
                           onTapUsername: () =>
@@ -535,6 +538,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
         .read(chatActionProvider.notifier)
         .sendClassMessage(widget.classId, text);
 
+    if (mounted) _focusNode.requestFocus();
     if (!mounted || result == null) return;
     if (result.warning) {
       final remaining = 3 - result.warningCount;
@@ -652,7 +656,9 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     setState(() => _locallyDeletedIds.add(message.id));
     try {
       if (widget.isAdmin) {
-        await ref.read(chatActionProvider.notifier).adminDeleteMessage(message.id);
+        await ref
+            .read(chatActionProvider.notifier)
+            .adminDeleteMessage(message.id);
       } else {
         await ref.read(chatActionProvider.notifier).deleteMessage(message.id);
       }
@@ -663,7 +669,8 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     }
   }
 
-  void _showMessageActions(BuildContext context, ChatMessage message, bool isOwn) {
+  void _showMessageActions(
+      BuildContext context, ChatMessage message, bool isOwn) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -749,14 +756,12 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
           children: [
             Expanded(
               child: messagesAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text('Erreur : $e')),
                 data: (messages) {
                   final visible = messages
                       .where((m) =>
-                          !m.isDeleted &&
-                          !_locallyDeletedIds.contains(m.id))
+                          !m.isDeleted && !_locallyDeletedIds.contains(m.id))
                       .toList();
 
                   if (visible.isEmpty) {
@@ -776,9 +781,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                     final msg = visible[i];
                     final prev = i > 0 ? visible[i - 1] : null;
                     if (prev == null ||
-                        msg.createdAt
-                                .difference(prev.createdAt)
-                                .inMinutes >=
+                        msg.createdAt.difference(prev.createdAt).inMinutes >=
                             15) {
                       items.add(_ChatItem.divider(msg.createdAt));
                     }
@@ -796,8 +799,8 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
 
                   return ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       final item = items[index];
@@ -816,8 +819,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                         onTapUsername: () =>
                             context.push('/user/${msg.username}'),
                         onLongPress: canInteract
-                            ? () =>
-                                _showMessageActions(context, msg, isOwn)
+                            ? () => _showMessageActions(context, msg, isOwn)
                             : null,
                       );
                     },
@@ -896,6 +898,7 @@ class _LoanRequestBubble extends StatelessWidget {
   const _LoanRequestBubble({
     required this.message,
     required this.isOwn,
+    required this.isAccepted,
     required this.showHeader,
     required this.onTapUsername,
     this.onDelete,
@@ -904,6 +907,7 @@ class _LoanRequestBubble extends StatelessWidget {
 
   final ChatMessage message;
   final bool isOwn;
+  final bool isAccepted;
   final bool showHeader;
   final VoidCallback onTapUsername;
   final VoidCallback? onDelete;
@@ -977,8 +981,7 @@ class _LoanRequestBubble extends StatelessWidget {
                     const Spacer(),
                     Text(
                       timeStr,
-                      style:
-                          const TextStyle(fontSize: 10, color: Colors.grey),
+                      style: const TextStyle(fontSize: 10, color: Colors.grey),
                     ),
                     if (onDelete != null) ...[
                       const SizedBox(width: 6),
@@ -999,13 +1002,19 @@ class _LoanRequestBubble extends StatelessWidget {
                     color: AppTheme.gold,
                   ),
                 ),
-                if (message.loanInterestRate != null ||
+                if (isAccepted ||
+                    message.loanInterestRate != null ||
                     message.loanDueDate != null) ...[
                   const SizedBox(height: 6),
                   Wrap(
                     spacing: 10,
                     runSpacing: 4,
                     children: [
+                      if (isAccepted)
+                        const _LoanTag(
+                          icon: Icons.check_circle_rounded,
+                          label: 'Prêt actif',
+                        ),
                       if (message.loanInterestRate != null)
                         _LoanTag(
                           icon: Icons.percent_rounded,
@@ -1065,7 +1074,7 @@ String _loanDueDateLabel(DateTime dt) {
   final date =
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
   final time =
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}:${d.second.toString().padLeft(2, '0')}';
+      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   return '$date $time';
 }
 
@@ -1428,9 +1437,8 @@ class _MessageBubble extends StatelessWidget {
                         color: textColor,
                         fontSize: 14.6,
                         height: 1.38,
-                        fontStyle: isCensored
-                            ? FontStyle.italic
-                            : FontStyle.normal,
+                        fontStyle:
+                            isCensored ? FontStyle.italic : FontStyle.normal,
                       ),
                     ),
                   ),
@@ -1442,8 +1450,8 @@ class _MessageBubble extends StatelessWidget {
                     children: [
                       Text(
                         timeStr,
-                        style: const TextStyle(
-                            fontSize: 10, color: Colors.grey),
+                        style:
+                            const TextStyle(fontSize: 10, color: Colors.grey),
                       ),
                       if (message.editedAt != null) ...[
                         const SizedBox(width: 4),
@@ -1721,8 +1729,7 @@ class _InputBar extends StatelessWidget {
           ),
         Container(
           decoration: BoxDecoration(
-            color:
-                isDark ? const Color(0xFF161827) : theme.colorScheme.surface,
+            color: isDark ? const Color(0xFF161827) : theme.colorScheme.surface,
             border: Border(
               top: BorderSide(
                 color: Colors.grey.withValues(alpha: 0.12),
@@ -1746,16 +1753,14 @@ class _InputBar extends StatelessWidget {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF23273F)
-                            : Colors.grey[100],
+                        color:
+                            isDark ? const Color(0xFF23273F) : Colors.grey[100],
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: Focus(
                         onKeyEvent: (node, event) {
                           if (event is KeyDownEvent &&
-                              event.logicalKey ==
-                                  LogicalKeyboardKey.enter &&
+                              event.logicalKey == LogicalKeyboardKey.enter &&
                               !HardwareKeyboard.instance.isShiftPressed) {
                             onSend();
                             return KeyEventResult.handled;
@@ -1765,15 +1770,14 @@ class _InputBar extends StatelessWidget {
                         child: TextField(
                           controller: controller,
                           focusNode: focusNode,
-                          enabled: !isMuted && !chatState.isSending,
+                          enabled: !isMuted,
                           maxLength: 500,
                           maxLines: 5,
                           minLines: 1,
                           textInputAction: TextInputAction.newline,
                           style: const TextStyle(fontSize: 14.5),
                           decoration: InputDecoration(
-                            hintText:
-                                isMuted ? 'Vous êtes muet…' : hintText,
+                            hintText: isMuted ? 'Vous êtes muet…' : hintText,
                             counterText: '',
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(

@@ -94,7 +94,8 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   }
 
   void _removeLender(String id) {
-    setState(() => _selectedLenders.removeWhere((lender) => lender['id'] == id));
+    setState(
+        () => _selectedLenders.removeWhere((lender) => lender['id'] == id));
   }
 
   Future<void> _pickDate() async {
@@ -158,7 +159,8 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     if (profile != null && profile.balance < 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Impossible de demander un prêt avec un solde négatif.'),
+          content:
+              Text('Impossible de demander un prêt avec un solde négatif.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -220,28 +222,37 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
 
     final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
     final combinedDue = DateTime(
-      _dueDate!.year, _dueDate!.month, _dueDate!.day, t.hour, t.minute,
+      _dueDate!.year,
+      _dueDate!.month,
+      _dueDate!.day,
+      t.hour,
+      t.minute,
     );
-    final note =
-        _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
+    final note = _noteController.text.trim().isEmpty
+        ? null
+        : _noteController.text.trim();
 
     // ── Mode chat : envoie dans le chat global ────────────────────────────────
     if (_isChatMode) {
       setState(() => _isSubmitting = true);
       try {
-        final result = await ref
-            .read(chatActionProvider.notifier)
-            .sendLoanRequestChat(
-              principal,
-              interestRate: interestRate > 0 ? interestRate : null,
-              dueDate: combinedDue,
-              note: note,
-            );
+        final result =
+            await ref.read(chatActionProvider.notifier).sendLoanRequestChat(
+                  principal,
+                  interestRate: interestRate > 0 ? interestRate : null,
+                  dueDate: combinedDue,
+                  note: note,
+                );
         if (!mounted) return;
         if (result == null) {
+          final errorMessage = ref.read(chatActionProvider).error?.trim();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Erreur lors de l\'envoi.'),
+            SnackBar(
+              content: Text(
+                errorMessage == null || errorMessage.isEmpty
+                    ? 'Erreur lors de l\'envoi.'
+                    : errorMessage,
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -293,8 +304,9 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor:
-              errors.length == _selectedLenders.length ? Colors.red : Colors.orange,
+          backgroundColor: errors.length == _selectedLenders.length
+              ? Colors.red
+              : Colors.orange,
         ),
       );
       return;
@@ -366,8 +378,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   ],
                   TextField(
                     controller: _searchController,
-                    onChanged: (value) =>
-                        setState(() => _searchQuery = value),
+                    onChanged: (value) => setState(() => _searchQuery = value),
                     decoration: InputDecoration(
                       hintText: 'Rechercher un utilisateur…',
                       prefixIcon: const Icon(Icons.search_rounded),
@@ -414,8 +425,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                                       final user = _filteredUsers[index];
                                       final alreadySelected =
                                           _selectedLenders.any(
-                                        (lender) =>
-                                            lender['id'] == user['id'],
+                                        (lender) => lender['id'] == user['id'],
                                       );
                                       return ListTile(
                                         dense: true,
@@ -424,8 +434,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                                           backgroundColor: AppTheme.gold
                                               .withValues(alpha: 0.15),
                                           child: Text(
-                                            (user['display_name']
-                                                    as String)[0]
+                                            (user['display_name'] as String)[0]
                                                 .toUpperCase(),
                                             style: const TextStyle(
                                               color: AppTheme.gold,
@@ -518,8 +527,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color:
-                          Theme.of(context).inputDecorationTheme.fillColor,
+                      color: Theme.of(context).inputDecorationTheme.fillColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -532,9 +540,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                               : _formatDue(),
                           style: TextStyle(
                             color: _dueDate == null
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
                                 : null,
                           ),
                         ),
