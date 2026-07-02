@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/date_utils.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
@@ -148,8 +149,9 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   String _formatDue() {
     final d = _dueDate!;
     final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
-    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}'
-        '  ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    return formatLoanDueDateLabel(
+      DateTime(d.year, d.month, d.day, t.hour, t.minute),
+    );
   }
 
   Future<void> _submit() async {

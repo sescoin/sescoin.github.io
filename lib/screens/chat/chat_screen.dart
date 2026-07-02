@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../common/date_utils.dart';
 import '../../common/user_avatar.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
@@ -1069,14 +1070,7 @@ class _LoanRequestBubble extends StatelessWidget {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-String _loanDueDateLabel(DateTime dt) {
-  final d = dt.toLocal();
-  final date =
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-  final time =
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-  return '$date $time';
-}
+String _loanDueDateLabel(DateTime dt) => formatLoanDueDateLabel(dt);
 
 // ── Tag compact (taux, échéance) dans une bulle de demande de prêt ────────────
 
