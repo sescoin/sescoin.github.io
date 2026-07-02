@@ -789,7 +789,9 @@ class _LoansTab extends ConsumerWidget {
                         ? () => onRepay(loan)
                         : null,
                     onCancel: loan.isPending ? () => onCancel(loan) : null,
-                    onDelete: loan.isArchived ? () => onDelete(loan) : null,
+                    onDelete: loan.isArchived || loan.isExpiredPending
+                        ? () => onDelete(loan)
+                        : null,
                   ),
                 ),
               ),

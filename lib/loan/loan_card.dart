@@ -269,9 +269,8 @@ class _LoanStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      LoanStatus.pending => isExpired
-          ? ('Expirée', Colors.grey)
-          : ('En attente', AppTheme.warning),
+      LoanStatus.pending =>
+        isExpired ? ('Expiré', Colors.grey) : ('En attente', AppTheme.warning),
       LoanStatus.active => ('Actif', AppTheme.positive),
       LoanStatus.repaid => ('Remboursé', Colors.grey),
       LoanStatus.defaulted => ('En retard', AppTheme.negative),
