@@ -14,12 +14,11 @@ class ChatService {
     return _client
         .from('chat_messages')
         .stream(primaryKey: ['id'])
-        .eq('is_deleted', false)
         .order('created_at', ascending: true)
         .limit(100)
         .map((rows) => rows
             .map(ChatMessage.fromJson)
-            .where((m) => m.classId == null && !m.isExpired)
+            .where((m) => m.classId == null && !m.isDeleted && !m.isExpired)
             .toList());
   }
 
@@ -27,12 +26,12 @@ class ChatService {
     return _client
         .from('chat_messages')
         .stream(primaryKey: ['id'])
-        .eq('is_deleted', false)
         .order('created_at', ascending: true)
         .limit(100)
         .map((rows) => rows
             .map(ChatMessage.fromJson)
-            .where((m) => m.classId == classId && !m.isExpired)
+            .where((m) =>
+                m.classId == classId && !m.isDeleted && !m.isExpired)
             .toList());
   }
 

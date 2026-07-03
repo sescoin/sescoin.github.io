@@ -168,8 +168,8 @@ begin
   insert into public.notifications (user_id, type, title, body, data, is_read)
   values (
     v_message.user_id, 'loan_accepted',
-    'Pret accorde !',
-    v_lender.display_name || ' a accepte ta demande de ' ||
+    'Prêt accordé !',
+    v_lender.display_name || ' a accepté ta demande de ' ||
       v_message.loan_amount::text || ' SC.',
     jsonb_build_object('loan_id', v_loan_id),
     false

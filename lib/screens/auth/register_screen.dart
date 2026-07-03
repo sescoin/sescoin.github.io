@@ -10,7 +10,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
-import '../../models/class_room.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/class_provider.dart';
 import '../../services/auth_service.dart';
