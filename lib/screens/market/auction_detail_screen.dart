@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -51,10 +52,9 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
   Future<void> _placeBid(double minBid) async {
     final amount = double.tryParse(_amountCtrl.text.replaceAll(',', '.'));
     if (amount == null || amount < minBid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Offre minimum : ${minBid.toStringAsFixed(2)} SC'),
-        ),
+      AppFeedback.warning(
+        context,
+        'Offre minimum : ${minBid.toStringAsFixed(2)} SC.',
       );
       return;
     }
@@ -69,17 +69,11 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
         ref.invalidate(auctionBidsProvider(widget.auctionId));
         ref.invalidate(auctionStreamProvider(widget.auctionId));
         ref.invalidate(activeAuctionsProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Enchère placée'),
-            backgroundColor: AppTheme.positive,
-          ),
-        );
+        AppFeedback.success(context, 'Enchère placée ! 🔨');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        AppFeedback.error(context, e);
       }
     }
   }
@@ -94,8 +88,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
       ref.invalidate(activeAuctionsProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        AppFeedback.error(context, e);
       }
     }
   }

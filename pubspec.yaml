@@ -40,6 +40,7 @@ dependencies:
   fl_chart: ^1.2.0
 
   # Utilitaires
+  shared_preferences: ^2.2.3   # Préférences locales (thème, accent…)
   intl: ^0.20.2                # Formatage dates et nombres
   diacritic: ^0.1.5            # Conversion accents (é→e, ç→c...)
   crypto: ^3.0.3               # Hash des mots de passe côté client

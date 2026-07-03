@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
 import '../../common/user_avatar.dart';
@@ -215,20 +216,17 @@ class AdminAvatarReviewScreen extends ConsumerWidget {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(approve ? 'Photo approuvée' : 'Photo refusée'),
-          backgroundColor: approve ? AppTheme.positive : AppTheme.negative,
-        ),
-      );
+      if (approve) {
+        AppFeedback.success(context, 'Photo approuvée.');
+      } else {
+        AppFeedback.info(context, 'Photo refusée.');
+      }
       Navigator.of(context).pop();
     } catch (error) {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      AppFeedback.error(context, error);
     }
   }
 }

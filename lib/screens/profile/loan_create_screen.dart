@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/date_utils.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
@@ -159,27 +160,20 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
 
     final profile = ref.read(currentProfileProvider).value;
     if (profile != null && profile.balance < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Impossible de demander un prêt avec un solde négatif.'),
-          backgroundColor: Colors.red,
-        ),
+      AppFeedback.error(
+        context,
+        'Impossible de demander un prêt avec un solde négatif.',
       );
       return;
     }
 
     if (!_isChatMode && _selectedLenders.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ajoute au moins un prêteur')),
-      );
+      AppFeedback.warning(context, 'Ajoute au moins un prêteur.');
       return;
     }
 
     if (_dueDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choisis une date d\'échéance')),
-      );
+      AppFeedback.warning(context, 'Choisis une date d\'échéance.');
       return;
     }
 
@@ -248,23 +242,14 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
         if (!mounted) return;
         if (result == null) {
           final errorMessage = ref.read(chatActionProvider).error?.trim();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                errorMessage == null || errorMessage.isEmpty
-                    ? 'Erreur lors de l\'envoi.'
-                    : errorMessage,
-              ),
-              backgroundColor: Colors.red,
-            ),
+          AppFeedback.error(
+            context,
+            errorMessage == null || errorMessage.isEmpty
+                ? 'L\'envoi a échoué. Réessaie.'
+                : errorMessage,
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Demande de prêt publiée dans le chat !'),
-              backgroundColor: AppTheme.positive,
-            ),
-          );
+          AppFeedback.success(context, 'Demande de prêt publiée dans le chat !');
           context.pop();
         }
       } finally {
@@ -303,22 +288,17 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
       final message = sent > 0
           ? '$sent envoyée(s)\n${errors.join('\n')}'
           : errors.join('\n');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: errors.length == _selectedLenders.length
-              ? Colors.red
-              : Colors.orange,
-        ),
-      );
+      if (errors.length == _selectedLenders.length) {
+        AppFeedback.error(context, message);
+      } else {
+        AppFeedback.warning(context, message);
+      }
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$sent demande(s) de prêt envoyée(s) avec succès !'),
-        backgroundColor: AppTheme.positive,
-      ),
+    AppFeedback.success(
+      context,
+      '$sent demande(s) de prêt envoyée(s) avec succès !',
     );
     context.pop();
   }

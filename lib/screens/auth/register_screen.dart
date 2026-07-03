@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/app_feedback.dart';
 import '../../core/constants.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
@@ -178,8 +179,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     // Si des classes existent, une doit être sélectionnée
     final classesValue = ref.read(classListProvider).valueOrNull;
     if (classesValue != null && classesValue.isNotEmpty && _selectedClassId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez choisir une classe.')),
+      AppFeedback.warning(
+        context,
+        'Choisis ta classe avant d\'envoyer la demande.',
       );
       return;
     }
@@ -202,9 +204,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) context.go(AppRoutes.requestSent);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        AppFeedback.error(context, e);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -562,12 +562,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: context.onAccent,
                           ),
                         )
                       : const Text('Envoyer la demande'),

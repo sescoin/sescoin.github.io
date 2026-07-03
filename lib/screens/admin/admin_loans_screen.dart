@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/theme.dart';
 import '../../models/loan.dart';
@@ -93,18 +94,10 @@ class _AdminLoansScreenState extends ConsumerState<AdminLoansScreen>
     try {
       await ref.read(adminActionsProvider.notifier).updateLoanConfig(config);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Paramètres enregistrés'),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
+      AppFeedback.success(context, 'Paramètres enregistrés.');
     } catch (e) {
       if (!mounted) return;
-      final msg = e.toString().replaceFirst('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red),
-      );
+      AppFeedback.error(context, e);
     }
   }
 

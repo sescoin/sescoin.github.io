@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
-import '../../core/theme.dart';
 import '../../providers/admin_provider.dart';
 
 class AdminMarketAuctionFormScreen extends ConsumerStatefulWidget {
@@ -96,9 +96,7 @@ class _AdminMarketAuctionFormScreenState
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      AppFeedback.error(context, error);
     } finally {
       if (mounted) {
         setState(() => _isUploadingImage = false);
@@ -129,20 +127,13 @@ class _AdminMarketAuctionFormScreenState
       if (!mounted) {
         return;
       }
+      AppFeedback.success(context, 'Enchère créée !');
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enchère créée'),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      AppFeedback.error(context, error);
     }
   }
 

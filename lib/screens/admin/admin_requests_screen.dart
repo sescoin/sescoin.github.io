@@ -7,6 +7,7 @@ import '../../models/class_room.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/class_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../common/app_feedback.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -93,17 +94,11 @@ class AdminRequestsScreen extends ConsumerWidget {
             initialBalance: balance,
           );
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(
-            content: Text('Compte approuvé avec $balance SC !'),
-            backgroundColor: AppTheme.positive,
-          ),
-        );
+        AppFeedback.success(ctx, 'Compte approuvé avec $balance SC !');
       }
     } catch (e) {
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        AppFeedback.error(ctx, e);
       }
     }
   }
@@ -147,8 +142,7 @@ class AdminRequestsScreen extends ConsumerWidget {
             );
       } catch (e) {
         if (ctx.mounted) {
-          ScaffoldMessenger.of(ctx)
-              .showSnackBar(SnackBar(content: Text(e.toString())));
+          AppFeedback.error(ctx, e);
         }
       }
     }

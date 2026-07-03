@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../common/animations.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -62,33 +63,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     context.go('${AppRoutes.profile}?tab=notifications'),
                 icon: const Icon(Icons.notifications_outlined),
               ),
-              unreadAsync.when(
-                data: (count) => count > 0
-                    ? Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          width: 16,
-                          height: 16,
-                          decoration: const BoxDecoration(
-                            color: AppTheme.negative,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              count > 9 ? '9+' : '$count',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: AnimatedBadge(
+                  count: unreadAsync.valueOrNull ?? 0,
+                  color: AppTheme.negative,
+                ),
               ),
             ],
           ),
@@ -96,7 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       body: RefreshIndicator(
-        color: AppTheme.gold,
+        color: context.accent,
         onRefresh: () async {
           ref.invalidate(recentTransactionsProvider);
           ref.invalidate(currentRateProvider);
@@ -108,150 +89,165 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const BalanceCard(),
+              FadeSlideIn.staggered(index: 0, child: const BalanceCard()),
               const SizedBox(height: 24),
-              const CurrencyChart(),
+              FadeSlideIn.staggered(index: 1, child: const CurrencyChart()),
               const SizedBox(height: 24),
               if (_nfcAvailable) ...[
-                InkWell(
-                  onTap: () => context.go(AppRoutes.pay),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.gold.withValues(alpha: 0.15),
-                          AppTheme.gold.withValues(alpha: 0.04),
+                FadeSlideIn.staggered(
+                  index: 2,
+                  child: PressableScale(
+                    onTap: () => context.go(AppRoutes.pay),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            context.accent.withValues(alpha: 0.15),
+                            context.accent.withValues(alpha: 0.04),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: context.accent.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.nfc_rounded,
+                            color: context.accent,
+                            size: 28,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Paiement NFC',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                                Text(
+                                  'Mode principal · approche les téléphones',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 14,
+                            color: context.accent.withValues(alpha: 0.7),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppTheme.gold.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.nfc_rounded,
-                          color: AppTheme.gold,
-                          size: 28,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Paiement NFC',
-                                style: TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                              Text(
-                                'Mode principal · approche les téléphones',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 14,
-                          color: AppTheme.gold.withValues(alpha: 0.7),
-                        ),
-                      ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
               ],
-              Text(
-                'Actions rapides',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+              FadeSlideIn.staggered(
+                index: 3,
+                child: Text(
+                  'Actions rapides',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _QuickAction(
-                    icon: Icons.qr_code_scanner_rounded,
-                    label: 'Payer',
-                    onTap: () => context.go(AppRoutes.pay),
-                  ),
-                  _QuickAction(
-                    icon: Icons.send_rounded,
-                    label: 'Transférer',
-                    onTap: () => context.push(AppRoutes.transferManual),
-                  ),
-                  _QuickAction(
-                    icon: Icons.leaderboard_rounded,
-                    label: 'Classement',
-                    onTap: () => context.push(AppRoutes.leaderboard),
-                  ),
-                  _QuickAction(
-                    icon: Icons.handshake_rounded,
-                    label: 'Prêts',
-                    onTap: () => context.push(AppRoutes.loanCreate),
-                  ),
-                  _QuickAction(
-                    icon: Icons.hub_rounded,
-                    label: 'Blockchain',
-                    onTap: () => context.push(AppRoutes.transactionExplorer),
-                  ),
-                ],
+              FadeSlideIn.staggered(
+                index: 4,
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _QuickAction(
+                      icon: Icons.qr_code_scanner_rounded,
+                      label: 'Payer',
+                      onTap: () => context.go(AppRoutes.pay),
+                    ),
+                    _QuickAction(
+                      icon: Icons.send_rounded,
+                      label: 'Transférer',
+                      onTap: () => context.push(AppRoutes.transferManual),
+                    ),
+                    _QuickAction(
+                      icon: Icons.leaderboard_rounded,
+                      label: 'Classement',
+                      onTap: () => context.push(AppRoutes.leaderboard),
+                    ),
+                    _QuickAction(
+                      icon: Icons.handshake_rounded,
+                      label: 'Prêts',
+                      onTap: () => context.push(AppRoutes.loanCreate),
+                    ),
+                    _QuickAction(
+                      icon: Icons.hub_rounded,
+                      label: 'Blockchain',
+                      onTap: () => context.push(AppRoutes.transactionExplorer),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Dernières transactions',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  TextButton(
-                    onPressed: () => context.go(AppRoutes.wallet),
-                    child: const Text('Voir tout'),
-                  ),
-                ],
+              FadeSlideIn.staggered(
+                index: 5,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Dernières transactions',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    TextButton(
+                      onPressed: () => context.go(AppRoutes.wallet),
+                      child: const Text('Voir tout'),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
-              recentAsync.when(
-                data: (txs) => txs.isEmpty
-                    ? const EmptyState(
-                        icon: Icons.receipt_long_rounded,
-                        title: 'Aucune transaction',
-                        subtitle: 'Tes transactions apparaîtront ici',
-                      )
-                    : Card(
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: txs.length,
-                          separatorBuilder: (_, __) => const Divider(
-                            height: 1,
-                            indent: 16,
-                          ),
-                          itemBuilder: (context, i) => TransactionTile(
-                            transaction: txs[i],
+              FadeSlideIn.staggered(
+                index: 6,
+                child: recentAsync.when(
+                  data: (txs) => txs.isEmpty
+                      ? const EmptyState(
+                          icon: Icons.receipt_long_rounded,
+                          title: 'Aucune transaction',
+                          subtitle: 'Tes transactions apparaîtront ici',
+                        )
+                      : Card(
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: txs.length,
+                            separatorBuilder: (_, __) => const Divider(
+                              height: 1,
+                              indent: 16,
+                            ),
+                            itemBuilder: (context, i) => TransactionTile(
+                              transaction: txs[i],
+                            ),
                           ),
                         ),
-                      ),
-                loading: () => const InlineLoader(),
-                error: (e, _) => ErrorRetry(
-                  message: 'Impossible de charger les transactions',
-                  onRetry: () => ref.invalidate(recentTransactionsProvider),
+                  loading: () => const InlineLoader(),
+                  error: (e, _) => ErrorRetry(
+                    message: 'Impossible de charger les transactions',
+                    onRetry: () => ref.invalidate(recentTransactionsProvider),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -279,18 +275,22 @@ class _QuickAction extends StatelessWidget {
     final width = (MediaQuery.of(context).size.width - 56) / 3;
     return SizedBox(
       width: width.clamp(92, 180).toDouble(),
-      child: InkWell(
+      child: PressableScale(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: context.isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.05),
+            ),
           ),
           child: Column(
             children: [
-              Icon(icon, color: AppTheme.gold, size: 24),
+              Icon(icon, color: context.accent, size: 24),
               const SizedBox(height: 6),
               Text(
                 label,
@@ -350,29 +350,15 @@ class _AdminButtonState extends ConsumerState<_AdminButton>
           icon: const Icon(Icons.admin_panel_settings_rounded),
           tooltip: 'Administration',
         ),
-        if (count > 0)
-          Positioned(
-            right: 6,
-            top: 6,
-            child: Container(
-              width: 17,
-              height: 17,
-              decoration: const BoxDecoration(
-                color: AppTheme.warning,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  count > 9 ? '9+' : '$count',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
+        Positioned(
+          right: 6,
+          top: 6,
+          child: AnimatedBadge(
+            count: count,
+            color: AppTheme.warning,
+            size: 17,
           ),
+        ),
       ],
     );
   }

@@ -1,0 +1,202 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Instance de SharedPreferences injectée au démarrage (voir main.dart).
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('Override dans main.dart');
+});
+
+// ── Accents disponibles ────────────────────────────────────────────────────────
+
+class AppAccent {
+  const AppAccent({
+    required this.key,
+    required this.label,
+    required this.color,
+    required this.dark,
+  });
+
+  /// Identifiant stable pour la persistance.
+  final String key;
+  final String label;
+
+  /// Couleur principale (boutons, éléments actifs, montants…).
+  final Color color;
+
+  /// Variante sombre (dégradés, appuis).
+  final Color dark;
+}
+
+const appAccents = <AppAccent>[
+  AppAccent(
+    key: 'gold',
+    label: 'Or',
+    color: Color(0xFFD4AF37),
+    dark: Color(0xFFB8960C),
+  ),
+  AppAccent(
+    key: 'ocean',
+    label: 'Océan',
+    color: Color(0xFF3B82F6),
+    dark: Color(0xFF1D4ED8),
+  ),
+  AppAccent(
+    key: 'emerald',
+    label: 'Émeraude',
+    color: Color(0xFF10B981),
+    dark: Color(0xFF047857),
+  ),
+  AppAccent(
+    key: 'violet',
+    label: 'Violet',
+    color: Color(0xFF8B5CF6),
+    dark: Color(0xFF6D28D9),
+  ),
+  AppAccent(
+    key: 'sunset',
+    label: 'Corail',
+    color: Color(0xFFF97316),
+    dark: Color(0xFFC2410C),
+  ),
+  AppAccent(
+    key: 'rose',
+    label: 'Rose',
+    color: Color(0xFFEC4899),
+    dark: Color(0xFFBE185D),
+  ),
+  AppAccent(
+    key: 'cyan',
+    label: 'Lagon',
+    color: Color(0xFF06B6D4),
+    dark: Color(0xFF0E7490),
+  ),
+];
+
+AppAccent accentByKey(String key) =>
+    appAccents.firstWhere((a) => a.key == key, orElse: () => appAccents.first);
+
+// ── État des préférences ───────────────────────────────────────────────────────
+
+class AppSettings {
+  const AppSettings({
+    this.themeMode = ThemeMode.system,
+    this.accentKey = 'gold',
+    this.pureBlack = false,
+    this.reduceMotion = false,
+    this.textScale = 1.0,
+  });
+
+  final ThemeMode themeMode;
+  final String accentKey;
+
+  /// Fond noir pur en mode sombre (écrans OLED).
+  final bool pureBlack;
+
+  /// Désactive les animations décoratives.
+  final bool reduceMotion;
+
+  /// Multiplicateur de taille de texte (0.9 / 1.0 / 1.1).
+  final double textScale;
+
+  AppAccent get accent => accentByKey(accentKey);
+
+  AppSettings copyWith({
+    ThemeMode? themeMode,
+    String? accentKey,
+    bool? pureBlack,
+    bool? reduceMotion,
+    double? textScale,
+  }) {
+    return AppSettings(
+      themeMode: themeMode ?? this.themeMode,
+      accentKey: accentKey ?? this.accentKey,
+      pureBlack: pureBlack ?? this.pureBlack,
+      reduceMotion: reduceMotion ?? this.reduceMotion,
+      textScale: textScale ?? this.textScale,
+    );
+  }
+}
+
+// ── Notifier + persistance ─────────────────────────────────────────────────────
+
+class SettingsNotifier extends StateNotifier<AppSettings> {
+  SettingsNotifier(this._prefs) : super(_load(_prefs)) {
+    AppMotion.reduce = state.reduceMotion;
+  }
+
+  final SharedPreferences _prefs;
+
+  static const _kThemeMode = 'settings.themeMode';
+  static const _kAccent = 'settings.accent';
+  static const _kPureBlack = 'settings.pureBlack';
+  static const _kReduceMotion = 'settings.reduceMotion';
+  static const _kTextScale = 'settings.textScale';
+
+  static AppSettings _load(SharedPreferences prefs) {
+    final modeIndex = prefs.getInt(_kThemeMode);
+    return AppSettings(
+      themeMode: modeIndex != null &&
+              modeIndex >= 0 &&
+              modeIndex < ThemeMode.values.length
+          ? ThemeMode.values[modeIndex]
+          : ThemeMode.system,
+      accentKey: prefs.getString(_kAccent) ?? 'gold',
+      pureBlack: prefs.getBool(_kPureBlack) ?? false,
+      reduceMotion: prefs.getBool(_kReduceMotion) ?? false,
+      textScale: prefs.getDouble(_kTextScale) ?? 1.0,
+    );
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    state = state.copyWith(themeMode: mode);
+    _prefs.setInt(_kThemeMode, mode.index);
+  }
+
+  void setAccent(String key) {
+    state = state.copyWith(accentKey: key);
+    _prefs.setString(_kAccent, key);
+  }
+
+  void setPureBlack(bool value) {
+    state = state.copyWith(pureBlack: value);
+    _prefs.setBool(_kPureBlack, value);
+  }
+
+  void setReduceMotion(bool value) {
+    state = state.copyWith(reduceMotion: value);
+    AppMotion.reduce = value;
+    _prefs.setBool(_kReduceMotion, value);
+  }
+
+  void setTextScale(double value) {
+    state = state.copyWith(textScale: value);
+    _prefs.setDouble(_kTextScale, value);
+  }
+
+  void reset() {
+    state = const AppSettings();
+    AppMotion.reduce = false;
+    _prefs.remove(_kThemeMode);
+    _prefs.remove(_kAccent);
+    _prefs.remove(_kPureBlack);
+    _prefs.remove(_kReduceMotion);
+    _prefs.remove(_kTextScale);
+  }
+}
+
+final settingsProvider =
+    StateNotifierProvider<SettingsNotifier, AppSettings>((ref) {
+  return SettingsNotifier(ref.watch(sharedPreferencesProvider));
+});
+
+/// Accès global à la préférence "animations réduites" pour les widgets
+/// d'animation feuilles, sans avoir à traverser tout l'arbre de providers.
+class AppMotion {
+  AppMotion._();
+
+  static bool reduce = false;
+
+  static Duration duration(Duration normal) =>
+      reduce ? Duration.zero : normal;
+}

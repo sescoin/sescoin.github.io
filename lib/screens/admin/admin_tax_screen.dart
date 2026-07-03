@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../common/app_feedback.dart';
+import '../../common/loading_overlay.dart';
 import '../../core/theme.dart';
 import '../../providers/admin_provider.dart';
-import '../../common/loading_overlay.dart';
 
 class AdminTaxScreen extends ConsumerStatefulWidget {
   const AdminTaxScreen({super.key});
@@ -57,19 +58,12 @@ class _AdminTaxScreenState extends ConsumerState<AdminTaxScreen> {
               reason: _reasonCtrl.text,
             );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Taxe de $percent% appliquée !'),
-              backgroundColor: AppTheme.positive,
-            ),
-          );
+          AppFeedback.success(context, 'Taxe de $percent% appliquée !');
           context.pop();
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())),
-          );
+          AppFeedback.error(context, e);
         }
       }
     }

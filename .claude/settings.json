@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(flutter analyze 2>&1)"
+      "PowerShell(flutter analyze 2>&1)",
+      "PowerShell(Get-ChildItem -Recurse -File lib | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"$PWD\\\\\", \"\"\\) })",
+      "PowerShell(flutter pub get 2>&1)",
+      "PowerShell(flutter build apk --debug 2>&1)"
     ]
   }
 }

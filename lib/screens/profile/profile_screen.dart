@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/animations.dart';
+import '../../common/app_feedback.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -65,101 +67,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
   Future<void> _changePassword() async {
     context.push(AppRoutes.changePassword);
-    return;
-
-    // ignore: dead_code
-    final oldController = TextEditingController();
-    final newController = TextEditingController();
-    final confirmController = TextEditingController();
-    var obscure = true;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Changer le mot de passe'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: oldController,
-                obscureText: obscure,
-                decoration: InputDecoration(
-                  labelText: 'Mot de passe actuel',
-                  suffixIcon: IconButton(
-                    onPressed: () => setState(() => obscure = !obscure),
-                    icon: Icon(
-                      obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: newController,
-                obscureText: obscure,
-                decoration: const InputDecoration(
-                  labelText: 'Nouveau mot de passe',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: confirmController,
-                obscureText: obscure,
-                decoration: const InputDecoration(labelText: 'Confirmer'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Modifier'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed != true || !mounted) {
-      return;
-    }
-    if (newController.text != confirmController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Les mots de passe ne correspondent pas'),
-        ),
-      );
-      return;
-    }
-
-    try {
-      await ref.read(authServiceProvider).changePasswordWithVerification(
-            oldController.text,
-            newController.text,
-          );
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mot de passe modifié !'),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
-    }
   }
 
   Future<void> _requestPhotoChange() async {
@@ -218,23 +125,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            profile?.isAdmin == true
-                ? 'Photo de profil mise à jour !'
-                : 'Photo envoyée, en attente d’approbation',
-          ),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
+      if (profile?.isAdmin == true) {
+        AppFeedback.success(context, 'Photo de profil mise à jour !');
+      } else {
+        AppFeedback.info(
+          context,
+          'Photo envoyée ! Elle apparaîtra dès qu\'elle sera approuvée.',
+        );
+      }
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      AppFeedback.error(context, error);
     }
   }
 
@@ -311,9 +214,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
     final amount = double.tryParse(controller.text.replaceAll(',', '.'));
     if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Montant invalide')),
-      );
+      AppFeedback.warning(context, 'Entre un montant valide pour rembourser.');
       return;
     }
 
@@ -326,19 +227,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Remboursement enregistré'),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
+      AppFeedback.success(context, 'Remboursement enregistré !');
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      AppFeedback.error(context, error);
     }
   }
 
@@ -376,19 +270,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(successMessage),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
+      AppFeedback.success(context, successMessage);
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      AppFeedback.error(context, error);
     }
   }
 
@@ -399,16 +286,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prêt supprimé')),
-      );
+      AppFeedback.success(context, 'Prêt supprimé.');
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      AppFeedback.error(context, error);
     }
   }
 
@@ -420,16 +303,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notification supprimée')),
-      );
+      AppFeedback.success(context, 'Notification supprimée.');
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      AppFeedback.error(context, error);
     }
   }
 
@@ -482,6 +361,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               title: const Text('Profil'),
               actions: [
                 IconButton(
+                  onPressed: () => context.push(AppRoutes.settings),
+                  icon: const Icon(Icons.settings_rounded),
+                  tooltip: 'Paramètres',
+                ),
+                IconButton(
                   onPressed: () => context.push(AppRoutes.transactionExplorer),
                   icon: const Icon(Icons.hub_rounded),
                   tooltip: 'Blockchain',
@@ -517,10 +401,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       dividerColor: Colors.transparent,
                       indicatorSize: TabBarIndicatorSize.tab,
                       indicator: BoxDecoration(
-                        color: AppTheme.gold.withValues(alpha: 0.16),
+                        color: context.accent.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(18),
                       ),
-                      labelColor: AppTheme.gold,
+                      labelColor: context.accent,
                       tabs: const [
                         Tab(text: 'Prêts'),
                         Tab(text: 'Notifications'),
@@ -593,103 +477,145 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.accent;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Stack(
-                    children: [
-                      UserAvatar(
-                        username: profile.username,
-                        avatarUrl: profile.avatarUrl,
-                        radius: 28,
-                        onTap: onPhotoTap,
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: GestureDetector(
-                          onTap: onPhotoTap,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: AppTheme.gold,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.edit_rounded,
-                              size: 14,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      child: FadeSlideIn(
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Stack(
                       children: [
-                        Text(
-                          profile.displayName,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
+                        Container(
+                          padding: const EdgeInsets.all(2.5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                accent,
+                                accent.withValues(alpha: 0.25),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: UserAvatar(
+                            username: profile.username,
+                            avatarUrl: profile.avatarUrl,
+                            radius: 28,
+                            onTap: onPhotoTap,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '@${profile.username}',
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: GestureDetector(
+                            onTap: onPhotoTap,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: accent,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Theme.of(context).cardColor,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.edit_rounded,
+                                size: 13,
+                                color: AppTheme.onAccent(accent),
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          profile.formattedBalance,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.gold,
+                      ],
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            profile.displayName,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '@${profile.username}',
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          CountUpAmount(
+                            value: profile.balance,
+                            builder: (context, animated) => Text(
+                              '${animated.toStringAsFixed(2)} SC',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: accent,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (profile.pendingAvatarUrl != null &&
+                    profile.pendingAvatarUrl!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.warning.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.hourglass_top_rounded,
+                          size: 18,
+                          color: AppTheme.warning,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Nouvelle photo en attente d\'approbation.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ],
-              ),
-              if (profile.pendingAvatarUrl != null &&
-                  profile.pendingAvatarUrl!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Container(
+                const SizedBox(height: 14),
+                SizedBox(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.warning.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Une nouvelle photo de profil est en attente d’approbation.',
+                  child: OutlinedButton.icon(
+                    onPressed: onChangePassword,
+                    icon: const Icon(Icons.lock_outline_rounded),
+                    label: const Text('Mot de passe'),
                   ),
                 ),
               ],
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: onChangePassword,
-                  icon: const Icon(Icons.lock_outline_rounded),
-                  label: const Text('Mot de passe'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -776,24 +702,31 @@ class _LoansTab extends ConsumerWidget {
                     ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              ...sortedLoans.map(
-                (loan) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: LoanCard(
-                    loan: loan,
-                    currentUserId: currentUserId,
-                    isLoading: isLoading,
-                    onAccept: loan.isPending ? () => onAccept(loan) : null,
-                    onReject: loan.isPending ? () => onReject(loan) : null,
-                    onRepay: loan.isActive && !loan.isFullyRepaid
-                        ? () => onRepay(loan)
-                        : null,
-                    onCancel: loan.isPending ? () => onCancel(loan) : null,
-                    onDelete: loan.isArchived || loan.isExpiredPending
-                        ? () => onDelete(loan)
-                        : null,
-                  ),
-                ),
+              ...sortedLoans.indexed.map(
+                (entry) {
+                  final (index, loan) = entry;
+                  return FadeSlideIn.staggered(
+                    key: ValueKey(loan.id),
+                    index: index,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: LoanCard(
+                        loan: loan,
+                        currentUserId: currentUserId,
+                        isLoading: isLoading,
+                        onAccept: loan.isPending ? () => onAccept(loan) : null,
+                        onReject: loan.isPending ? () => onReject(loan) : null,
+                        onRepay: loan.isActive && !loan.isFullyRepaid
+                            ? () => onRepay(loan)
+                            : null,
+                        onCancel: loan.isPending ? () => onCancel(loan) : null,
+                        onDelete: loan.isArchived || loan.isExpiredPending
+                            ? () => onDelete(loan)
+                            : null,
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),

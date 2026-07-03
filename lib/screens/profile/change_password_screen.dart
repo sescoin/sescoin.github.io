@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
-import '../../core/theme.dart';
 import '../../providers/service_providers.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
@@ -45,17 +45,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       if (!mounted) {
         return;
       }
+      AppFeedback.success(context, 'Mot de passe modifié !');
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mot de passe modifié'),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        AppFeedback.error(context, error);
       }
     } finally {
       if (mounted) {

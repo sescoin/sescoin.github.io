@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
@@ -75,9 +76,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez un destinataire.')),
-      );
+      AppFeedback.warning(context, 'Choisis d\'abord un destinataire.');
       return;
     }
 
@@ -91,21 +90,15 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
             description: _descCtrl.text.isEmpty ? null : _descCtrl.text,
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${amount.toStringAsFixed(2)} SC envoyés à @$username',
-            ),
-            backgroundColor: AppTheme.positive,
-          ),
+        AppFeedback.success(
+          context,
+          '${amount.toStringAsFixed(2)} SC envoyés à @$username !',
         );
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        AppFeedback.error(context, e);
       }
     }
   }

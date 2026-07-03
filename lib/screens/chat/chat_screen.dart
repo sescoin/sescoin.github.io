@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/date_utils.dart';
 import '../../common/user_avatar.dart';
 import '../../core/router.dart';
@@ -231,13 +232,13 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   }
 
   void _showSnackBar(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (color == Colors.red || color == AppTheme.negative) {
+      AppFeedback.error(context, msg);
+    } else if (color == Colors.orange || color == AppTheme.warning) {
+      AppFeedback.warning(context, msg);
+    } else {
+      AppFeedback.success(context, msg);
+    }
   }
 
   Future<void> _sendAdminMessage() async {
@@ -517,13 +518,13 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
   }
 
   void _showSnackBar(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (color == Colors.red || color == AppTheme.negative) {
+      AppFeedback.error(context, msg);
+    } else if (color == Colors.orange || color == AppTheme.warning) {
+      AppFeedback.warning(context, msg);
+    } else {
+      AppFeedback.success(context, msg);
+    }
   }
 
   Future<void> _send() async {

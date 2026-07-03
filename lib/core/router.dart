@@ -33,6 +33,7 @@ import '../screens/profile/loan_create_screen.dart';
 import '../screens/profile/change_password_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
+import '../screens/profile/settings_screen.dart';
 import '../screens/wallet/transfer_screen.dart';
 import '../screens/wallet/wallet_screen.dart';
 
@@ -76,6 +77,7 @@ class AppRoutes {
   static const String adminClassDetailPath = '/admin/classes/:classId';
   static const String classChatPath = '/chat/class/:classId';
   static const String changePassword = '/profile/password';
+  static const String settings = '/profile/settings';
 
   static String publicProfilePath(String username) => '/user/$username';
   static String adminClassDetail(String classId) => '/admin/classes/$classId';
@@ -220,6 +222,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.changePassword,
         name: 'changePassword',
         builder: (context, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
         path: AppRoutes.publicProfile,
@@ -378,28 +385,53 @@ class MainShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   static const _tabs = [
-    (icon: Icons.home_rounded, label: 'Accueil'),
-    (icon: Icons.account_balance_wallet_rounded, label: 'Portefeuille'),
-    (icon: Icons.qr_code_scanner_rounded, label: 'Payer'),
-    (icon: Icons.storefront_rounded, label: 'Marché'),
-    (icon: Icons.chat_rounded, label: 'Chat'),
-    (icon: Icons.person_rounded, label: 'Profil'),
+    (
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home_rounded,
+      label: 'Accueil',
+    ),
+    (
+      icon: Icons.account_balance_wallet_outlined,
+      selectedIcon: Icons.account_balance_wallet_rounded,
+      label: 'Portefeuille',
+    ),
+    (
+      icon: Icons.qr_code_scanner_outlined,
+      selectedIcon: Icons.qr_code_scanner_rounded,
+      label: 'Payer',
+    ),
+    (
+      icon: Icons.storefront_outlined,
+      selectedIcon: Icons.storefront_rounded,
+      label: 'Marché',
+    ),
+    (
+      icon: Icons.chat_bubble_outline_rounded,
+      selectedIcon: Icons.chat_rounded,
+      label: 'Chat',
+    ),
+    (
+      icon: Icons.person_outline_rounded,
+      selectedIcon: Icons.person_rounded,
+      label: 'Profil',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) => navigationShell.goBranch(
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: (index) => navigationShell.goBranch(
           index,
           initialLocation: index == navigationShell.currentIndex,
         ),
-        items: _tabs
+        destinations: _tabs
             .map(
-              (tab) => BottomNavigationBarItem(
+              (tab) => NavigationDestination(
                 icon: Icon(tab.icon),
+                selectedIcon: Icon(tab.selectedIcon),
                 label: tab.label,
               ),
             )

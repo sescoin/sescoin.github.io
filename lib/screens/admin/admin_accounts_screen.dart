@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -171,14 +172,11 @@ class AdminAccountsScreen extends ConsumerWidget {
         try {
           await ref.read(adminActionsProvider.notifier).unbanUser(profile.id);
           if (ctx.mounted) {
-            ScaffoldMessenger.of(ctx).showSnackBar(
-              const SnackBar(content: Text('Compte débanni')),
-            );
+            AppFeedback.success(ctx, 'Compte débanni.');
           }
         } catch (error) {
           if (ctx.mounted) {
-            ScaffoldMessenger.of(ctx)
-                .showSnackBar(SnackBar(content: Text(error.toString())));
+            AppFeedback.error(ctx, error);
           }
         }
       case 'delete':
@@ -246,19 +244,14 @@ class AdminAccountsScreen extends ConsumerWidget {
             reason: reasonCtrl.text,
           );
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${isDebit ? '-' : '+'}${amount.toStringAsFixed(2)} SC appliqué',
-            ),
-            backgroundColor: isDebit ? AppTheme.negative : AppTheme.positive,
-          ),
+        AppFeedback.success(
+          ctx,
+          '${isDebit ? '-' : '+'}${amount.toStringAsFixed(2)} SC appliqué.',
         );
       }
     } catch (error) {
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        AppFeedback.error(ctx, error);
       }
     }
   }
@@ -297,14 +290,11 @@ class AdminAccountsScreen extends ConsumerWidget {
             reason: reasonCtrl.text.isEmpty ? null : reasonCtrl.text,
           );
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          const SnackBar(content: Text('Compte banni')),
-        );
+        AppFeedback.success(ctx, 'Compte banni.');
       }
     } catch (error) {
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        AppFeedback.error(ctx, error);
       }
     }
   }
@@ -343,14 +333,11 @@ class AdminAccountsScreen extends ConsumerWidget {
     try {
       await ref.read(adminActionsProvider.notifier).deleteUser(userId);
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          const SnackBar(content: Text('Compte supprimé')),
-        );
+        AppFeedback.success(ctx, 'Compte supprimé.');
       }
     } catch (error) {
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        AppFeedback.error(ctx, error);
       }
     }
   }

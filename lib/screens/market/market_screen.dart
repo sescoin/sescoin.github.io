@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../common/animations.dart';
+import '../../common/app_feedback.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -60,8 +62,6 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppTheme.gold,
-          labelColor: AppTheme.gold,
           tabs: const [
             Tab(text: 'Boutique', icon: Icon(Icons.storefront_rounded)),
             Tab(text: 'Enchères', icon: Icon(Icons.gavel_rounded)),
@@ -141,7 +141,7 @@ class _ShopTab extends ConsumerWidget {
                     category,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.gold,
+                          color: context.accent,
                         ),
                   ),
                 ),
@@ -239,18 +239,11 @@ class _ShopTab extends ConsumerWidget {
     try {
       await ref.read(purchaseProvider.notifier).purchase(itemId: item.id);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${item.name} acheté !'),
-            backgroundColor: AppTheme.positive,
-          ),
-        );
+        AppFeedback.success(context, '${item.name} acheté ! 🎉');
       }
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
-        );
+        AppFeedback.error(context, error);
       }
     }
   }
@@ -286,10 +279,14 @@ class _AuctionsTab extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             itemCount: auctions.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) => AuctionCard(
-              auction: auctions[index],
-              isLoading: bidState.isLoading,
-              onBid: () => context.push('/auction/${auctions[index].id}'),
+            itemBuilder: (context, index) => FadeSlideIn.staggered(
+              key: ValueKey(auctions[index].id),
+              index: index,
+              child: AuctionCard(
+                auction: auctions[index],
+                isLoading: bidState.isLoading,
+                onBid: () => context.push('/auction/${auctions[index].id}'),
+              ),
             ),
           ),
         );

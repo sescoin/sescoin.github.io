@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
-import '../../core/theme.dart';
 import '../../models/marketplace_item.dart';
 import '../../providers/admin_provider.dart';
 
@@ -117,8 +117,7 @@ class _AdminMarketItemFormScreenState
       setState(() {});
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        AppFeedback.error(context, error);
       }
     } finally {
       if (mounted) {
@@ -162,21 +161,14 @@ class _AdminMarketItemFormScreenState
         return;
       }
 
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isEditing
-                ? 'Offre boutique mise à jour'
-                : 'Offre boutique créée',
-          ),
-          backgroundColor: AppTheme.positive,
-        ),
+      AppFeedback.success(
+        context,
+        _isEditing ? 'Offre boutique mise à jour.' : 'Offre boutique créée !',
       );
+      Navigator.of(context).pop();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        AppFeedback.error(context, error);
       }
     }
   }

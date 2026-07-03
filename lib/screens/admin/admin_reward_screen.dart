@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
-import '../../core/theme.dart';
 import '../../providers/admin_provider.dart';
 
 class AdminRewardScreen extends ConsumerStatefulWidget {
@@ -37,17 +37,11 @@ class _AdminRewardScreenState extends ConsumerState<AdminRewardScreen> {
       if (!mounted) {
         return;
       }
+      AppFeedback.success(context, 'Récompense distribuée ! 🎉');
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Récompense distribuée'),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        AppFeedback.error(context, error);
       }
     }
   }

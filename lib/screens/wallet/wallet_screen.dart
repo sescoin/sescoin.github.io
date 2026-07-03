@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../common/animations.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -73,7 +74,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           }
 
           return RefreshIndicator(
-            color: AppTheme.gold,
+            color: context.accent,
             onRefresh: () => ref.read(walletProvider.notifier).refresh(),
             child: ListView.separated(
               controller: _scrollCtrl,
@@ -85,17 +86,21 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               ),
               itemBuilder: (context, i) {
                 if (i == state.items.length) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
                     child: Center(
                       child: CircularProgressIndicator(
-                        color: AppTheme.gold,
+                        color: context.accent,
                         strokeWidth: 2,
                       ),
                     ),
                   );
                 }
-                return TransactionTile(transaction: state.items[i]);
+                final tile = TransactionTile(transaction: state.items[i]);
+                // Cascade uniquement sur le premier écran visible
+                return i < 12
+                    ? FadeSlideIn.staggered(index: i, child: tile)
+                    : tile;
               },
             ),
           );

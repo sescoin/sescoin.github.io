@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'providers/settings_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,10 +87,16 @@ Future<void> main() async {
     }
   });
 
+  // Préférences locales (thème, accent, animations…)
+  final prefs = await SharedPreferences.getInstance();
+
   runApp(
     // ProviderScope = racine obligatoire pour Riverpod
-    const ProviderScope(
-      child: SESCoinApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const SESCoinApp(),
     ),
   );
 }
@@ -99,20 +107,23 @@ class SESCoinApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final settings = ref.watch(settingsProvider);
 
     return MaterialApp.router(
       title: 'SES Coin',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      theme: AppTheme.light(settings.accent),
+      darkTheme: AppTheme.dark(settings.accent, pureBlack: settings.pureBlack),
+      themeMode: settings.themeMode,
       routerConfig: router,
       builder: (context, child) {
-        // Force la taille de police système entre 0.8 et 1.2 pour éviter les débordements
+        // Taille de police = système (borné 0.8–1.2) × préférence utilisateur
         final mq = MediaQuery.of(context);
         final clamped = mq.textScaler.scale(1.0).clamp(0.8, 1.2);
         return MediaQuery(
-          data: mq.copyWith(textScaler: TextScaler.linear(clamped)),
+          data: mq.copyWith(
+            textScaler: TextScaler.linear(clamped * settings.textScale),
+          ),
           child: child!,
         );
       },

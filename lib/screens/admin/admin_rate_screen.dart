@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/theme.dart';
 import '../../models/currency_rate.dart';
@@ -104,19 +105,13 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Cours fixé à ${rate.toStringAsFixed(4)}'),
-          backgroundColor: AppTheme.positive,
-        ),
-      );
+      AppFeedback.success(context, 'Cours fixé à ${rate.toStringAsFixed(4)}.');
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.toString())));
+      AppFeedback.error(context, e);
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/animations.dart';
+import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
@@ -98,8 +101,6 @@ class _PayScreenState extends ConsumerState<PayScreen>
           title: const Text('Payer'),
           bottom: TabBar(
             controller: _tabCtrl,
-            indicatorColor: AppTheme.gold,
-            labelColor: AppTheme.gold,
             tabs: const [
               Tab(text: 'Recevoir', icon: Icon(Icons.download_rounded)),
               Tab(text: 'Envoyer', icon: Icon(Icons.upload_rounded)),
@@ -112,7 +113,7 @@ class _PayScreenState extends ConsumerState<PayScreen>
               MaterialBanner(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                leading: const Icon(Icons.nfc_rounded, color: AppTheme.gold),
+                leading: Icon(Icons.nfc_rounded, color: context.accent),
                 content: const Text(
                   'Active le NFC pour les paiements de proximité',
                   style: TextStyle(fontWeight: FontWeight.w500),
@@ -122,10 +123,7 @@ class _PayScreenState extends ConsumerState<PayScreen>
                     onPressed: NfcHceService.openNfcSettings,
                     child: const Text(
                       'Activer',
-                      style: TextStyle(
-                        color: AppTheme.gold,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
@@ -221,22 +219,22 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: AppTheme.gold.withValues(alpha: 0.12),
+                color: context.accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppTheme.gold.withValues(alpha: 0.4),
+                  color: context.accent.withValues(alpha: 0.4),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.nfc_rounded, size: 18, color: AppTheme.gold),
-                  SizedBox(width: 6),
+                  Icon(Icons.nfc_rounded, size: 18, color: context.accent),
+                  const SizedBox(width: 6),
                   Text(
                     'NFC actif · approche l’envoyeur',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppTheme.gold,
+                      color: context.accent,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -330,10 +328,9 @@ class _SendTabState extends ConsumerState<_SendTab> {
     );
     if (!uuidRe.hasMatch(raw)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('QR invalide : ce n’est pas un compte SES Coin'),
-          ),
+        AppFeedback.warning(
+          context,
+          'Ce QR code n\'est pas un compte SES Coin.',
         );
       }
       return;
@@ -353,9 +350,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
         return;
       }
       if (profile == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Compte introuvable')),
-        );
+        AppFeedback.error(context, 'Compte introuvable.');
         setState(() => _sending = false);
         return;
       }
@@ -375,35 +370,28 @@ class _SendTabState extends ConsumerState<_SendTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        AppFeedback.error(context, e);
         setState(() => _sending = false);
       }
     }
   }
 
   void _showSuccess(double amount, String? name) {
+    HapticFeedback.heavyImpact();
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Paiement effectué !'),
-        content: Text(
-          '${amount.toStringAsFixed(2)} SC envoyés${name != null ? ' à $name' : ''}',
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() {
-                _sending = false;
-                _amountCtrl.clear();
-                _descCtrl.clear();
-              });
-            },
-            child: const Text('OK'),
-          ),
-        ],
+      builder: (ctx) => _PaymentSuccessDialog(
+        amount: amount,
+        name: name,
+        onDone: () {
+          Navigator.pop(ctx);
+          setState(() {
+            _sending = false;
+            _amountCtrl.clear();
+            _descCtrl.clear();
+          });
+        },
       ),
     );
   }
@@ -453,8 +441,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
         setState(() => _nfcScanning = false);
         final msg = e.toString();
         if (!msg.contains('timeout') && !msg.contains('cancel')) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('NFC : $msg')));
+          AppFeedback.error(context, 'NFC : $msg');
         }
       }
     }
@@ -484,9 +471,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
         return;
       }
       if (profile == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Compte introuvable')),
-        );
+        AppFeedback.error(context, 'Compte introuvable.');
         setState(() => _sending = false);
         return;
       }
@@ -506,8 +491,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        AppFeedback.error(context, e);
         setState(() => _sending = false);
       }
     }
@@ -565,18 +549,12 @@ class _SendTabState extends ConsumerState<_SendTab> {
             const SizedBox(height: 32),
             if (canNfc) ...[
               if (_nfcScanning) ...[
-                const Center(
-                  child: Icon(
-                    Icons.nfc_rounded,
-                    size: 56,
-                    color: AppTheme.gold,
-                  ),
-                ),
+                const Center(child: _NfcPulse()),
                 const SizedBox(height: 12),
-                const Center(
+                Center(
                   child: Text(
-                    'En attente du destinataire...',
-                    style: TextStyle(color: AppTheme.gold),
+                    'En attente du destinataire…',
+                    style: TextStyle(color: context.accent),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -634,8 +612,8 @@ class _SendTabState extends ConsumerState<_SendTab> {
             ],
             if (_sending) ...[
               const SizedBox(height: 32),
-              const Center(
-                child: CircularProgressIndicator(color: AppTheme.gold),
+              Center(
+                child: CircularProgressIndicator(color: context.accent),
               ),
             ],
           ],
@@ -661,7 +639,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
             width: 240,
             height: 240,
             decoration: BoxDecoration(
-              border: Border.all(color: AppTheme.gold, width: 2.5),
+              border: Border.all(color: context.accent, width: 2.5),
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -682,6 +660,174 @@ class _SendTabState extends ConsumerState<_SendTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Indicateur NFC pulsant ─────────────────────────────────────────────────────
+
+class _NfcPulse extends StatefulWidget {
+  const _NfcPulse();
+
+  @override
+  State<_NfcPulse> createState() => _NfcPulseState();
+}
+
+class _NfcPulseState extends State<_NfcPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    if (!AppMotion.reduce) _controller.repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = context.accent;
+    return SizedBox(
+      width: 120,
+      height: 120,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              for (final phase in [0.0, 0.5])
+                _ring(((_controller.value + phase) % 1.0), accent),
+              child!,
+            ],
+          );
+        },
+        child: Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.14),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.nfc_rounded, size: 34, color: accent),
+        ),
+      ),
+    );
+  }
+
+  Widget _ring(double t, Color accent) {
+    return Container(
+      width: 64 + t * 56,
+      height: 64 + t * 56,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: accent.withValues(alpha: (1 - t) * 0.45),
+          width: 2,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Dialogue de paiement réussi ────────────────────────────────────────────────
+
+class _PaymentSuccessDialog extends StatelessWidget {
+  const _PaymentSuccessDialog({
+    required this.amount,
+    required this.name,
+    required this.onDone,
+  });
+
+  final double amount;
+  final String? name;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: AppMotion.duration(const Duration(milliseconds: 600)),
+              curve: Curves.elasticOut,
+              builder: (context, value, child) =>
+                  Transform.scale(scale: value, child: child),
+              child: Container(
+                width: 76,
+                height: 76,
+                decoration: BoxDecoration(
+                  color: AppTheme.positive.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.positive.withValues(alpha: 0.3),
+                      blurRadius: 24,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 42,
+                  color: AppTheme.positive,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'Paiement effectué !',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            CountUpAmount(
+              value: amount,
+              duration: const Duration(milliseconds: 550),
+              builder: (context, animated) => Text(
+                '${animated.toStringAsFixed(2)} SC',
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.8,
+                  color: context.accent,
+                ),
+              ),
+            ),
+            if (name != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'envoyés à $name',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onDone,
+                child: const Text('Parfait !'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
