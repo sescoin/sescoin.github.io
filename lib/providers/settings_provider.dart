@@ -71,7 +71,44 @@ const appAccents = <AppAccent>[
     color: Color(0xFF06B6D4),
     dark: Color(0xFF0E7490),
   ),
+  AppAccent(
+    key: 'crimson',
+    label: 'Rubis',
+    color: Color(0xFFE11D48),
+    dark: Color(0xFF9F1239),
+  ),
+  AppAccent(
+    key: 'indigo',
+    label: 'Indigo',
+    color: Color(0xFF6366F1),
+    dark: Color(0xFF4338CA),
+  ),
+  AppAccent(
+    key: 'slate',
+    label: 'Graphite',
+    color: Color(0xFF64748B),
+    dark: Color(0xFF334155),
+  ),
 ];
+
+/// Clé réservée à la couleur choisie librement par l'utilisateur.
+const customAccentKey = 'custom';
+
+/// Construit un accent complet (couleur + variante sombre) depuis une
+/// couleur arbitraire choisie au sélecteur.
+AppAccent customAccentFrom(Color color) {
+  final hsl = HSLColor.fromColor(color);
+  final dark = hsl
+      .withLightness((hsl.lightness - 0.18).clamp(0.08, 1.0))
+      .withSaturation((hsl.saturation * 1.05).clamp(0.0, 1.0))
+      .toColor();
+  return AppAccent(
+    key: customAccentKey,
+    label: 'Perso',
+    color: color,
+    dark: dark,
+  );
+}
 
 AppAccent accentByKey(String key) =>
     appAccents.firstWhere((a) => a.key == key, orElse: () => appAccents.first);
@@ -82,6 +119,7 @@ class AppSettings {
   const AppSettings({
     this.themeMode = ThemeMode.system,
     this.accentKey = 'gold',
+    this.customAccent,
     this.pureBlack = false,
     this.reduceMotion = false,
     this.textScale = 1.0,
@@ -89,6 +127,10 @@ class AppSettings {
 
   final ThemeMode themeMode;
   final String accentKey;
+
+  /// Couleur libre choisie au sélecteur (utilisée quand
+  /// [accentKey] == [customAccentKey]).
+  final Color? customAccent;
 
   /// Fond noir pur en mode sombre (écrans OLED).
   final bool pureBlack;
@@ -99,11 +141,14 @@ class AppSettings {
   /// Multiplicateur de taille de texte (0.9 / 1.0 / 1.1).
   final double textScale;
 
-  AppAccent get accent => accentByKey(accentKey);
+  AppAccent get accent => accentKey == customAccentKey && customAccent != null
+      ? customAccentFrom(customAccent!)
+      : accentByKey(accentKey);
 
   AppSettings copyWith({
     ThemeMode? themeMode,
     String? accentKey,
+    Color? customAccent,
     bool? pureBlack,
     bool? reduceMotion,
     double? textScale,
@@ -111,6 +156,7 @@ class AppSettings {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
       accentKey: accentKey ?? this.accentKey,
+      customAccent: customAccent ?? this.customAccent,
       pureBlack: pureBlack ?? this.pureBlack,
       reduceMotion: reduceMotion ?? this.reduceMotion,
       textScale: textScale ?? this.textScale,
@@ -129,12 +175,14 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   static const _kThemeMode = 'settings.themeMode';
   static const _kAccent = 'settings.accent';
+  static const _kCustomAccent = 'settings.customAccent';
   static const _kPureBlack = 'settings.pureBlack';
   static const _kReduceMotion = 'settings.reduceMotion';
   static const _kTextScale = 'settings.textScale';
 
   static AppSettings _load(SharedPreferences prefs) {
     final modeIndex = prefs.getInt(_kThemeMode);
+    final customValue = prefs.getInt(_kCustomAccent);
     return AppSettings(
       themeMode: modeIndex != null &&
               modeIndex >= 0 &&
@@ -142,6 +190,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
           ? ThemeMode.values[modeIndex]
           : ThemeMode.system,
       accentKey: prefs.getString(_kAccent) ?? 'gold',
+      customAccent: customValue != null ? Color(customValue) : null,
       pureBlack: prefs.getBool(_kPureBlack) ?? false,
       reduceMotion: prefs.getBool(_kReduceMotion) ?? false,
       textScale: prefs.getDouble(_kTextScale) ?? 1.0,
@@ -156,6 +205,13 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   void setAccent(String key) {
     state = state.copyWith(accentKey: key);
     _prefs.setString(_kAccent, key);
+  }
+
+  /// Sélectionne une couleur d'accent libre (sélecteur multicolore).
+  void setCustomAccent(Color color) {
+    state = state.copyWith(accentKey: customAccentKey, customAccent: color);
+    _prefs.setString(_kAccent, customAccentKey);
+    _prefs.setInt(_kCustomAccent, color.toARGB32());
   }
 
   void setPureBlack(bool value) {
@@ -179,6 +235,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     AppMotion.reduce = false;
     _prefs.remove(_kThemeMode);
     _prefs.remove(_kAccent);
+    _prefs.remove(_kCustomAccent);
     _prefs.remove(_kPureBlack);
     _prefs.remove(_kReduceMotion);
     _prefs.remove(_kTextScale);

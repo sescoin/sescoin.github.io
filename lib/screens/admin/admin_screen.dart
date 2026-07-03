@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../common/animations.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
@@ -15,134 +16,233 @@ class AdminScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingAsync = ref.watch(pendingRequestsProvider);
     final state = ref.watch(adminActionsProvider);
+    final accent = context.accent;
 
     return LoadingOverlay(
       isLoading: state.isLoading,
       child: Scaffold(
         appBar: AppBar(title: const Text('Administration')),
         body: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.admin_panel_settings_rounded,
-                    color: AppTheme.gold,
-                    size: 32,
+            // ── En-tête ─────────────────────────────────────────────────────
+            FadeSlideIn.staggered(
+              index: 0,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF1A1A2E),
+                      Color.lerp(const Color(0xFF16213E), accent, 0.22)!,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Mode Administrateur',
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.55),
+                          width: 1.4,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.admin_panel_settings_rounded,
+                        color: accent,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Mode Administrateur',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            ref
+                                    .watch(currentProfileProvider)
+                                    .value
+                                    ?.displayName ??
+                                '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: accent,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Contrôle total',
                         style: TextStyle(
                           color: Colors.white,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          letterSpacing: 0.3,
                         ),
                       ),
-                      Text(
-                        ref.watch(currentProfileProvider).value?.displayName ??
-                            '',
-                        style: const TextStyle(
-                          color: AppTheme.gold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
+            // ── Demandes en attente ─────────────────────────────────────────
             pendingAsync.when(
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
               data: (requests) => requests.isNotEmpty
-                  ? Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.warning.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.warning.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.pending_rounded,
-                            color: AppTheme.warning,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              '${requests.length} demande${requests.length > 1 ? 's' : ''} en attente',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600),
+                  ? FadeSlideIn.staggered(
+                      index: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child: PressableScale(
+                          onTap: () => context.push(AppRoutes.adminRequests),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppTheme.warning.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppTheme.warning.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.warning
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(11),
+                                  ),
+                                  child: const Icon(
+                                    Icons.pending_actions_rounded,
+                                    color: AppTheme.warning,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '${requests.length} demande${requests.length > 1 ? 's' : ''} de compte en attente',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: AppTheme.warning,
+                                ),
+                              ],
                             ),
                           ),
-                          TextButton(
-                            onPressed: () =>
-                                context.push(AppRoutes.adminRequests),
-                            child: const Text('Voir'),
-                          ),
-                        ],
+                        ),
                       ),
                     )
                   : const SizedBox.shrink(),
             ),
-            const SizedBox(height: 16),
-            const _SectionTitle('Comptes'),
+            // ── Sections ────────────────────────────────────────────────────
+            const _SectionTitle(icon: Icons.people_rounded, title: 'Comptes'),
             _AdminTile(
+              index: 2,
               icon: Icons.people_rounded,
               title: 'Tous les comptes',
               subtitle: 'Voir, bannir, créditer, débiter ou supprimer',
               onTap: () => context.push(AppRoutes.adminAccounts),
             ),
             _AdminTile(
+              index: 3,
               icon: Icons.mark_email_unread_rounded,
               title: 'Demandes de compte',
               subtitle: 'Approuvez ou refusez les demandes',
               onTap: () => context.push(AppRoutes.adminRequests),
             ),
-            const SizedBox(height: 16),
-            const _SectionTitle('Marché'),
+            const SizedBox(height: 18),
+            const _SectionTitle(
+              icon: Icons.storefront_rounded,
+              title: 'Marché',
+            ),
             _AdminTile(
+              index: 4,
               icon: Icons.storefront_rounded,
               title: 'Gérer le marché',
               subtitle: 'Créez, modifiez ou supprimez des offres et enchères',
               onTap: () => context.push(AppRoutes.adminMarketEdit),
             ),
-            const SizedBox(height: 16),
-            const _SectionTitle('Classes'),
+            const SizedBox(height: 18),
+            const _SectionTitle(icon: Icons.school_rounded, title: 'Classes'),
             _AdminTile(
+              index: 5,
               icon: Icons.school_rounded,
               title: 'Gérer les classes',
               subtitle: 'Créer, renommer, supprimer, gérer les membres',
               onTap: () => context.push(AppRoutes.adminClasses),
             ),
-            const SizedBox(height: 16),
-            const _SectionTitle('Prêts'),
+            const SizedBox(height: 18),
+            const _SectionTitle(
+              icon: Icons.account_balance_rounded,
+              title: 'Prêts',
+            ),
             _AdminTile(
+              index: 6,
               icon: Icons.account_balance_rounded,
               title: 'Prêts',
               subtitle: 'Liste de tous les prêts et paramètres',
               onTap: () => context.push(AppRoutes.adminLoans),
-              color: Colors.blueAccent,
+              color: AppTheme.info,
             ),
-            const SizedBox(height: 16),
-            const _SectionTitle('Économie'),
+            const SizedBox(height: 18),
+            const _SectionTitle(
+              icon: Icons.query_stats_rounded,
+              title: 'Économie',
+            ),
             _AdminTile(
+              index: 7,
               icon: Icons.percent_rounded,
               title: 'Taxer tout le monde',
               subtitle: 'Prélevez un pourcentage sur tous les comptes',
@@ -150,18 +250,19 @@ class AdminScreen extends ConsumerWidget {
               color: AppTheme.negative,
             ),
             _AdminTile(
+              index: 8,
               icon: Icons.card_giftcard_rounded,
               title: 'Distribuer une récompense',
-              subtitle: 'Créditez tous les comptes depuis une vraie interface',
+              subtitle: 'Créditez tous les comptes en une fois',
               onTap: () => context.push(AppRoutes.adminReward),
               color: AppTheme.positive,
             ),
             _AdminTile(
+              index: 9,
               icon: Icons.trending_up_rounded,
               title: 'Modifier le cours',
               subtitle: "Éditez la demande, l'offre et le prix",
               onTap: () => context.push(AppRoutes.adminRate),
-              color: AppTheme.gold,
             ),
           ],
         ),
@@ -170,30 +271,41 @@ class AdminScreen extends ConsumerWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title);
+// ── Titre de section ───────────────────────────────────────────────────────────
 
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.icon, required this.title});
+
+  final IconData icon;
   final String title;
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.accent;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-          color: AppTheme.gold,
-          letterSpacing: 0.5,
-        ),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: accent),
+          const SizedBox(width: 7),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
+                ),
+          ),
+        ],
       ),
     );
   }
 }
 
+// ── Tuile d'action ─────────────────────────────────────────────────────────────
+
 class _AdminTile extends StatelessWidget {
   const _AdminTile({
+    required this.index,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -201,36 +313,79 @@ class _AdminTile extends StatelessWidget {
     this.color,
   });
 
+  final int index;
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  final Color? color;
 
-  final Color _defaultColor = AppTheme.gold;
+  /// null = couleur d'accent du thème.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    final tileColor = color ?? _defaultColor;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: tileColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
+    final theme = Theme.of(context);
+    final tileColor = color ?? theme.colorScheme.primary;
+
+    return FadeSlideIn.staggered(
+      index: index,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: PressableScale(
+          onTap: onTap,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: tileColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(icon, color: tileColor, size: 21),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.3,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.6),
+                  ),
+                ],
+              ),
+            ),
           ),
-          child: Icon(icon, color: tileColor, size: 20),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: onTap,
       ),
     );
   }

@@ -115,6 +115,9 @@ class SESCoinApp extends ConsumerWidget {
       theme: AppTheme.light(settings.accent),
       darkTheme: AppTheme.dark(settings.accent, pureBlack: settings.pureBlack),
       themeMode: settings.themeMode,
+      // Fondu doux quand on change de thème ou de couleur d'accent.
+      themeAnimationDuration: const Duration(milliseconds: 350),
+      themeAnimationCurve: Curves.easeOutCubic,
       routerConfig: router,
       builder: (context, child) {
         // Taille de police = système (borné 0.8–1.2) × préférence utilisateur

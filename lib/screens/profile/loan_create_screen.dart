@@ -339,13 +339,13 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                             (lender) => Chip(
                               avatar: CircleAvatar(
                                 backgroundColor:
-                                    AppTheme.gold.withValues(alpha: 0.2),
+                                    context.accent.withValues(alpha: 0.2),
                                 child: Text(
                                   (lender['display_name'] as String)[0]
                                       .toUpperCase(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: AppTheme.gold,
+                                    color: context.accent,
                                   ),
                                 ),
                               ),
@@ -413,13 +413,13 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                                         dense: true,
                                         leading: CircleAvatar(
                                           radius: 18,
-                                          backgroundColor: AppTheme.gold
+                                          backgroundColor: context.accent
                                               .withValues(alpha: 0.15),
                                           child: Text(
                                             (user['display_name'] as String)[0]
                                                 .toUpperCase(),
-                                            style: const TextStyle(
-                                              color: AppTheme.gold,
+                                            style: TextStyle(
+                                              color: context.accent,
                                               fontWeight: FontWeight.w700,
                                             ),
                                           ),

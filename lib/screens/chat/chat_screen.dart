@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
 import '../../common/date_utils.dart';
 import '../../common/user_avatar.dart';
@@ -297,10 +298,6 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(d, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.gold,
-              foregroundColor: Colors.black87,
-            ),
             child: const Text('Confirmer'),
           ),
         ],
@@ -443,8 +440,8 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
             right: 16,
             child: FloatingActionButton.small(
               onPressed: _scrollToBottom,
-              backgroundColor: AppTheme.gold,
-              foregroundColor: Colors.black87,
+              backgroundColor: context.accent,
+              foregroundColor: context.onAccent,
               child: const Icon(Icons.keyboard_arrow_down_rounded),
             ),
           ),
@@ -574,7 +571,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
       builder: (ctx) => _ChatDialog(
         icon: Icons.edit_rounded,
         title: 'Modifier le message',
-        accentColor: AppTheme.gold,
+        accentColor: Theme.of(context).colorScheme.primary,
         content: TextField(
           controller: ctrl,
           maxLength: 500,
@@ -687,7 +684,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
             margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF171929) : Colors.white,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.7),
@@ -844,8 +841,8 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
             right: 16,
             child: FloatingActionButton.small(
               onPressed: _scrollToBottom,
-              backgroundColor: AppTheme.gold,
-              foregroundColor: Colors.black87,
+              backgroundColor: context.accent,
+              foregroundColor: context.onAccent,
               child: const Icon(Icons.keyboard_arrow_down_rounded),
             ),
           ),
@@ -864,27 +861,53 @@ class _LoanRequestBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final accent = theme.colorScheme.primary;
+    final onAccent = theme.colorScheme.onPrimary;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161827) : theme.colorScheme.surface,
+        color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(color: Colors.grey.withValues(alpha: 0.12)),
+          top: BorderSide(color: theme.dividerTheme.color ?? Colors.black12),
         ),
       ),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onTap,
-              icon: const Icon(Icons.request_page_rounded),
-              label: const Text('Envoyer une demande de prêt'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.gold,
-                foregroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+          child: PressableScale(
+            onTap: onTap,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [accent, Color.lerp(accent, Colors.black, 0.22)!],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.32),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.handshake_rounded, color: onAccent, size: 19),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Envoyer une demande de prêt',
+                    style: TextStyle(
+                      color: onAccent,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -918,7 +941,8 @@ class _LoanRequestBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final accent = theme.colorScheme.primary;
+    final onAccent = theme.colorScheme.onPrimary;
     final timeStr = DateFormat('HH:mm').format(message.createdAt);
 
     return Padding(
@@ -953,113 +977,184 @@ class _LoanRequestBubble extends StatelessWidget {
             ),
           Container(
             margin: const EdgeInsets.only(left: 4, right: 40),
-            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark
-                  ? AppTheme.gold.withValues(alpha: 0.12)
-                  : AppTheme.gold.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: AppTheme.gold.withValues(alpha: 0.35),
+                color: accent.withValues(alpha: 0.4),
                 width: 1.2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.10),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.request_page_rounded,
-                        color: AppTheme.gold, size: 18),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Demande de prêt',
-                      style: TextStyle(
-                        color: AppTheme.gold,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                      ),
+                // Bandeau d'en-tête teinté
+                Container(
+                  padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.10),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(17),
                     ),
-                    const Spacer(),
-                    Text(
-                      timeStr,
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                    if (onDelete != null) ...[
-                      const SizedBox(width: 6),
-                      GestureDetector(
-                        onTap: onDelete,
-                        child: const Icon(Icons.close_rounded,
-                            size: 16, color: Colors.red),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${message.loanAmount?.toStringAsFixed(0)} SC',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.gold,
                   ),
-                ),
-                if (isAccepted ||
-                    message.loanInterestRate != null ||
-                    message.loanDueDate != null) ...[
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 4,
+                  child: Row(
                     children: [
-                      if (isAccepted)
-                        const _LoanTag(
-                          icon: Icons.check_circle_rounded,
-                          label: 'Prêt actif',
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: accent,
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      if (message.loanInterestRate != null)
-                        _LoanTag(
-                          icon: Icons.percent_rounded,
-                          label:
-                              '${message.loanInterestRate!.toStringAsFixed(message.loanInterestRate! % 1 == 0 ? 0 : 1)}%',
+                        child: Icon(
+                          Icons.handshake_rounded,
+                          color: onAccent,
+                          size: 15,
                         ),
-                      if (message.loanDueDate != null)
-                        _LoanTag(
-                          icon: Icons.calendar_today_rounded,
-                          label: _loanDueDateLabel(message.loanDueDate!),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Demande de prêt',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: accent,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
                         ),
+                      ),
+                      Text(
+                        timeStr,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (onDelete != null) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: onDelete,
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: AppTheme.negative.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: 13,
+                              color: AppTheme.negative,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                ],
-                if (message.loanNote != null &&
-                    message.loanNote!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    message.loanNote!,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
-                if (onAccept != null) ...[
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: onAccept,
-                      icon: const Icon(Icons.handshake_rounded, size: 16),
-                      label: const Text('Accepter le prêt'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.gold,
-                        foregroundColor: Colors.black87,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        textStyle: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            message.loanAmount?.toStringAsFixed(0) ?? '?',
+                            style: TextStyle(
+                              fontSize: 26,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.6,
+                              color: accent,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              'SC',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: accent.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      if (isAccepted ||
+                          message.loanInterestRate != null ||
+                          message.loanDueDate != null) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            if (isAccepted)
+                              const _LoanTag(
+                                icon: Icons.check_circle_rounded,
+                                label: 'Prêt actif',
+                                color: AppTheme.positive,
+                              ),
+                            if (message.loanInterestRate != null)
+                              _LoanTag(
+                                icon: Icons.percent_rounded,
+                                label:
+                                    '${message.loanInterestRate!.toStringAsFixed(message.loanInterestRate! % 1 == 0 ? 0 : 1)}% d\'intérêt',
+                              ),
+                            if (message.loanDueDate != null)
+                              _LoanTag(
+                                icon: Icons.event_rounded,
+                                label: _loanDueDateLabel(message.loanDueDate!),
+                              ),
+                          ],
+                        ),
+                      ],
+                      if (message.loanNote != null &&
+                          message.loanNote!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          message.loanNote!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.35,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                      if (onAccept != null) ...[
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: onAccept,
+                            icon: const Icon(Icons.handshake_rounded, size: 16),
+                            label: const Text('Accepter le prêt'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              textStyle: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -1076,27 +1171,38 @@ String _loanDueDateLabel(DateTime dt) => formatLoanDueDateLabel(dt);
 // ── Tag compact (taux, échéance) dans une bulle de demande de prêt ────────────
 
 class _LoanTag extends StatelessWidget {
-  const _LoanTag({required this.icon, required this.label});
+  const _LoanTag({required this.icon, required this.label, this.color});
 
   final IconData icon;
   final String label;
 
+  /// null = couleur d'accent du thème.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: AppTheme.gold),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.gold,
+    final c = color ?? Theme.of(context).colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: c),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: c,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1121,10 +1227,8 @@ class _ChatDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: isDark ? const Color(0xFF1A1B2E) : Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1350,16 +1454,17 @@ class _MessageBubble extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final isCensored = message.isCensored;
 
+    final accent = theme.colorScheme.primary;
     final bubbleColor = isCensored
         ? (isDark ? Colors.grey[800]! : Colors.grey[300]!)
         : isOwn
-            ? AppTheme.gold
-            : (isDark ? const Color(0xFF2A2A3E) : Colors.white);
+            ? accent
+            : (isDark ? theme.cardColor : Colors.white);
 
     final textColor = isCensored
         ? Colors.grey
         : isOwn
-            ? Colors.black87
+            ? theme.colorScheme.onPrimary
             : theme.colorScheme.onSurface;
 
     return Padding(
@@ -1724,10 +1829,10 @@ class _InputBar extends StatelessWidget {
           ),
         Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF161827) : theme.colorScheme.surface,
+            color: theme.colorScheme.surface,
             border: Border(
               top: BorderSide(
-                color: Colors.grey.withValues(alpha: 0.12),
+                color: theme.dividerTheme.color ?? Colors.black12,
                 width: 1,
               ),
             ),
@@ -1748,8 +1853,9 @@ class _InputBar extends StatelessWidget {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color:
-                            isDark ? const Color(0xFF23273F) : Colors.grey[100],
+                        color: isDark
+                            ? theme.inputDecorationTheme.fillColor
+                            : Colors.grey[100],
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: Focus(
@@ -1813,8 +1919,11 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+    final onAccent = theme.colorScheme.onPrimary;
     return Material(
-      color: isMuted ? Colors.grey[400] : AppTheme.gold,
+      color: isMuted ? Colors.grey[400] : accent,
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
@@ -1822,13 +1931,13 @@ class _SendButton extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(11),
           child: isSending
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.black87),
+                      strokeWidth: 2, color: onAccent),
                 )
-              : const Icon(Icons.send_rounded, color: Colors.black87, size: 18),
+              : Icon(Icons.send_rounded, color: onAccent, size: 18),
         ),
       ),
     );

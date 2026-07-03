@@ -144,6 +144,23 @@ class SettingsScreen extends ConsumerWidget {
                           notifier.setAccent(accent.key);
                         },
                       ),
+                    _CustomAccentDot(
+                      selected: settings.accentKey == customAccentKey,
+                      currentColor: settings.customAccent,
+                      onTap: () async {
+                        HapticFeedback.selectionClick();
+                        final picked = await showDialog<Color>(
+                          context: context,
+                          builder: (_) => _ColorPickerDialog(
+                            initialColor: settings.customAccent ??
+                                settings.accent.color,
+                          ),
+                        );
+                        if (picked != null) {
+                          notifier.setCustomAccent(picked);
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -457,6 +474,430 @@ class _AccentDot extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Pastille multicolore (couleur libre) ───────────────────────────────────────
+
+class _CustomAccentDot extends StatelessWidget {
+  const _CustomAccentDot({
+    required this.selected,
+    required this.currentColor,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final Color? currentColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Couleur personnalisée',
+      selected: selected,
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: AppMotion.duration(const Duration(milliseconds: 240)),
+              curve: Curves.easeOutBack,
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const SweepGradient(
+                  colors: [
+                    Color(0xFFE53935),
+                    Color(0xFFFF9800),
+                    Color(0xFFFFEB3B),
+                    Color(0xFF4CAF50),
+                    Color(0xFF03A9F4),
+                    Color(0xFF3F51B5),
+                    Color(0xFF9C27B0),
+                    Color(0xFFE53935),
+                  ],
+                ),
+                border: Border.all(
+                  color: selected
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Colors.transparent,
+                  width: 2.4,
+                ),
+                boxShadow: selected && currentColor != null
+                    ? [
+                        BoxShadow(
+                          color: currentColor!.withValues(alpha: 0.5),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              // Cœur : la couleur choisie (ou icône pipette si jamais choisie)
+              child: Center(
+                child: selected && currentColor != null
+                    ? Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: currentColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: Icon(
+                          Icons.check_rounded,
+                          size: 15,
+                          color: AppTheme.onAccent(currentColor!),
+                        ),
+                      )
+                    : Container(
+                        width: 26,
+                        height: 26,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.colorize_rounded,
+                          size: 15,
+                          color: Colors.black87,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Perso',
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected
+                    ? Theme.of(context).colorScheme.onSurface
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Sélecteur de couleur (HSV) ─────────────────────────────────────────────────
+
+class _ColorPickerDialog extends StatefulWidget {
+  const _ColorPickerDialog({required this.initialColor});
+
+  final Color initialColor;
+
+  @override
+  State<_ColorPickerDialog> createState() => _ColorPickerDialogState();
+}
+
+class _ColorPickerDialogState extends State<_ColorPickerDialog> {
+  late HSVColor _hsv;
+
+  @override
+  void initState() {
+    super.initState();
+    _hsv = HSVColor.fromColor(widget.initialColor);
+    // Une couleur trop sombre/délavée donne des boutons illisibles :
+    // on repart d'une base vive si nécessaire.
+    if (_hsv.saturation < 0.05 && _hsv.value < 0.05) {
+      _hsv = const HSVColor.fromAHSV(1, 210, 0.8, 0.9);
+    }
+  }
+
+  Color get _color => _hsv.toColor();
+
+  String get _hex =>
+      '#${_color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      title: const Text('Couleur personnalisée'),
+      contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      content: SizedBox(
+        width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Nuance (saturation / luminosité)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: AspectRatio(
+                aspectRatio: 1.55,
+                child: _SaturationValueBox(
+                  hsv: _hsv,
+                  onChanged: (hsv) => setState(() => _hsv = hsv),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Teinte
+            _HueSlider(
+              hue: _hsv.hue,
+              onChanged: (hue) => setState(() => _hsv = _hsv.withHue(hue)),
+            ),
+            const SizedBox(height: 16),
+            // Aperçu
+            Row(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _color.withValues(alpha: 0.45),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.palette_rounded,
+                    size: 18,
+                    color: AppTheme.onAccent(_color),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _hex,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Text(
+                      'Ta couleur d\'accent',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                // Mini aperçu bouton
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: _color,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Aa',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.onAccent(_color),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: _color,
+            foregroundColor: AppTheme.onAccent(_color),
+          ),
+          onPressed: () => Navigator.pop(context, _color),
+          child: const Text('Choisir'),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Carré saturation / luminosité ──────────────────────────────────────────────
+
+class _SaturationValueBox extends StatelessWidget {
+  const _SaturationValueBox({required this.hsv, required this.onChanged});
+
+  final HSVColor hsv;
+  final ValueChanged<HSVColor> onChanged;
+
+  void _handle(Offset localPosition, Size size) {
+    final s = (localPosition.dx / size.width).clamp(0.0, 1.0);
+    final v = 1.0 - (localPosition.dy / size.height).clamp(0.0, 1.0);
+    onChanged(hsv.withSaturation(s).withValue(v));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanDown: (d) => _handle(d.localPosition, size),
+          onPanUpdate: (d) => _handle(d.localPosition, size),
+          child: CustomPaint(
+            size: size,
+            painter: _SvPainter(hsv: hsv),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SvPainter extends CustomPainter {
+  _SvPainter({required this.hsv});
+
+  final HSVColor hsv;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final hueColor = HSVColor.fromAHSV(1, hsv.hue, 1, 1).toColor();
+
+    // Blanc → teinte pure (horizontal)
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          colors: [Colors.white, hueColor],
+        ).createShader(rect),
+    );
+    // Transparent → noir (vertical)
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.transparent, Colors.black],
+        ).createShader(rect),
+    );
+
+    // Curseur
+    final pos = Offset(
+      hsv.saturation * size.width,
+      (1 - hsv.value) * size.height,
+    );
+    canvas.drawCircle(
+      pos,
+      9,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+    canvas.drawCircle(
+      pos,
+      9,
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SvPainter oldDelegate) =>
+      oldDelegate.hsv != hsv;
+}
+
+// ── Barre de teinte ────────────────────────────────────────────────────────────
+
+class _HueSlider extends StatelessWidget {
+  const _HueSlider({required this.hue, required this.onChanged});
+
+  final double hue;
+  final ValueChanged<double> onChanged;
+
+  void _handle(Offset localPosition, double width) {
+    final h = (localPosition.dx / width).clamp(0.0, 1.0) * 360.0;
+    onChanged(h.clamp(0.0, 359.9));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 26,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanDown: (d) => _handle(d.localPosition, width),
+            onPanUpdate: (d) => _handle(d.localPosition, width),
+            child: CustomPaint(
+              size: Size(width, 26),
+              painter: _HuePainter(hue: hue),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HuePainter extends CustomPainter {
+  _HuePainter({required this.hue});
+
+  final double hue;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final track = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, size.height / 2 - 7, size.width, 14),
+      const Radius.circular(999),
+    );
+    canvas.drawRRect(
+      track,
+      Paint()
+        ..shader = LinearGradient(
+          colors: [
+            for (var h = 0; h <= 360; h += 30)
+              HSVColor.fromAHSV(1, h.toDouble() % 360, 1, 1).toColor(),
+          ],
+        ).createShader(track.outerRect),
+    );
+
+    final x = (hue / 360.0) * size.width;
+    final center = Offset(x.clamp(9, size.width - 9), size.height / 2);
+    canvas.drawCircle(
+      center,
+      10,
+      Paint()..color = HSVColor.fromAHSV(1, hue, 1, 1).toColor(),
+    );
+    canvas.drawCircle(
+      center,
+      10,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HuePainter oldDelegate) =>
+      oldDelegate.hue != hue;
 }
 
 // ── Aperçu en direct ───────────────────────────────────────────────────────────
