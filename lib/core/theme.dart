@@ -51,11 +51,11 @@ class AppTheme {
   // ── Transitions de pages ───────────────────────────────────────────────────
   static const _pageTransitions = PageTransitionsTheme(
     builders: {
-      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+      TargetPlatform.iOS: FadeUpwardsPageTransitionsBuilder(),
+      TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+      TargetPlatform.macOS: FadeUpwardsPageTransitionsBuilder(),
+      TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
     },
   );
 
@@ -265,13 +265,11 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected)
-              ? onAccent(primary)
-              : null,
+          (states) =>
+              states.contains(WidgetState.selected) ? onAccent(primary) : null,
         ),
         trackColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? primary : null,
+          (states) => states.contains(WidgetState.selected) ? primary : null,
         ),
       ),
       tooltipTheme: TooltipThemeData(
@@ -495,13 +493,11 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected)
-              ? onAccent(primary)
-              : null,
+          (states) =>
+              states.contains(WidgetState.selected) ? onAccent(primary) : null,
         ),
         trackColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? primary : null,
+          (states) => states.contains(WidgetState.selected) ? primary : null,
         ),
       ),
       tooltipTheme: TooltipThemeData(

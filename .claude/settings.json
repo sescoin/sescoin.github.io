@@ -5,7 +5,11 @@
       "PowerShell(Get-ChildItem -Recurse -File lib | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"$PWD\\\\\", \"\"\\) })",
       "PowerShell(flutter pub get 2>&1)",
       "PowerShell(flutter build apk --debug 2>&1)",
-      "PowerShell(flutter build web --release --base-href / 2>&1)"
+      "PowerShell(flutter build web --release --base-href / 2>&1)",
+      "PowerShell(gh auth status 2>&1)",
+      "PowerShell(gh run list --limit 5 2>&1)",
+      "PowerShell(flutter --version 2>&1)",
+      "PowerShell($sdk = \\(Get-Command flutter\\).Source | Split-Path | Split-Path; Select-String -Path \"$sdk\\\\packages\\\\flutter\\\\lib\\\\src\\\\material\\\\page_transitions_theme.dart\" -Pattern \"class FadeForwardsPageTransitionsBuilder|class CupertinoPageTransitionsBuilder\" | ForEach-Object { $_.Line.Trim\\(\\) })"
     ]
   }
 }
