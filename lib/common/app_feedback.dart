@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -151,8 +150,8 @@ String prettifyError(Object error) {
     return _cleanup(error.message);
   }
 
-  if (error is SocketException || error is TimeoutException) {
-    return 'Pas de connexion. Vérifie ton réseau et réessaie.';
+  if (error is TimeoutException) {
+    return 'Le serveur met trop de temps à répondre. Réessaie.';
   }
 
   final raw = error.toString();
