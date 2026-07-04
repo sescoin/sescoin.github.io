@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
+import '../../common/ban_guard.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -121,7 +122,7 @@ class _ShopTab extends ConsumerWidget {
           return const EmptyState(
             icon: Icons.storefront_rounded,
             title: 'Boutique vide',
-            subtitle: 'La professeure n\'a pas encore ajouté d\'offres',
+            subtitle: 'Les offres actives apparaîtront ici',
           );
         }
 
@@ -212,6 +213,7 @@ class _ShopTab extends ConsumerWidget {
     WidgetRef ref,
     MarketplaceItem item,
   ) async {
+    if (!ensureNotBanned(context, ref)) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(

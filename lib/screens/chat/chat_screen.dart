@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
+import '../../common/ban_guard.dart';
 import '../../common/date_utils.dart';
 import '../../common/user_avatar.dart';
 import '../../core/router.dart';
@@ -88,6 +89,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       return Scaffold(
         appBar: AppBar(
           title: const Text('Chat'),
+          actions: [if (!isAdmin) const _ChatInfoButton()],
           bottom: TabBar(
             controller: _tabController,
             tabs: [
@@ -117,33 +119,148 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Annonces'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline_rounded),
-            onPressed: () => _showGlobalChatInfo(context),
-          ),
-        ],
+        actions: [if (!isAdmin) const _ChatInfoButton()],
       ),
       body: _GlobalChatBody(isAdmin: isAdmin),
     );
   }
+}
 
-  void _showGlobalChatInfo(BuildContext context) {
+// ── Bouton d'infos du chat global ─────────────────────────────────────────────
+
+class _ChatInfoButton extends StatelessWidget {
+  const _ChatInfoButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: PressableScale(
+        onTap: () => _show(context),
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+            border: Border.all(color: accent.withValues(alpha: 0.3)),
+          ),
+          child: Icon(Icons.question_mark_rounded, size: 16, color: accent),
+        ),
+      ),
+    );
+  }
+
+  void _show(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Chat global'),
-        content: const Text(
-          'Seul l\'administrateur peut envoyer des messages ici.\n\n'
-          'Tu peux envoyer une demande de prêt visible par tous.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Compris'),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [accent, Color.lerp(accent, Colors.black, 0.22)!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.35),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.campaign_rounded,
+                  color: theme.colorScheme.onPrimary,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Le chat Annonces',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 16),
+              const _ChatInfoRow(
+                icon: Icons.school_rounded,
+                text: 'Seule la professeure peut publier des annonces ici.',
+              ),
+              const SizedBox(height: 10),
+              const _ChatInfoRow(
+                icon: Icons.handshake_rounded,
+                text:
+                    'Tu peux publier une demande de prêt, visible par toute l\'école.',
+              ),
+              const SizedBox(height: 10),
+              const _ChatInfoRow(
+                icon: Icons.bolt_rounded,
+                text:
+                    'Quand quelqu\'un accepte ta demande, le prêt démarre automatiquement.',
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Compris !'),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+}
+
+class _ChatInfoRow extends StatelessWidget {
+  const _ChatInfoRow({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(icon, size: 16, color: accent),
+        ),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -263,6 +380,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   }
 
   Future<void> _deleteOwnLoanRequest(ChatMessage msg) async {
+    if (!ensureNotBanned(context, ref)) return;
     setState(() => _locallyDeletedIds.add(msg.id));
     try {
       await ref.read(chatActionProvider.notifier).deleteMessage(msg.id);
@@ -274,6 +392,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   }
 
   Future<void> _acceptLoanRequest(ChatMessage msg) async {
+    if (!ensureNotBanned(context, ref)) return;
     if (msg.loanDueDate != null && msg.loanDueDate!.isBefore(DateTime.now())) {
       _showSnackBar(
         'Impossible d\'accepter : la date d\'échéance est déjà dépassée.',
@@ -427,10 +546,13 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
               )
             else
               _LoanRequestBar(
-                onTap: () => context.push(
-                  AppRoutes.loanCreate,
-                  extra: {'chatMode': true},
-                ),
+                onTap: () {
+                  if (!ensureNotBanned(context, ref)) return;
+                  context.push(
+                    AppRoutes.loanCreate,
+                    extra: {'chatMode': true},
+                  );
+                },
               ),
           ],
         ),
@@ -527,6 +649,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    if (!ensureNotBanned(context, ref)) return;
 
     ref.read(chatActionProvider.notifier).clearMuteIfExpired();
     if (ref.read(chatActionProvider).isMuted) return;

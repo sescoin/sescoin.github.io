@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../common/app_feedback.dart';
+import '../../common/ban_guard.dart';
 import '../../common/date_utils.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
@@ -156,6 +157,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   }
 
   Future<void> _submit() async {
+    if (!ensureNotBanned(context, ref)) return;
     if (!_formKey.currentState!.validate()) return;
 
     final profile = ref.read(currentProfileProvider).value;

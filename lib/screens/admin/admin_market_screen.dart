@@ -61,8 +61,6 @@ class _AdminMarketScreenState extends ConsumerState<AdminMarketScreen>
           title: const Text('Gérer le marché'),
           bottom: TabBar(
             controller: _tabCtrl,
-            indicatorColor: AppTheme.gold,
-            labelColor: AppTheme.gold,
             tabs: const [
               Tab(text: 'Boutique', icon: Icon(Icons.storefront_rounded)),
               Tab(text: 'Enchères', icon: Icon(Icons.gavel_rounded)),
@@ -137,6 +135,8 @@ class _ItemAdminCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final accent = context.accent;
+    final neutral = Theme.of(context).colorScheme.onSurfaceVariant;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -164,20 +164,20 @@ class _ItemAdminCard extends ConsumerWidget {
                         children: [
                           _TinyBadge(
                             label: item.category,
-                            color: AppTheme.gold,
+                            color: accent,
                           ),
                           _TinyBadge(
                             label: item.isUnlimited
                                 ? 'Illimité'
                                 : '${item.stock} restants',
                             color: item.stock > 3 || item.isUnlimited
-                                ? Colors.white70
+                                ? neutral
                                 : AppTheme.negative,
                           ),
                           if (item.hasPurchaseLimit)
                             _TinyBadge(
                               label: 'Max ${item.maxPerUser}/pers.',
-                              color: Colors.white70,
+                              color: neutral,
                             ),
                           if (!item.isActive)
                             const _TinyBadge(
@@ -192,9 +192,9 @@ class _ItemAdminCard extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Text(
                   '${item.price.toStringAsFixed(2)} SC',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.gold,
+                    color: accent,
                   ),
                 ),
               ],
@@ -327,9 +327,9 @@ class _ItemAdminCard extends ConsumerWidget {
                                   ),
                                   trailing: Text(
                                     '${unitPrice.toStringAsFixed(2)} SC',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      color: AppTheme.gold,
+                                      color: context.accent,
                                     ),
                                   ),
                                 );
@@ -451,6 +451,8 @@ class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
   @override
   Widget build(BuildContext context) {
     final isUrgent = _remaining.inMinutes < 5 && auction.isActive;
+    final accent = context.accent;
+    final neutral = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Card(
       child: Padding(
@@ -487,21 +489,20 @@ class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
                             color: switch (auction.status) {
                               AuctionStatus.upcoming => AppTheme.warning,
                               AuctionStatus.active => AppTheme.positive,
-                              AuctionStatus.ended => AppTheme.gold,
+                              AuctionStatus.ended => accent,
                               AuctionStatus.cancelled => AppTheme.negative,
                             },
                           ),
                           _TinyBadge(
                             label:
                                 'Fin ${DateFormat('dd/MM/yyyy HH:mm').format(auction.endsAt)}',
-                            color: Colors.white70,
+                            color: neutral,
                           ),
                           if (auction.isActive)
                             _TinyBadge(
                               label:
                                   'Temps restant ${_formatRemaining(_remaining)}',
-                              color:
-                                  isUrgent ? AppTheme.negative : AppTheme.gold,
+                              color: isUrgent ? AppTheme.negative : accent,
                             ),
                         ],
                       ),
@@ -511,9 +512,9 @@ class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
                 const SizedBox(width: 12),
                 Text(
                   '${auction.currentPrice.toStringAsFixed(2)} SC',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.gold,
+                    color: accent,
                   ),
                 ),
               ],
@@ -635,7 +636,7 @@ class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.gold.withValues(alpha: 0.12),
+                            color: context.accent.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -693,16 +694,17 @@ class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
                                           '${(bid['amount'] as num).toDouble().toStringAsFixed(2)} SC',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w700,
-                                            color:
-                                                isWinner ? AppTheme.gold : null,
+                                            color: isWinner
+                                                ? context.accent
+                                                : null,
                                           ),
                                         ),
                                         if (isWinner)
-                                          const Text(
+                                          Text(
                                             'Gagnant',
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: AppTheme.gold,
+                                              color: context.accent,
                                             ),
                                           ),
                                       ],

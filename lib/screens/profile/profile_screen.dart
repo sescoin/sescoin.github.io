@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
+import '../../common/ban_guard.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -242,6 +243,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     required Future<void> Function() action,
     String successMessage = 'Action effectuée',
   }) async {
+    if (!ensureNotBanned(context, ref)) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(

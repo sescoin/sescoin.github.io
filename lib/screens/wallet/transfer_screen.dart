@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../common/app_feedback.dart';
+import '../../common/ban_guard.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
@@ -74,6 +75,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
   }
 
   Future<void> _submit() async {
+    if (!ensureNotBanned(context, ref)) return;
     if (!_formKey.currentState!.validate()) return;
     if (_selectedUser == null) {
       AppFeedback.warning(context, 'Choisis d\'abord un destinataire.');

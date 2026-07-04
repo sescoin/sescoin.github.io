@@ -154,16 +154,57 @@ class AuthService {
     return AccountRequest.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Vrai si un compte à ce nom a existé puis a été supprimé par l'admin
+  /// (demande approuvée dans l'historique, mais plus aucun profil).
+  Future<bool> _wasAccountDeleted(String username) async {
+    try {
+      final profileExists = await _client
+          .from('profiles')
+          .select('id')
+          .eq('username', username)
+          .maybeSingle();
+      if (profileExists != null) return false;
+
+      final approvedRequest = await _client
+          .from('account_requests')
+          .select('id')
+          .eq('username', username)
+          .eq('status', 'approved')
+          .maybeSingle();
+      return approvedRequest != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<Profile> signIn({
     required String username,
     required String password,
   }) async {
-    final fakeEmail = '${username.trim()}@sescoin.local';
+    final cleanUsername = username.trim();
+    final fakeEmail = '$cleanUsername@sescoin.local';
 
-    final response = await _client.auth.signInWithPassword(
-      email: fakeEmail,
-      password: password,
-    );
+    final AuthResponse response;
+    try {
+      response = await _client.auth.signInWithPassword(
+        email: fakeEmail,
+        password: password,
+      );
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      final isInvalidCredentials = msg.contains('invalid login') ||
+          msg.contains('invalid credentials') ||
+          msg.contains('invalid_credentials');
+      // Le compte auth n'existe plus : si un compte à ce nom a été approuvé
+      // par le passé, c'est qu'il a été supprimé par l'administrateur.
+      if (isInvalidCredentials && await _wasAccountDeleted(cleanUsername)) {
+        throw Exception(
+          'Ce compte a été supprimé par l\'administrateur.\n'
+          'Contacte la professeure si tu penses qu\'il s\'agit d\'une erreur.',
+        );
+      }
+      rethrow;
+    }
 
     if (response.user == null) {
       throw Exception('Identifiant ou mot de passe incorrect.');
@@ -178,19 +219,14 @@ class AuthService {
     if (profileData == null) {
       await _client.auth.signOut();
       throw Exception(
-        'Aucun profil trouvé pour ce compte.\n'
-        'Demande à l\'admin de recréer ton profil dans Supabase.',
+        'Ce compte a été supprimé par l\'administrateur.\n'
+        'Contacte la professeure si tu penses qu\'il s\'agit d\'une erreur.',
       );
     }
 
-    final profile = Profile.fromJson(profileData);
-
-    if (profile.isBanned) {
-      await _client.auth.signOut();
-      throw Exception('Ce compte a été banni.');
-    }
-
-    return profile;
+    // Un compte banni peut se connecter : il garde l'accès en lecture,
+    // mais toutes les actions sont bloquées dans l'app (voir ban_guard.dart).
+    return Profile.fromJson(profileData);
   }
 
   Future<void> signOut() async {

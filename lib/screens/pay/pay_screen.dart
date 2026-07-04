@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
+import '../../common/ban_guard.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
@@ -338,6 +339,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
 
     final amount = double.tryParse(_amountCtrl.text.replaceAll(',', '.')) ?? 0;
 
+    if (!ensureNotBanned(context, ref)) return;
     setState(() => _sending = true);
     try {
       final profile = await Supabase.instance.client
@@ -457,6 +459,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
   }
 
   Future<void> _sendViaNfc(String recipientId) async {
+    if (!ensureNotBanned(context, ref)) return;
     final amount = double.tryParse(_amountCtrl.text.replaceAll(',', '.')) ?? 0;
 
     setState(() => _sending = true);

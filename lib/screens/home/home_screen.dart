@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../common/animations.dart';
+import '../../common/ban_guard.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -89,6 +90,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const BannedBanner(),
               FadeSlideIn.staggered(index: 0, child: const BalanceCard()),
               const SizedBox(height: 24),
               FadeSlideIn.staggered(index: 1, child: const CurrencyChart()),

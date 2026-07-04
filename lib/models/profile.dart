@@ -11,6 +11,7 @@ class Profile {
     required this.role,
     required this.isBanned,
     required this.createdAt,
+    this.banReason,
     this.avatarUrl,
     this.pendingAvatarUrl,
     this.fcmToken,
@@ -24,6 +25,9 @@ class Profile {
   final String role;
   final bool isBanned;
   final DateTime createdAt;
+
+  /// Motif du bannissement (si le compte est suspendu).
+  final String? banReason;
   final String? avatarUrl;
   final String? pendingAvatarUrl;
   final String? fcmToken;
@@ -49,6 +53,7 @@ class Profile {
       role: json['role'] as String? ?? 'student',
       isBanned: json['is_banned'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
+      banReason: json['ban_reason'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       pendingAvatarUrl: json['pending_avatar_url'] as String?,
       fcmToken: json['fcm_token'] as String?,
@@ -77,6 +82,7 @@ class Profile {
     String? role,
     bool? isBanned,
     DateTime? createdAt,
+    Object? banReason = _sentinel,
     String? avatarUrl,
     Object? pendingAvatarUrl = _sentinel,
     String? fcmToken,
@@ -90,6 +96,7 @@ class Profile {
       role: role ?? this.role,
       isBanned: isBanned ?? this.isBanned,
       createdAt: createdAt ?? this.createdAt,
+      banReason: banReason == _sentinel ? this.banReason : banReason as String?,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       pendingAvatarUrl: pendingAvatarUrl == _sentinel
           ? this.pendingAvatarUrl
