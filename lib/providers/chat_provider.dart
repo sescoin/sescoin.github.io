@@ -95,6 +95,7 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
     double? interestRate,
     DateTime? dueDate,
     String? note,
+    String? classId,
   }) async {
     state = state.copyWith(isSending: true, clearError: true);
     try {
@@ -103,6 +104,7 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
             interestRate: interestRate,
             dueDate: dueDate,
             note: note,
+            classId: classId,
           );
       state = state.copyWith(isSending: false);
       return result;
@@ -111,6 +113,34 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
       state = state.copyWith(isSending: false, error: msg);
       return null;
     }
+  }
+
+  // ── Cadeaux ──────────────────────────────────────────────────────────────────
+
+  Future<ChatSendResult?> sendChatGift(
+    double amount, {
+    String? note,
+    String? classId,
+  }) async {
+    state = state.copyWith(isSending: true, clearError: true);
+    try {
+      final result = await _ref.read(chatServiceProvider).sendChatGift(
+            amount,
+            note: note,
+            classId: classId,
+          );
+      state = state.copyWith(isSending: false);
+      return result;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(isSending: false, error: msg);
+      return null;
+    }
+  }
+
+  /// Retourne le montant empoché, ou lève une exception (trop tard, etc.).
+  Future<double> claimChatGift(String messageId) async {
+    return _ref.read(chatServiceProvider).claimChatGift(messageId);
   }
 
   // ── Class chat ───────────────────────────────────────────────────────────────

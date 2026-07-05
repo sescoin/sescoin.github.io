@@ -118,6 +118,37 @@ class SettingsScreen extends ConsumerWidget {
           FadeSlideIn.staggered(
             index: 3,
             child: _SectionTitle(
+              icon: Icons.texture_rounded,
+              title: 'Ambiance',
+              trailing: settings.ambiance.label,
+            ),
+          ),
+          FadeSlideIn.staggered(
+            index: 3,
+            child: GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 2.6,
+              children: [
+                for (final ambiance in appAmbiances)
+                  _AmbianceCard(
+                    ambiance: ambiance,
+                    selected: settings.ambianceKey == ambiance.key,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      notifier.setAmbiance(ambiance.key);
+                    },
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          FadeSlideIn.staggered(
+            index: 3,
+            child: _SectionTitle(
               icon: Icons.palette_rounded,
               title: 'Couleur d\'accent',
               trailing: settings.accent.label,
@@ -469,6 +500,105 @@ class _AccentDot extends StatelessWidget {
                     : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Carte d'ambiance ───────────────────────────────────────────────────────────
+
+class _AmbianceCard extends StatelessWidget {
+  const _AmbianceCard({
+    required this.ambiance,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AppAmbiance ambiance;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+
+    return PressableScale(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppMotion.duration(const Duration(milliseconds: 240)),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? primary.withValues(alpha: 0.10) : theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? primary
+                : theme.brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.05),
+            width: selected ? 1.6 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Aperçu des deux modes : pastille claire + pastille sombre.
+            SizedBox(
+              width: 34,
+              height: 26,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: ambiance.lightScaffold,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.1),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    top: 4,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: ambiance.darkCard,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.18),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                ambiance.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: selected ? primary : theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_circle_rounded, size: 16, color: primary),
           ],
         ),
       ),

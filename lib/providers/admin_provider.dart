@@ -154,7 +154,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
               userId: userId,
               type: NotificationType.system,
               title: 'Compte suspendu',
-              body: 'Ton compte a été suspendu par la professeure.'
+              body: 'Ton compte a été suspendu par l\'administrateur.'
                   '${reason != null && reason.trim().isNotEmpty ? '\nMotif : ${reason.trim()}' : ''}'
                   '\nTu peux consulter l\'app, mais aucune action n\'est possible.',
             );
@@ -179,7 +179,7 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
               type: NotificationType.system,
               title: 'Compte réactivé',
               body:
-                  'Ton compte a été réactivé par la professeure. Bon retour ! 🎉',
+                  'Ton compte a été réactivé par l\'administrateur. Bon retour ! 🎉',
             );
       } catch (_) {}
       state =

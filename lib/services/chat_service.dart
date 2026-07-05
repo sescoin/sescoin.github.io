@@ -59,6 +59,7 @@ class ChatService {
     double? interestRate,
     DateTime? dueDate,
     String? note,
+    String? classId,
   }) async {
     final params = <String, dynamic>{'p_amount': amount};
     if (interestRate != null) params['p_interest_rate'] = interestRate;
@@ -66,10 +67,46 @@ class ChatService {
       params['p_due_date'] = dueDate.toUtc().toIso8601String();
     }
     if (note != null) params['p_note'] = note;
+    if (classId != null) params['p_class_id'] = classId;
     try {
       final response =
           await _client.rpc('send_loan_request_chat', params: params);
       return ChatSendResult.fromJson(response as Map<String, dynamic>);
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
+  // ── Cadeaux ────────────────────────────────────────────────────────────────
+
+  /// Envoie un cadeau dans le chat (Annonces si [classId] est null,
+  /// chat de classe sinon). Le premier utilisateur qui le récupère l'empoche.
+  Future<ChatSendResult> sendChatGift(
+    double amount, {
+    String? note,
+    String? classId,
+  }) async {
+    final params = <String, dynamic>{'p_amount': amount};
+    if (note != null) params['p_note'] = note;
+    if (classId != null) params['p_class_id'] = classId;
+    try {
+      final response = await _client.rpc('send_chat_gift', params: params);
+      return ChatSendResult.fromJson(response as Map<String, dynamic>);
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
+  /// Tente de récupérer un cadeau — premier arrivé, premier servi
+  /// (l'atomicité est garantie côté SQL).
+  Future<double> claimChatGift(String messageId) async {
+    try {
+      final response = await _client.rpc(
+        'claim_chat_gift',
+        params: {'p_message_id': messageId},
+      );
+      final map = response as Map<String, dynamic>;
+      return (map['amount'] as num).toDouble();
     } on PostgrestException catch (e) {
       throw Exception(e.message);
     }

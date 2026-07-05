@@ -304,8 +304,8 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Choisis une série, puis fais glisser ton doigt '
-                            'sur le graphique pour dessiner la courbe. '
+                            'Choisissez une série, puis faites glisser votre '
+                            'doigt sur le graphique pour dessiner la courbe. '
                             'Appui long sur une colonne : valeur exacte.',
                             style: TextStyle(
                               fontSize: 12,
@@ -544,7 +544,7 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
                       TextField(
                         controller: _reasonCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Raison affichée aux élèves',
+                          labelText: 'Raison affichée aux utilisateurs',
                         ),
                       ),
                     ],

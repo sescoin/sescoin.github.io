@@ -20,6 +20,10 @@ class ChatMessage {
     this.loanStatus,
     this.loanId,
     this.loanAcceptedBy,
+    this.giftAmount,
+    this.giftClaimedBy,
+    this.giftClaimedUsername,
+    this.giftClaimedAt,
   });
 
   final String id;
@@ -42,10 +46,16 @@ class ChatMessage {
   final String? loanStatus;
   final String? loanId;
   final String? loanAcceptedBy;
+  final double? giftAmount;
+  final String? giftClaimedBy;
+  final String? giftClaimedUsername;
+  final DateTime? giftClaimedAt;
 
   bool get isExpired => expiresAt.isBefore(DateTime.now());
   bool get isLoanRequest => messageType == 'loan_request';
   bool get isLoanRequestAccepted => isLoanRequest && loanStatus == 'accepted';
+  bool get isGift => messageType == 'gift';
+  bool get isGiftClaimed => isGift && giftClaimedBy != null;
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
@@ -79,6 +89,14 @@ class ChatMessage {
       loanStatus: json['loan_status'] as String?,
       loanId: json['loan_id'] as String?,
       loanAcceptedBy: json['loan_accepted_by'] as String?,
+      giftAmount: json['gift_amount'] != null
+          ? (json['gift_amount'] as num).toDouble()
+          : null,
+      giftClaimedBy: json['gift_claimed_by'] as String?,
+      giftClaimedUsername: json['gift_claimed_username'] as String?,
+      giftClaimedAt: json['gift_claimed_at'] != null
+          ? DateTime.parse(json['gift_claimed_at'] as String).toLocal()
+          : null,
     );
   }
 }

@@ -10,6 +10,7 @@ import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
 import '../../common/ban_guard.dart';
 import '../../common/date_utils.dart';
+import '../../common/keyboard_fix.dart';
 import '../../common/user_avatar.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
@@ -53,6 +54,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     if (_tabController != null) return;
     if (!_isClassMode && hasClass) {
       _tabController = TabController(length: 2, vsync: this);
+      // Le bouton d'infos change de contenu (et pulse) selon l'onglet actif.
+      _tabController!.addListener(() {
+        if (mounted) setState(() {});
+      });
       setState(() {});
     }
   }
@@ -89,7 +94,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       return Scaffold(
         appBar: AppBar(
           title: const Text('Chat'),
-          actions: [if (!isAdmin) const _ChatInfoButton()],
+          actions: [
+            if (!isAdmin)
+              _ChatInfoButton(classMode: _tabController!.index == 1),
+          ],
           bottom: TabBar(
             controller: _tabController,
             tabs: [
@@ -126,10 +134,53 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   }
 }
 
-// ── Bouton d'infos du chat global ─────────────────────────────────────────────
+// ── Bouton d'infos du chat (contenu selon l'onglet) ───────────────────────────
 
-class _ChatInfoButton extends StatelessWidget {
-  const _ChatInfoButton();
+class _ChatInfoButton extends StatefulWidget {
+  const _ChatInfoButton({this.classMode = false});
+
+  /// true = onglet chat de classe, false = onglet Annonces.
+  final bool classMode;
+
+  @override
+  State<_ChatInfoButton> createState() => _ChatInfoButtonState();
+}
+
+class _ChatInfoButtonState extends State<_ChatInfoButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChatInfoButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // À l'arrivée sur le chat de classe, le bouton pulse quelques instants
+    // pour signaler que son contenu a changé.
+    if (widget.classMode && !oldWidget.classMode && !AppMotion.reduce) {
+      _pulseCtrl.repeat(reverse: true);
+      Future.delayed(const Duration(milliseconds: 2600), () {
+        if (mounted) {
+          _pulseCtrl
+            ..stop()
+            ..animateTo(0, duration: const Duration(milliseconds: 200));
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,16 +188,45 @@ class _ChatInfoButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: PressableScale(
-        onTap: () => _show(context),
-        child: Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-            border: Border.all(color: accent.withValues(alpha: 0.3)),
-          ),
-          child: Icon(Icons.question_mark_rounded, size: 16, color: accent),
+        onTap: () {
+          _pulseCtrl.stop();
+          _pulseCtrl.value = 0;
+          _show(context);
+        },
+        child: AnimatedBuilder(
+          animation: _pulseCtrl,
+          builder: (context, child) {
+            final t = _pulseCtrl.value;
+            return Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Color.lerp(
+                  accent.withValues(alpha: 0.12),
+                  accent.withValues(alpha: 0.32),
+                  t,
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.3 + 0.5 * t),
+                  width: 1 + t,
+                ),
+                boxShadow: t > 0
+                    ? [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.45 * t),
+                          blurRadius: 10 + 6 * t,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Transform.scale(
+                scale: 1 + 0.12 * t,
+                child:
+                    Icon(Icons.question_mark_rounded, size: 16, color: accent),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -155,6 +235,7 @@ class _ChatInfoButton extends StatelessWidget {
   void _show(BuildContext context) {
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
+    final classMode = widget.classMode;
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -183,34 +264,54 @@ class _ChatInfoButton extends StatelessWidget {
                   ],
                 ),
                 child: Icon(
-                  Icons.campaign_rounded,
+                  classMode ? Icons.school_rounded : Icons.campaign_rounded,
                   color: theme.colorScheme.onPrimary,
                   size: 26,
                 ),
               ),
               const SizedBox(height: 14),
               Text(
-                'Le chat Annonces',
+                classMode ? 'Le chat de classe' : 'Le chat Annonces',
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 16),
-              const _ChatInfoRow(
-                icon: Icons.school_rounded,
-                text: 'Seule la professeure peut publier des annonces ici.',
-              ),
-              const SizedBox(height: 10),
-              const _ChatInfoRow(
-                icon: Icons.handshake_rounded,
-                text:
-                    'Tu peux publier une demande de prêt, visible par toute l\'école.',
-              ),
-              const SizedBox(height: 10),
-              const _ChatInfoRow(
-                icon: Icons.bolt_rounded,
-                text:
-                    'Quand quelqu\'un accepte ta demande, le prêt démarre automatiquement.',
-              ),
+              if (classMode) ...[
+                const _ChatInfoRow(
+                  icon: Icons.chat_bubble_rounded,
+                  text:
+                      'Discute librement avec ta classe — reste correct, les messages inappropriés sont censurés.',
+                ),
+                const SizedBox(height: 10),
+                const _ChatInfoRow(
+                  icon: Icons.add_circle_rounded,
+                  text:
+                      'Avec le bouton +, tu peux demander un prêt à ta classe ou envoyer un cadeau.',
+                ),
+                const SizedBox(height: 10),
+                const _ChatInfoRow(
+                  icon: Icons.card_giftcard_rounded,
+                  text:
+                      'Un cadeau est remporté par la première personne qui le récupère !',
+                ),
+              ] else ...[
+                const _ChatInfoRow(
+                  icon: Icons.admin_panel_settings_rounded,
+                  text: 'Seul l\'administrateur peut publier des annonces ici.',
+                ),
+                const SizedBox(height: 10),
+                const _ChatInfoRow(
+                  icon: Icons.handshake_rounded,
+                  text:
+                      'Tu peux publier une demande de prêt, visible par tous les utilisateurs.',
+                ),
+                const SizedBox(height: 10),
+                const _ChatInfoRow(
+                  icon: Icons.card_giftcard_rounded,
+                  text:
+                      'L\'administrateur peut lâcher des cadeaux : le premier qui les récupère les empoche !',
+                ),
+              ],
               const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
@@ -406,7 +507,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
       builder: (d) => AlertDialog(
         title: const Text('Accepter le prêt'),
         content: Text(
-          'Vous allez prêter ${msg.loanAmount?.toStringAsFixed(2) ?? '?'} SC à @${msg.username}.'
+          'Tu vas prêter ${msg.loanAmount?.toStringAsFixed(2) ?? '?'} SC à @${msg.username}.'
           '${msg.loanInterestRate != null ? '\nTaux : ${msg.loanInterestRate}%' : ''}'
           '${msg.loanDueDate != null ? '\nÉchéance : ${_formatDueDate(msg.loanDueDate!)}' : ''}',
         ),
@@ -437,13 +538,34 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
 
   String _formatDueDate(DateTime dt) => _loanDueDateLabel(dt);
 
+  Future<void> _claimGift(ChatMessage msg) async {
+    if (!ensureNotBanned(context, ref)) return;
+    try {
+      final amount =
+          await ref.read(chatActionProvider.notifier).claimChatGift(msg.id);
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      _showSnackBar(
+        '🎁 +${amount.toStringAsFixed(2)} SC — le cadeau est à toi !',
+        AppTheme.positive,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(
+        e.toString().replaceFirst('Exception: ', ''),
+        Colors.orange,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(globalMessagesProvider);
     final chatState = ref.watch(chatActionProvider);
     final currentUserId = ref.watch(currentUserIdProvider) ?? '';
 
-    return Stack(
+    return KeyboardDismissUnfocus(
+        child: Stack(
       children: [
         Column(
           children: [
@@ -501,6 +623,20 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                       final canDelete = widget.isAdmin ||
                           (isOwn && msg.isLoanRequest && !isAccepted);
 
+                      if (msg.isGift) {
+                        return _GiftBubble(
+                          message: msg,
+                          isOwn: isOwn,
+                          currentUserId: currentUserId,
+                          showHeader: item.showHeader,
+                          onClaim: !isOwn && !msg.isGiftClaimed
+                              ? () => _claimGift(msg)
+                              : null,
+                          onTapUsername: () =>
+                              context.push('/user/${msg.username}'),
+                        );
+                      }
+
                       if (msg.isLoanRequest) {
                         return _LoanRequestBubble(
                           message: msg,
@@ -543,6 +679,11 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                 chatState: chatState,
                 onSend: _sendAdminMessage,
                 hintText: 'Écrire une annonce…',
+                leading: _AttachIconButton(
+                  icon: Icons.card_giftcard_rounded,
+                  tooltip: 'Envoyer un cadeau',
+                  onTap: () => _showGiftDialog(context, ref, classId: null),
+                ),
               )
             else
               _LoanRequestBar(
@@ -568,7 +709,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
             ),
           ),
       ],
-    );
+    ));
   }
 }
 
@@ -592,6 +733,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
   bool _showScrollFab = false;
   bool _isNearBottom = true;
   final Set<String> _locallyDeletedIds = {};
+  final Set<String> _locallyAcceptedLoanRequestIds = {};
 
   @override
   void initState() {
@@ -685,6 +827,152 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     _muteTimer = Timer(const Duration(minutes: 10), () {
       if (mounted) ref.read(chatActionProvider.notifier).clearMuteIfExpired();
     });
+  }
+
+  // ── Prêts et cadeaux de classe ─────────────────────────────────────────────
+
+  Future<void> _acceptLoanRequest(ChatMessage msg) async {
+    if (!ensureNotBanned(context, ref)) return;
+    if (msg.loanDueDate != null && msg.loanDueDate!.isBefore(DateTime.now())) {
+      _showSnackBar(
+        'Impossible d\'accepter : la date d\'échéance est déjà dépassée.',
+        Colors.red,
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Accepter le prêt'),
+        content: Text(
+          'Tu vas prêter ${msg.loanAmount?.toStringAsFixed(2) ?? '?'} SC à @${msg.username}.'
+          '${msg.loanInterestRate != null ? '\nTaux : ${msg.loanInterestRate}%' : ''}'
+          '${msg.loanDueDate != null ? '\nÉchéance : ${_loanDueDateLabel(msg.loanDueDate!)}' : ''}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(d, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(d, true),
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _locallyAcceptedLoanRequestIds.add(msg.id));
+    try {
+      await ref.read(chatActionProvider.notifier).acceptChatLoanRequest(msg.id);
+      if (!mounted) return;
+      _showSnackBar('Prêt accepté !', AppTheme.positive);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _locallyAcceptedLoanRequestIds.remove(msg.id));
+      _showSnackBar('Erreur : $e', Colors.red);
+    }
+  }
+
+  Future<void> _deleteOwnLoanRequest(ChatMessage msg) async {
+    if (!ensureNotBanned(context, ref)) return;
+    setState(() => _locallyDeletedIds.add(msg.id));
+    try {
+      await ref.read(chatActionProvider.notifier).deleteMessage(msg.id);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _locallyDeletedIds.remove(msg.id));
+      _showSnackBar('Erreur : $e', Colors.red);
+    }
+  }
+
+  Future<void> _claimGift(ChatMessage msg) async {
+    if (!ensureNotBanned(context, ref)) return;
+    try {
+      final amount =
+          await ref.read(chatActionProvider.notifier).claimChatGift(msg.id);
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      _showSnackBar(
+        '🎁 +${amount.toStringAsFixed(2)} SC — le cadeau est à toi !',
+        AppTheme.positive,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(
+        e.toString().replaceFirst('Exception: ', ''),
+        Colors.orange,
+      );
+    }
+  }
+
+  void _showAttachSheet() {
+    if (!ensureNotBanned(context, ref)) return;
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => SafeArea(
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 28,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 38,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              Text(
+                'Partager avec la classe',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
+              if (!widget.isAdmin) ...[
+                _ChatActionTile(
+                  icon: Icons.handshake_rounded,
+                  label: 'Demander un prêt à la classe',
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    context.push(
+                      AppRoutes.loanCreate,
+                      extra: {'chatMode': true, 'classId': widget.classId},
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+              _ChatActionTile(
+                icon: Icons.card_giftcard_rounded,
+                label: 'Envoyer un cadeau',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _showGiftDialog(context, ref, classId: widget.classId);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _editMessage(ChatMessage message) async {
@@ -872,7 +1160,8 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     final readsMap = ref.watch(chatReadsMapProvider);
     final currentUserId = ref.watch(currentUserIdProvider) ?? '';
 
-    return Stack(
+    return KeyboardDismissUnfocus(
+        child: Stack(
       children: [
         Column(
           children: [
@@ -931,6 +1220,44 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                       }
                       final msg = item.message!;
                       final isOwn = msg.userId == currentUserId;
+
+                      if (msg.isGift) {
+                        return _GiftBubble(
+                          message: msg,
+                          isOwn: isOwn,
+                          currentUserId: currentUserId,
+                          showHeader: item.showHeader,
+                          onClaim: !isOwn && !msg.isGiftClaimed
+                              ? () => _claimGift(msg)
+                              : null,
+                          onTapUsername: () =>
+                              context.push('/user/${msg.username}'),
+                        );
+                      }
+
+                      if (msg.isLoanRequest) {
+                        final isAccepted = msg.isLoanRequestAccepted ||
+                            _locallyAcceptedLoanRequestIds.contains(msg.id);
+                        final canDelete = widget.isAdmin ||
+                            (isOwn && !isAccepted);
+                        return _LoanRequestBubble(
+                          message: msg,
+                          isOwn: isOwn,
+                          isAccepted: isAccepted,
+                          showHeader: item.showHeader,
+                          onDelete: canDelete
+                              ? () => widget.isAdmin
+                                  ? _deleteMessage(msg)
+                                  : _deleteOwnLoanRequest(msg)
+                              : null,
+                          onAccept: !isOwn && !isAccepted
+                              ? () => _acceptLoanRequest(msg)
+                              : null,
+                          onTapUsername: () =>
+                              context.push('/user/${msg.username}'),
+                        );
+                      }
+
                       final canInteract =
                           (isOwn || widget.isAdmin) && !msg.isDeleted;
                       return _MessageBubble(
@@ -955,6 +1282,11 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
               chatState: chatState,
               onSend: _send,
               hintText: 'Écrire un message…',
+              leading: _AttachIconButton(
+                icon: Icons.add_rounded,
+                tooltip: 'Prêt ou cadeau',
+                onTap: _showAttachSheet,
+              ),
             ),
           ],
         ),
@@ -970,7 +1302,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
             ),
           ),
       ],
-    );
+    ));
   }
 }
 
@@ -1227,7 +1559,7 @@ class _LoanRequestBubble extends StatelessWidget {
                             if (isAccepted)
                               const _LoanTag(
                                 icon: Icons.check_circle_rounded,
-                                label: 'Prêt actif',
+                                label: 'Acceptée',
                                 color: AppTheme.positive,
                               ),
                             if (message.loanInterestRate != null)
@@ -1326,6 +1658,527 @@ class _LoanTag extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Bouton rond à gauche de la barre de saisie ────────────────────────────────
+
+class _AttachIconButton extends StatelessWidget {
+  const _AttachIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(11),
+            child: Icon(icon, color: accent, size: 18),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Envoi d'un cadeau ─────────────────────────────────────────────────────────
+
+Future<void> _showGiftDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  String? classId,
+}) async {
+  if (!ensureNotBanned(context, ref)) return;
+  final amountCtrl = TextEditingController();
+  final noteCtrl = TextEditingController();
+  final theme = Theme.of(context);
+  final accent = theme.colorScheme.primary;
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [accent, Color.lerp(accent, Colors.black, 0.22)!],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.card_giftcard_rounded,
+                color: theme.colorScheme.onPrimary,
+                size: 26,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Envoyer un cadeau',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'La première personne à le récupérer l\'empoche !',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: amountCtrl,
+              autofocus: true,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Montant',
+                suffixText: 'SC',
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: noteCtrl,
+              maxLength: 120,
+              decoration: const InputDecoration(
+                labelText: 'Petit mot (optionnel)',
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Annuler'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    icon: const Icon(Icons.card_giftcard_rounded, size: 17),
+                    label: const Text('Envoyer 🎁'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  final amount =
+      double.tryParse(amountCtrl.text.trim().replaceAll(',', '.')) ?? 0;
+  final note = noteCtrl.text.trim();
+  amountCtrl.dispose();
+  noteCtrl.dispose();
+
+  if (confirmed != true) return;
+  if (amount <= 0) {
+    if (context.mounted) {
+      AppFeedback.warning(context, 'Montant invalide.');
+    }
+    return;
+  }
+
+  final result = await ref.read(chatActionProvider.notifier).sendChatGift(
+        amount,
+        note: note.isEmpty ? null : note,
+        classId: classId,
+      );
+  if (!context.mounted) return;
+  if (result == null) {
+    final error = ref.read(chatActionProvider).error?.trim();
+    AppFeedback.error(
+      context,
+      error == null || error.isEmpty ? 'L\'envoi a échoué. Réessaie.' : error,
+    );
+  } else {
+    AppFeedback.success(context, 'Cadeau envoyé ! 🎁');
+  }
+}
+
+// ── Bulle cadeau ──────────────────────────────────────────────────────────────
+
+class _GiftBubble extends StatelessWidget {
+  const _GiftBubble({
+    required this.message,
+    required this.isOwn,
+    required this.currentUserId,
+    required this.showHeader,
+    required this.onTapUsername,
+    this.onClaim,
+  });
+
+  final ChatMessage message;
+  final bool isOwn;
+  final String currentUserId;
+  final bool showHeader;
+  final VoidCallback onTapUsername;
+  final VoidCallback? onClaim;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+    final onAccent = theme.colorScheme.onPrimary;
+    final claimed = message.isGiftClaimed;
+    final claimedByMe = message.giftClaimedBy == currentUserId;
+    final timeStr = DateFormat('HH:mm').format(message.createdAt);
+
+    return Padding(
+      padding: EdgeInsets.only(top: showHeader ? 10 : 4, bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (showHeader)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 4),
+              child: GestureDetector(
+                onTap: onTapUsername,
+                child: Row(
+                  children: [
+                    UserAvatar(
+                      username: message.username,
+                      avatarUrl: message.avatarUrl,
+                      radius: 12,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      message.displayName,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          Container(
+            margin: const EdgeInsets.only(left: 4, right: 40),
+            decoration: BoxDecoration(
+              gradient: claimed
+                  ? null
+                  : LinearGradient(
+                      colors: [
+                        accent.withValues(alpha: 0.16),
+                        accent.withValues(alpha: 0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+              color: claimed ? theme.cardColor : null,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: claimed
+                    ? theme.colorScheme.onSurface.withValues(alpha: 0.10)
+                    : accent.withValues(alpha: 0.45),
+                width: 1.2,
+              ),
+              boxShadow: claimed
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.14),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: claimed
+                            ? theme.colorScheme.onSurface
+                                .withValues(alpha: 0.12)
+                            : accent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.card_giftcard_rounded,
+                        color: claimed
+                            ? theme.colorScheme.onSurfaceVariant
+                            : onAccent,
+                        size: 15,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Cadeau',
+                        style: TextStyle(
+                          color: claimed
+                              ? theme.colorScheme.onSurfaceVariant
+                              : accent,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      timeStr,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      message.giftAmount?.toStringAsFixed(
+                            (message.giftAmount ?? 0) % 1 == 0 ? 0 : 2,
+                          ) ??
+                          '?',
+                      style: TextStyle(
+                        fontSize: 30,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
+                        color: claimed
+                            ? theme.colorScheme.onSurfaceVariant
+                            : accent,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 3),
+                      child: Text(
+                        'SC',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: (claimed
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : accent)
+                              .withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (message.content.trim().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    message.content,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.35,
+                      color: theme.colorScheme.onSurface
+                          .withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                if (claimed)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.positive.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          size: 16,
+                          color: AppTheme.positive,
+                        ),
+                        const SizedBox(width: 7),
+                        Flexible(
+                          child: Text(
+                            claimedByMe
+                                ? 'Tu l\'as récupéré ! 🎉'
+                                : 'Récupéré par @${message.giftClaimedUsername ?? '?'}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.positive,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (onClaim != null)
+                  _ClaimGiftButton(onTap: onClaim!)
+                else
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: accent.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'En attente d\'un preneur…',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontStyle: FontStyle.italic,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bouton « Récupérer » : pulse en continu pour attirer l'œil.
+class _ClaimGiftButton extends StatefulWidget {
+  const _ClaimGiftButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_ClaimGiftButton> createState() => _ClaimGiftButtonState();
+}
+
+class _ClaimGiftButtonState extends State<_ClaimGiftButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    if (!AppMotion.reduce) _ctrl.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+    final onAccent = theme.colorScheme.onPrimary;
+
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_ctrl.value);
+        return Transform.scale(
+          scale: 1 + 0.03 * t,
+          child: PressableScale(
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              widget.onTap();
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    accent,
+                    Color.lerp(accent, Colors.black, 0.22)!,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.35 + 0.2 * t),
+                    blurRadius: 12 + 8 * t,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.redeem_rounded, color: onAccent, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Récupérer !',
+                    style: TextStyle(
+                      color: onAccent,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1908,6 +2761,7 @@ class _InputBar extends StatelessWidget {
     required this.onSend,
     required this.hintText,
     this.focusNode,
+    this.leading,
   });
 
   final TextEditingController controller;
@@ -1915,6 +2769,9 @@ class _InputBar extends StatelessWidget {
   final ChatState chatState;
   final VoidCallback onSend;
   final String hintText;
+
+  /// Bouton optionnel à gauche du champ (cadeau, pièce jointe…).
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -1973,6 +2830,10 @@ class _InputBar extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  if (leading != null) ...[
+                    leading!,
+                    const SizedBox(width: 8),
+                  ],
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(

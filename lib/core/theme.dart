@@ -7,17 +7,12 @@ class AppTheme {
   AppTheme._();
 
   // ── Palette de base ────────────────────────────────────────────────────────
+  // Les surfaces (fonds, cartes, champs) viennent des ambiances :
+  // voir appAmbiances dans settings_provider.dart.
   static const Color _primaryGold = Color(0xFFD4AF37); // Or SES Coin (défaut)
   static const Color _ink = Color(0xFF1A1A2E);
-  static const Color _paperLight = Color(0xFFF6F4EE);
   static const Color _positive = Color(0xFF2ECC71);
   static const Color _negative = Color(0xFFE74C3C);
-
-  // Surfaces sombres (alignées sur l'identité bleu nuit existante)
-  static const Color _darkScaffold = Color(0xFF0F0F1A);
-  static const Color _darkSurface = Color(0xFF161829);
-  static const Color _darkCard = Color(0xFF1A1D31);
-  static const Color _darkInput = Color(0xFF23273F);
 
   // Surfaces noir pur (OLED)
   static const Color _blackScaffold = Color(0xFF000000);
@@ -61,7 +56,10 @@ class AppTheme {
   );
 
   // ── Thème clair ────────────────────────────────────────────────────────────
-  static ThemeData light(AppAccent accent) {
+  static ThemeData light(AppAccent accent, {AppAmbiance? ambiance}) {
+    final amb = ambiance ?? appAmbiances.first;
+    final scaffold = amb.lightScaffold;
+    final input = amb.lightInput;
     final primary = accent.color;
     final onPrimary = onAccent(primary);
     final scheme = ColorScheme.fromSeed(
@@ -76,12 +74,12 @@ class AppTheme {
     final base = ThemeData(useMaterial3: true, colorScheme: scheme);
 
     return base.copyWith(
-      scaffoldBackgroundColor: _paperLight,
+      scaffoldBackgroundColor: scaffold,
       textTheme: _textTheme(base.textTheme),
       pageTransitionsTheme: _pageTransitions,
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
-        backgroundColor: _paperLight,
+        backgroundColor: scaffold,
         foregroundColor: _ink,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -158,7 +156,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFEFEDE6),
+        fillColor: input,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
@@ -243,7 +241,7 @@ class AppTheme {
         showDragHandle: true,
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: const Color(0xFFEFEDE6),
+        backgroundColor: input,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         side: BorderSide.none,
       ),
@@ -285,13 +283,18 @@ class AppTheme {
   }
 
   // ── Thème sombre ───────────────────────────────────────────────────────────
-  static ThemeData dark(AppAccent accent, {bool pureBlack = false}) {
+  static ThemeData dark(
+    AppAccent accent, {
+    AppAmbiance? ambiance,
+    bool pureBlack = false,
+  }) {
+    final amb = ambiance ?? appAmbiances.first;
     final primary = accent.color;
     final onPrimary = onAccent(primary);
-    final scaffold = pureBlack ? _blackScaffold : _darkScaffold;
-    final surface = pureBlack ? _blackSurface : _darkSurface;
-    final card = pureBlack ? _blackCard : _darkCard;
-    final input = pureBlack ? _blackInput : _darkInput;
+    final scaffold = pureBlack ? _blackScaffold : amb.darkScaffold;
+    final surface = pureBlack ? _blackSurface : amb.darkSurface;
+    final card = pureBlack ? _blackCard : amb.darkCard;
+    final input = pureBlack ? _blackInput : amb.darkInput;
 
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,

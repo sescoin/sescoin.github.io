@@ -14,9 +14,16 @@ import '../../providers/chat_provider.dart';
 import '../../providers/loan_provider.dart';
 
 class LoanCreateScreen extends ConsumerStatefulWidget {
-  const LoanCreateScreen({super.key, this.isChatMode = false});
+  const LoanCreateScreen({
+    super.key,
+    this.isChatMode = false,
+    this.chatClassId,
+  });
 
   final bool isChatMode;
+
+  /// null = demande publiée dans les Annonces ; non-null = chat de classe.
+  final String? chatClassId;
 
   @override
   ConsumerState<LoanCreateScreen> createState() => _LoanCreateScreenState();
@@ -240,6 +247,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   interestRate: interestRate > 0 ? interestRate : null,
                   dueDate: combinedDue,
                   note: note,
+                  classId: widget.chatClassId,
                 );
         if (!mounted) return;
         if (result == null) {

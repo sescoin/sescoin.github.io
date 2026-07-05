@@ -113,6 +113,86 @@ AppAccent customAccentFrom(Color color) {
 AppAccent accentByKey(String key) =>
     appAccents.firstWhere((a) => a.key == key, orElse: () => appAccents.first);
 
+// ── Ambiances (surfaces des thèmes clair et sombre) ────────────────────────────
+
+/// Une ambiance définit la « matière » de l'app : couleurs de fond, de
+/// cartes et de champs, pour le mode clair ET le mode sombre.
+class AppAmbiance {
+  const AppAmbiance({
+    required this.key,
+    required this.label,
+    required this.icon,
+    required this.lightScaffold,
+    required this.lightInput,
+    required this.darkScaffold,
+    required this.darkSurface,
+    required this.darkCard,
+    required this.darkInput,
+  });
+
+  /// Identifiant stable pour la persistance.
+  final String key;
+  final String label;
+  final IconData icon;
+
+  final Color lightScaffold;
+  final Color lightInput;
+  final Color darkScaffold;
+  final Color darkSurface;
+  final Color darkCard;
+  final Color darkInput;
+}
+
+const appAmbiances = <AppAmbiance>[
+  AppAmbiance(
+    key: 'classic',
+    label: 'Classique',
+    icon: Icons.auto_awesome_rounded,
+    lightScaffold: Color(0xFFF6F4EE),
+    lightInput: Color(0xFFEFEDE6),
+    darkScaffold: Color(0xFF0F0F1A),
+    darkSurface: Color(0xFF161829),
+    darkCard: Color(0xFF1A1D31),
+    darkInput: Color(0xFF23273F),
+  ),
+  AppAmbiance(
+    key: 'frost',
+    label: 'Givre',
+    icon: Icons.ac_unit_rounded,
+    lightScaffold: Color(0xFFF2F5F8),
+    lightInput: Color(0xFFE8EDF2),
+    darkScaffold: Color(0xFF0C1116),
+    darkSurface: Color(0xFF121A22),
+    darkCard: Color(0xFF16202A),
+    darkInput: Color(0xFF1E2A36),
+  ),
+  AppAmbiance(
+    key: 'lavender',
+    label: 'Lavande',
+    icon: Icons.nightlight_round,
+    lightScaffold: Color(0xFFF6F3FA),
+    lightInput: Color(0xFFECE6F4),
+    darkScaffold: Color(0xFF120F1D),
+    darkSurface: Color(0xFF181327),
+    darkCard: Color(0xFF1D1730),
+    darkInput: Color(0xFF272040),
+  ),
+  AppAmbiance(
+    key: 'forest',
+    label: 'Forêt',
+    icon: Icons.park_rounded,
+    lightScaffold: Color(0xFFF3F6F1),
+    lightInput: Color(0xFFE7EDE4),
+    darkScaffold: Color(0xFF0C1310),
+    darkSurface: Color(0xFF121C17),
+    darkCard: Color(0xFF16221C),
+    darkInput: Color(0xFF1E2E26),
+  ),
+];
+
+AppAmbiance ambianceByKey(String key) => appAmbiances
+    .firstWhere((a) => a.key == key, orElse: () => appAmbiances.first);
+
 // ── État des préférences ───────────────────────────────────────────────────────
 
 class AppSettings {
@@ -120,6 +200,7 @@ class AppSettings {
     this.themeMode = ThemeMode.system,
     this.accentKey = 'gold',
     this.customAccent,
+    this.ambianceKey = 'classic',
     this.pureBlack = false,
     this.reduceMotion = false,
     this.textScale = 1.0,
@@ -127,6 +208,9 @@ class AppSettings {
 
   final ThemeMode themeMode;
   final String accentKey;
+
+  /// Ambiance des surfaces (fonds, cartes) pour les deux modes.
+  final String ambianceKey;
 
   /// Couleur libre choisie au sélecteur (utilisée quand
   /// [accentKey] == [customAccentKey]).
@@ -145,10 +229,13 @@ class AppSettings {
       ? customAccentFrom(customAccent!)
       : accentByKey(accentKey);
 
+  AppAmbiance get ambiance => ambianceByKey(ambianceKey);
+
   AppSettings copyWith({
     ThemeMode? themeMode,
     String? accentKey,
     Color? customAccent,
+    String? ambianceKey,
     bool? pureBlack,
     bool? reduceMotion,
     double? textScale,
@@ -157,6 +244,7 @@ class AppSettings {
       themeMode: themeMode ?? this.themeMode,
       accentKey: accentKey ?? this.accentKey,
       customAccent: customAccent ?? this.customAccent,
+      ambianceKey: ambianceKey ?? this.ambianceKey,
       pureBlack: pureBlack ?? this.pureBlack,
       reduceMotion: reduceMotion ?? this.reduceMotion,
       textScale: textScale ?? this.textScale,
@@ -176,6 +264,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   static const _kThemeMode = 'settings.themeMode';
   static const _kAccent = 'settings.accent';
   static const _kCustomAccent = 'settings.customAccent';
+  static const _kAmbiance = 'settings.ambiance';
   static const _kPureBlack = 'settings.pureBlack';
   static const _kReduceMotion = 'settings.reduceMotion';
   static const _kTextScale = 'settings.textScale';
@@ -191,6 +280,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
           : ThemeMode.system,
       accentKey: prefs.getString(_kAccent) ?? 'gold',
       customAccent: customValue != null ? Color(customValue) : null,
+      ambianceKey: prefs.getString(_kAmbiance) ?? 'classic',
       pureBlack: prefs.getBool(_kPureBlack) ?? false,
       reduceMotion: prefs.getBool(_kReduceMotion) ?? false,
       textScale: prefs.getDouble(_kTextScale) ?? 1.0,
@@ -212,6 +302,11 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     state = state.copyWith(accentKey: customAccentKey, customAccent: color);
     _prefs.setString(_kAccent, customAccentKey);
     _prefs.setInt(_kCustomAccent, color.toARGB32());
+  }
+
+  void setAmbiance(String key) {
+    state = state.copyWith(ambianceKey: key);
+    _prefs.setString(_kAmbiance, key);
   }
 
   void setPureBlack(bool value) {
@@ -236,6 +331,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     _prefs.remove(_kThemeMode);
     _prefs.remove(_kAccent);
     _prefs.remove(_kCustomAccent);
+    _prefs.remove(_kAmbiance);
     _prefs.remove(_kPureBlack);
     _prefs.remove(_kReduceMotion);
     _prefs.remove(_kTextScale);

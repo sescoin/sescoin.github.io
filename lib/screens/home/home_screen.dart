@@ -274,31 +274,55 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.accent;
     final width = (MediaQuery.of(context).size.width - 56) / 3;
     return SizedBox(
       width: width.clamp(92, 180).toDouble(),
       child: PressableScale(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 13),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: context.isDark
                   ? Colors.white.withValues(alpha: 0.06)
                   : Colors.black.withValues(alpha: 0.05),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black
+                    .withValues(alpha: context.isDark ? 0.18 : 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Column(
             children: [
-              Icon(icon, color: context.accent, size: 24),
-              const SizedBox(height: 6),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      accent.withValues(alpha: 0.20),
+                      accent.withValues(alpha: 0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: accent, size: 20),
+              ),
+              const SizedBox(height: 7),
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,

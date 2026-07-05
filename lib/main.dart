@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'common/app_logo.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'providers/settings_provider.dart';
@@ -112,8 +113,12 @@ class SESCoinApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'SES Coin',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(settings.accent),
-      darkTheme: AppTheme.dark(settings.accent, pureBlack: settings.pureBlack),
+      theme: AppTheme.light(settings.accent, ambiance: settings.ambiance),
+      darkTheme: AppTheme.dark(
+        settings.accent,
+        ambiance: settings.ambiance,
+        pureBlack: settings.pureBlack,
+      ),
       themeMode: settings.themeMode,
       // Fondu doux quand on change de thème ou de couleur d'accent.
       themeAnimationDuration: const Duration(milliseconds: 350),
@@ -127,7 +132,13 @@ class SESCoinApp extends ConsumerWidget {
           data: mq.copyWith(
             textScaler: TextScaler.linear(clamped * settings.textScale),
           ),
-          child: child!,
+          // L'animation de lancement recouvre l'app puis s'efface.
+          child: Stack(
+            children: [
+              child!,
+              const LaunchSplash(),
+            ],
+          ),
         );
       },
     );

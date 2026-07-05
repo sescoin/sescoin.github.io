@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -38,10 +39,42 @@ class CurrencyChart extends ConsumerWidget {
   }
 }
 
-class _MarketChartCard extends StatelessWidget {
+class _MarketChartCard extends StatefulWidget {
   const _MarketChartCard({required this.rate});
 
   final CurrencyRate rate;
+
+  @override
+  State<_MarketChartCard> createState() => _MarketChartCardState();
+}
+
+class _MarketChartCardState extends State<_MarketChartCard> {
+  CurrencyRate get rate => widget.rate;
+
+  /// Point de prix touché : sa valeur exacte s'affiche quelques secondes.
+  int? _selectedIndex;
+  Timer? _selectionTimer;
+
+  @override
+  void dispose() {
+    _selectionTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onChartTap(Offset local, double width) {
+    final index = ((local.dx / width) * CurrencyRate.chartPointCount)
+        .floor()
+        .clamp(0, CurrencyRate.chartPointCount - 1);
+    setState(() {
+      _selectedIndex = _selectedIndex == index ? null : index;
+    });
+    _selectionTimer?.cancel();
+    if (_selectedIndex != null) {
+      _selectionTimer = Timer(const Duration(seconds: 4), () {
+        if (mounted) setState(() => _selectedIndex = null);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,16 +198,24 @@ class _MarketChartCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    child: _AnimatedChart(
-                      demandPoints: rate.demandPoints,
-                      supplyPoints: rate.supplyPoints,
-                      pricePoints: rate.pricePoints,
-                      maxVolume: maxVolume <= 0 ? 1 : maxVolume,
-                      maxPrice: maxPrice <= 0 ? 1 : maxPrice,
-                      accent: accent,
-                      surface: theme.cardColor,
-                      gridColor: onSurface.withValues(alpha: 0.08),
-                      labelColor: onVariant,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (d) =>
+                            _onChartTap(d.localPosition, constraints.maxWidth),
+                        child: _AnimatedChart(
+                          demandPoints: rate.demandPoints,
+                          supplyPoints: rate.supplyPoints,
+                          pricePoints: rate.pricePoints,
+                          maxVolume: maxVolume <= 0 ? 1 : maxVolume,
+                          maxPrice: maxPrice <= 0 ? 1 : maxPrice,
+                          accent: accent,
+                          surface: theme.cardColor,
+                          gridColor: onSurface.withValues(alpha: 0.08),
+                          labelColor: onVariant,
+                          selectedIndex: _selectedIndex,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -357,6 +398,7 @@ class _AnimatedChart extends StatelessWidget {
     required this.surface,
     required this.gridColor,
     required this.labelColor,
+    this.selectedIndex,
   });
 
   final List<double> demandPoints;
@@ -368,6 +410,7 @@ class _AnimatedChart extends StatelessWidget {
   final Color surface;
   final Color gridColor;
   final Color labelColor;
+  final int? selectedIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -394,6 +437,7 @@ class _AnimatedChart extends StatelessWidget {
         gridColor: gridColor,
         labelColor: labelColor,
         progress: progress,
+        selectedIndex: selectedIndex,
       );
 }
 
@@ -409,6 +453,7 @@ class _MarketChartPainter extends CustomPainter {
     required this.gridColor,
     required this.labelColor,
     required this.progress,
+    this.selectedIndex,
   });
 
   final List<double> demandPoints;
@@ -423,6 +468,9 @@ class _MarketChartPainter extends CustomPainter {
 
   /// 0 → 1 : les barres grandissent et la ligne se trace.
   final double progress;
+
+  /// Point de prix touché par l'utilisateur (affiche sa valeur exacte).
+  final int? selectedIndex;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -553,6 +601,63 @@ class _MarketChartPainter extends CustomPainter {
         canvas.drawCircle(Offset(centerX, priceY), 3.4, dotStroke);
       }
     }
+
+    // Valeur exacte du point de prix touché
+    if (selectedIndex != null && progress >= 1.0) {
+      final i = selectedIndex!;
+      final centerX = groupWidth * i + groupWidth / 2;
+      final priceY =
+          chartBottom - (pricePoints[i] / maxPrice) * (chartHeight * 0.94);
+      final anchor = Offset(centerX, priceY);
+
+      // Point mis en avant
+      canvas.drawCircle(anchor, 6, Paint()..color = accent);
+      canvas.drawCircle(
+        anchor,
+        6,
+        Paint()
+          ..color = surface
+          ..strokeWidth = 2.4
+          ..style = PaintingStyle.stroke,
+      );
+
+      // Badge avec la valeur exacte
+      textPainter.text = TextSpan(
+        text: '${pricePoints[i].toStringAsFixed(2).replaceAll('.', ',')} €',
+        style: TextStyle(
+          color: accent,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w800,
+          fontFeatures: const [ui.FontFeature.tabularFigures()],
+        ),
+      );
+      textPainter.layout();
+      final dx = (anchor.dx - textPainter.width / 2)
+          .clamp(2.0, size.width - textPainter.width - 2.0);
+      final above = anchor.dy - textPainter.height - 16;
+      final dy = above < 2 ? anchor.dy + 12 : above;
+      final bgRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          dx - 6,
+          dy - 4,
+          textPainter.width + 12,
+          textPainter.height + 8,
+        ),
+        const Radius.circular(8),
+      );
+      canvas.drawRRect(
+        bgRect,
+        Paint()..color = surface.withValues(alpha: 0.94),
+      );
+      canvas.drawRRect(
+        bgRect,
+        Paint()
+          ..color = accent.withValues(alpha: 0.45)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2,
+      );
+      textPainter.paint(canvas, Offset(dx, dy));
+    }
   }
 
   void _paintBarLabel(
@@ -593,6 +698,7 @@ class _MarketChartPainter extends CustomPainter {
         oldDelegate.maxVolume != maxVolume ||
         oldDelegate.maxPrice != maxPrice ||
         oldDelegate.accent != accent ||
-        oldDelegate.progress != progress;
+        oldDelegate.progress != progress ||
+        oldDelegate.selectedIndex != selectedIndex;
   }
 }

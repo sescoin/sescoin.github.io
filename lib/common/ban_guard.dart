@@ -75,7 +75,7 @@ class BannedBanner extends ConsumerWidget {
                 const SizedBox(height: 3),
                 Text(
                   reason == null || reason.isEmpty
-                      ? 'Ton compte a été suspendu par la professeure. '
+                      ? 'Ton compte a été suspendu par l\'administrateur. '
                           'Tu peux consulter l\'app, mais aucune action n\'est possible.'
                       : 'Motif : $reason\n'
                           'Tu peux consulter l\'app, mais aucune action n\'est possible.',

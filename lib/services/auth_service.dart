@@ -200,7 +200,7 @@ class AuthService {
       if (isInvalidCredentials && await _wasAccountDeleted(cleanUsername)) {
         throw Exception(
           'Ce compte a été supprimé par l\'administrateur.\n'
-          'Contacte la professeure si tu penses qu\'il s\'agit d\'une erreur.',
+          'Contacte l\'administrateur si tu penses qu\'il s\'agit d\'une erreur.',
         );
       }
       rethrow;
@@ -220,7 +220,7 @@ class AuthService {
       await _client.auth.signOut();
       throw Exception(
         'Ce compte a été supprimé par l\'administrateur.\n'
-        'Contacte la professeure si tu penses qu\'il s\'agit d\'une erreur.',
+        'Contacte l\'administrateur si tu penses qu\'il s\'agit d\'une erreur.',
       );
     }
 

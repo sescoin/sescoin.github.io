@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../common/notification_bridge.dart';
 import '../screens/admin/admin_accounts_screen.dart';
 import '../screens/admin/admin_avatar_review_screen.dart';
 import '../screens/admin/admin_class_detail_screen.dart';
@@ -215,6 +216,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           final extra = state.extra as Map<String, dynamic>?;
           return LoanCreateScreen(
             isChatMode: extra?['chatMode'] == true,
+            chatClassId: extra?['classId'] as String?,
           );
         },
       ),
@@ -420,7 +422,9 @@ class MainShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: navigationShell,
+      // Le pont relaie les notifications temps réel vers les notifications
+      // système (Android / navigateur) tant que l'app tourne.
+      body: NotificationBridge(child: navigationShell),
       // L'échelle du texte est bornée à 1.0 dans la barre de navigation :
       // avec 6 onglets, un libellé agrandi (« Portefeuille ») déborderait
       // sur une deuxième ligne.

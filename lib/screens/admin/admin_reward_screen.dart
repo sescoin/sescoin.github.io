@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../common/admin_widgets.dart';
+import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
+import '../../core/theme.dart';
 import '../../providers/admin_provider.dart';
 
 class AdminRewardScreen extends ConsumerStatefulWidget {
@@ -58,54 +61,57 @@ class _AdminRewardScreenState extends ConsumerState<AdminRewardScreen> {
           child: Form(
             key: _formKey,
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Distribution globale',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
+                const FadeSlideIn(
+                  child: AdminActionHeader(
+                    icon: Icons.card_giftcard_rounded,
+                    title: 'Distribution globale',
+                    message:
+                        'Cette action crédite tous les comptes actifs avec le '
+                        'même montant, en une seule fois.',
+                    color: AppTheme.positive,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FadeSlideIn.staggered(
+                  index: 1,
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _amountCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'Montant par personne',
+                              prefixIcon: Icon(Icons.savings_rounded),
+                              suffixText: 'SC',
+                            ),
+                            validator: (value) {
+                              final amount = double.tryParse(
+                                value?.replaceAll(',', '.') ?? '',
+                              );
+                              if (amount == null || amount <= 0) {
+                                return 'Entrez un montant valide';
+                              }
+                              return null;
+                            },
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Cette action crédite tous les comptes actifs avec le même montant.',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _reasonCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Raison affichée aux utilisateurs',
+                              hintText: 'Ex : Bravo pour le projet !',
+                              prefixIcon: Icon(Icons.notes_rounded),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _amountCtrl,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
-                          decoration: const InputDecoration(
-                            labelText: 'Montant par personne',
-                            suffixText: 'SC',
-                          ),
-                          validator: (value) {
-                            final amount =
-                                double.tryParse(value?.replaceAll(',', '.') ?? '');
-                            if (amount == null || amount <= 0) {
-                              return 'Entrez un montant valide';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _reasonCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Raison',
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -119,6 +125,11 @@ class _AdminRewardScreenState extends ConsumerState<AdminRewardScreen> {
             onPressed: state.isLoading ? null : _submit,
             icon: const Icon(Icons.card_giftcard_rounded),
             label: const Text('Distribuer'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.positive,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+            ),
           ),
         ),
       ),

@@ -65,8 +65,8 @@ class RequestSentScreen extends StatelessWidget {
               FadeSlideIn.staggered(
                 index: 3,
                 child: Text(
-                  'Ta demande a été transmise à la professeure.\n'
-                  'Elle va l\'examiner et créer ton compte avec '
+                  'Ta demande a été transmise à l\'administrateur.\n'
+                  'Il va l\'examiner et créer ton compte avec '
                   'ton solde initial.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
