@@ -84,7 +84,7 @@ class _AdminLoansScreenState extends ConsumerState<AdminLoansScreen>
 
   Future<void> _saveConfig() async {
     final config = LoanConfig(
-      maxDailySc: _parseDouble(_dailyCtrl, fallback: 5000),
+      maxDailySc: _parseDouble(_dailyCtrl, fallback: 100),
       maxWeeklySc: _parseDouble(_weeklyCtrl, fallback: 1000),
       maxActiveLoans: _parseInt(_activeLoansCtrl, fallback: 3),
       maxDurationDays: _parseInt(_durationCtrl, fallback: 14),
@@ -196,7 +196,7 @@ class _AdminLoansScreenState extends ConsumerState<AdminLoansScreen>
                       controller: _dailyCtrl,
                       label: 'Limite quotidienne',
                       suffix: 'SC / jour',
-                      hint: '5000',
+                      hint: '100',
                     ),
                     const SizedBox(height: 12),
                     _Field(
@@ -292,10 +292,10 @@ class _AdminLoanTile extends StatelessWidget {
                 const Spacer(),
                 Text(
                   '${loan.principal.toStringAsFixed(2)} SC',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: AppTheme.gold,
+                    color: context.accent,
                   ),
                 ),
               ],
@@ -441,10 +441,10 @@ class _Section extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 13,
-            color: AppTheme.gold,
+            color: context.accent,
             letterSpacing: 0.5,
           ),
         ),

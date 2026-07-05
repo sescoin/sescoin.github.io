@@ -549,12 +549,34 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = context.accent;
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
       child: FadeSlideIn(
-        child: Card(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: LinearGradient(
+              colors: [
+                Color.lerp(Theme.of(context).cardColor, accent, 0.14)!,
+                Theme.of(context).cardColor,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(
+              color: accent.withValues(alpha: 0.18),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.12),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -575,11 +597,18 @@ class _ProfileHeader extends StatelessWidget {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accent.withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: UserAvatar(
                             username: profile.username,
                             avatarUrl: profile.avatarUrl,
-                            radius: 28,
+                            radius: 30,
                             onTap: onPhotoTap,
                           ),
                         ),
@@ -615,27 +644,39 @@ class _ProfileHeader extends StatelessWidget {
                         children: [
                           Text(
                             profile.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             '@${profile.username}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Solde',
                             style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.4,
+                              color: onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 1),
                           CountUpAmount(
                             value: profile.balance,
                             builder: (context, animated) => Text(
                               '${animated.toStringAsFixed(2)} SC',
                               style: TextStyle(
-                                fontWeight: FontWeight.w700,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.5,
                                 color: accent,
                               ),
                             ),
@@ -676,13 +717,24 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: onChangePassword,
-                    icon: const Icon(Icons.lock_outline_rounded),
+                    icon: const Icon(Icons.lock_outline_rounded, size: 18),
                     label: const Text('Mot de passe'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(
+                        color: accent.withValues(alpha: 0.4),
+                      ),
+                      foregroundColor: accent,
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ),
               ],

@@ -128,78 +128,21 @@ class AdminScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 18),
-            // ── Demandes en attente ─────────────────────────────────────────
-            pendingAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (requests) => requests.isNotEmpty
-                  ? FadeSlideIn.staggered(
-                      index: 1,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 18),
-                        child: PressableScale(
-                          onTap: () => context.push(AppRoutes.adminRequests),
-                          child: Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: AppTheme.warning.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: AppTheme.warning.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.warning
-                                        .withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(11),
-                                  ),
-                                  child: const Icon(
-                                    Icons.pending_actions_rounded,
-                                    color: AppTheme.warning,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    '${requests.length} demande${requests.length > 1 ? 's' : ''} de compte en attente',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: AppTheme.warning,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
             // ── Sections ────────────────────────────────────────────────────
             const _SectionTitle(icon: Icons.people_rounded, title: 'Comptes'),
             _AdminTile(
-              index: 2,
+              index: 1,
               icon: Icons.people_rounded,
               title: 'Tous les comptes',
               subtitle: 'Voir, bannir, créditer, débiter ou supprimer',
               onTap: () => context.push(AppRoutes.adminAccounts),
             ),
             _AdminTile(
-              index: 3,
+              index: 2,
               icon: Icons.mark_email_unread_rounded,
               title: 'Demandes de compte',
               subtitle: 'Approuver ou refuser les demandes',
+              badgeCount: pendingAsync.valueOrNull?.length ?? 0,
               onTap: () => context.push(AppRoutes.adminRequests),
             ),
             const SizedBox(height: 18),
@@ -208,7 +151,7 @@ class AdminScreen extends ConsumerWidget {
               title: 'Marché',
             ),
             _AdminTile(
-              index: 4,
+              index: 3,
               icon: Icons.storefront_rounded,
               title: 'Gérer le marché',
               subtitle: 'Créer, modifier ou supprimer des offres et enchères',
@@ -217,7 +160,7 @@ class AdminScreen extends ConsumerWidget {
             const SizedBox(height: 18),
             const _SectionTitle(icon: Icons.school_rounded, title: 'Classes'),
             _AdminTile(
-              index: 5,
+              index: 4,
               icon: Icons.school_rounded,
               title: 'Gérer les classes',
               subtitle: 'Créer, renommer, supprimer, gérer les membres',
@@ -229,7 +172,7 @@ class AdminScreen extends ConsumerWidget {
               title: 'Prêts',
             ),
             _AdminTile(
-              index: 6,
+              index: 5,
               icon: Icons.account_balance_rounded,
               title: 'Prêts',
               subtitle: 'Liste de tous les prêts et paramètres',
@@ -242,7 +185,7 @@ class AdminScreen extends ConsumerWidget {
               title: 'Économie',
             ),
             _AdminTile(
-              index: 7,
+              index: 6,
               icon: Icons.percent_rounded,
               title: 'Taxer tout le monde',
               subtitle: 'Prélever un pourcentage sur tous les comptes',
@@ -250,7 +193,7 @@ class AdminScreen extends ConsumerWidget {
               color: AppTheme.negative,
             ),
             _AdminTile(
-              index: 8,
+              index: 7,
               icon: Icons.card_giftcard_rounded,
               title: 'Distribuer une récompense',
               subtitle: 'Créditer tous les comptes en une fois',
@@ -258,7 +201,7 @@ class AdminScreen extends ConsumerWidget {
               color: AppTheme.positive,
             ),
             _AdminTile(
-              index: 9,
+              index: 8,
               icon: Icons.trending_up_rounded,
               title: 'Modifier le cours',
               subtitle: "Éditer la demande, l'offre et le prix",
@@ -311,6 +254,7 @@ class _AdminTile extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.color,
+    this.badgeCount = 0,
   });
 
   final int index;
@@ -321,6 +265,9 @@ class _AdminTile extends StatelessWidget {
 
   /// null = couleur d'accent du thème.
   final Color? color;
+
+  /// > 0 : petit compteur affiché à côté du titre.
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -352,14 +299,27 @@ class _AdminTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14.5,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14.5,
+                                ),
+                              ),
+                            ),
+                            if (badgeCount > 0) ...[
+                              const SizedBox(width: 8),
+                              AnimatedBadge(
+                                count: badgeCount,
+                                color: tileColor,
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(

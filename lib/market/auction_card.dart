@@ -88,14 +88,22 @@ class _AuctionCardState extends State<AuctionCard> {
             Container(
               height: 80,
               width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFF1A1A2E),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF1A1A2E),
+                    Color.lerp(const Color(0xFF16213E), context.accent, 0.22)!,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.gavel_rounded,
                 size: 40,
-                color: AppTheme.gold,
+                color: context.accent,
               ),
             ),
           Padding(

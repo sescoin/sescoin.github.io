@@ -7,6 +7,7 @@ import '../../models/class_room.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/class_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
@@ -61,12 +62,16 @@ class AdminRequestsScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     itemCount: requests.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) => _RequestCard(
-                      req: requests[i],
-                      classes: classes,
-                      onApprove: (balance, classId) =>
-                          _approve(context, ref, requests[i], balance, classId),
-                      onReject: () => _reject(context, ref, requests[i].id),
+                    itemBuilder: (context, i) => FadeSlideIn.staggered(
+                      key: ValueKey(requests[i].id),
+                      index: i,
+                      child: _RequestCard(
+                        req: requests[i],
+                        classes: classes,
+                        onApprove: (balance, classId) => _approve(
+                            context, ref, requests[i], balance, classId),
+                        onReject: () => _reject(context, ref, requests[i].id),
+                      ),
                     ),
                   ),
           ),
@@ -279,10 +284,10 @@ class _RequestCardState extends State<_RequestCard> {
                         child: GestureDetector(
                           onTap: () =>
                               _showAvatarPreview(context, widget.req),
-                          child: const Icon(
+                          child: Icon(
                             Icons.open_in_full_rounded,
                             size: 16,
-                            color: AppTheme.gold,
+                            color: context.accent,
                           ),
                         ),
                       ),
@@ -314,26 +319,39 @@ class _RequestCardState extends State<_RequestCard> {
                         onTap: widget.classes.isEmpty
                             ? null
                             : () => _showClassPicker(context),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.school_rounded,
-                                size: 14, color: AppTheme.gold),
-                            const SizedBox(width: 4),
-                            Text(
-                              _selectedClass?.name ?? 'Aucune classe',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.gold,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.accent.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: context.accent.withValues(alpha: 0.25),
                             ),
-                            if (widget.classes.isNotEmpty) ...[
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.school_rounded,
+                                  size: 14, color: context.accent),
                               const SizedBox(width: 4),
-                              const Icon(Icons.edit_rounded,
-                                  size: 12, color: AppTheme.gold),
+                              Text(
+                                _selectedClass?.name ?? 'Aucune classe',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.accent,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (widget.classes.isNotEmpty) ...[
+                                const SizedBox(width: 4),
+                                Icon(Icons.edit_rounded,
+                                    size: 12, color: context.accent),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
                     ],
@@ -484,6 +502,7 @@ class _ClassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.accent;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -491,12 +510,12 @@ class _ClassChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected
-              ? AppTheme.gold.withValues(alpha: 0.15)
+              ? accent.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
-                ? AppTheme.gold
+                ? accent
                 : Colors.grey.withValues(alpha: 0.4),
             width: selected ? 1.5 : 1,
           ),
@@ -505,7 +524,7 @@ class _ClassChip extends StatelessWidget {
           label,
           style: TextStyle(
             color: selected
-                ? AppTheme.gold
+                ? accent
                 : Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight:
                 selected ? FontWeight.w700 : FontWeight.w500,

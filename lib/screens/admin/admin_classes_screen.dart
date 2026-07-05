@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../common/animations.dart';
+import '../../common/empty_state.dart';
+import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
@@ -24,6 +27,7 @@ class AdminClassesScreen extends ConsumerWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh_rounded),
+              tooltip: 'Actualiser',
               onPressed: () => ref.invalidate(classListProvider),
             ),
           ],
@@ -32,40 +36,38 @@ class AdminClassesScreen extends ConsumerWidget {
           onPressed: () => _showCreateDialog(context, ref),
           icon: const Icon(Icons.add_rounded),
           label: const Text('Nouvelle classe'),
-          backgroundColor: AppTheme.gold,
-          foregroundColor: Colors.black87,
+          backgroundColor: context.accent,
+          foregroundColor: context.onAccent,
         ),
         body: classesAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Erreur : $e'),
-                TextButton(
-                  onPressed: () => ref.invalidate(classListProvider),
-                  child: const Text('Réessayer'),
-                ),
-              ],
-            ),
+          loading: () => const InlineLoader(message: 'Chargement...'),
+          error: (e, _) => ErrorRetry(
+            message: 'Impossible de charger les classes',
+            onRetry: () => ref.invalidate(classListProvider),
           ),
           data: (classes) => classes.isEmpty
-              ? _EmptyClasses(
-                  onCreateTap: () => _showCreateDialog(context, ref),
+              ? const EmptyState(
+                  icon: Icons.school_rounded,
+                  title: 'Aucune classe',
+                  subtitle: 'Les classes créées apparaîtront ici',
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                   itemCount: classes.length,
-                  itemBuilder: (context, i) => _ClassCard(
-                    classRoom: classes[i],
-                    onTap: () => context.push(
-                      AppRoutes.adminClassDetail(classes[i].id),
-                      extra: {'name': classes[i].name},
+                  itemBuilder: (context, i) => FadeSlideIn.staggered(
+                    key: ValueKey(classes[i].id),
+                    index: i,
+                    child: _ClassCard(
+                      classRoom: classes[i],
+                      onTap: () => context.push(
+                        AppRoutes.adminClassDetail(classes[i].id),
+                        extra: {'name': classes[i].name},
+                      ),
+                      onRename: () =>
+                          _showRenameDialog(context, ref, classes[i]),
+                      onDelete: () =>
+                          _showDeleteDialog(context, ref, classes[i]),
                     ),
-                    onRename: () =>
-                        _showRenameDialog(context, ref, classes[i]),
-                    onDelete: () =>
-                        _showDeleteDialog(context, ref, classes[i]),
                   ),
                 ),
         ),
@@ -82,8 +84,9 @@ class AdminClassesScreen extends ConsumerWidget {
         content: TextField(
           controller: ctrl,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'Nom de la classe'),
+          decoration: const InputDecoration(labelText: 'Nom de la classe'),
           textCapitalization: TextCapitalization.words,
+          onSubmitted: (_) => Navigator.pop(ctx, true),
         ),
         actions: [
           TextButton(
@@ -99,7 +102,7 @@ class AdminClassesScreen extends ConsumerWidget {
     );
     final name = ctrl.text.trim();
     ctrl.dispose();
-    if (confirmed != true) return;
+    if (confirmed != true || name.isEmpty) return;
     await ref.read(classActionProvider.notifier).createClass(name);
   }
 
@@ -116,8 +119,9 @@ class AdminClassesScreen extends ConsumerWidget {
         content: TextField(
           controller: ctrl,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'Nouveau nom'),
+          decoration: const InputDecoration(labelText: 'Nouveau nom'),
           textCapitalization: TextCapitalization.words,
+          onSubmitted: (_) => Navigator.pop(ctx, true),
         ),
         actions: [
           TextButton(
@@ -133,7 +137,7 @@ class AdminClassesScreen extends ConsumerWidget {
     );
     final name = ctrl.text.trim();
     ctrl.dispose();
-    if (confirmed != true) return;
+    if (confirmed != true || name.isEmpty) return;
     await ref
         .read(classActionProvider.notifier)
         .renameClass(classRoom.id, name);
@@ -147,7 +151,7 @@ class AdminClassesScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Supprimer "${classRoom.name}" ?'),
+        title: Text('Supprimer « ${classRoom.name} » ?'),
         content: Text(
           'Les ${classRoom.memberCount} membre(s) seront retirés de cette classe. '
           'Les messages du chat de cette classe seront supprimés.',
@@ -158,7 +162,7 @@ class AdminClassesScreen extends ConsumerWidget {
             child: const Text('Annuler'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Supprimer'),
           ),
@@ -171,6 +175,8 @@ class AdminClassesScreen extends ConsumerWidget {
         .deleteClass(classRoom.id);
   }
 }
+
+// ── Carte de classe ────────────────────────────────────────────────────────────
 
 class _ClassCard extends StatelessWidget {
   const _ClassCard({
@@ -187,67 +193,109 @@ class _ClassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
+    final theme = Theme.of(context);
+    final accent = context.accent;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PressableScale(
         onTap: onTap,
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppTheme.gold.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.school_rounded, color: AppTheme.gold, size: 22),
-        ),
-        title: Text(
-          classRoom.name,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        subtitle: Text(
-          '${classRoom.memberCount} membre${classRoom.memberCount > 1 ? 's' : ''}',
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (v) {
-            if (v == 'rename') onRename();
-            if (v == 'delete') onDelete();
-          },
-          itemBuilder: (_) => [
-            const PopupMenuItem(value: 'rename', child: Text('Renommer')),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Text('Supprimer', style: TextStyle(color: Colors.red)),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 13, 6, 13),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        accent.withValues(alpha: 0.18),
+                        accent.withValues(alpha: 0.08),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Icon(Icons.school_rounded, color: accent, size: 22),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        classRoom.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.people_rounded,
+                            size: 13,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${classRoom.memberCount} membre${classRoom.memberCount > 1 ? 's' : ''}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  onSelected: (v) {
+                    if (v == 'rename') onRename();
+                    if (v == 'delete') onDelete();
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'rename',
+                      child: ListTile(
+                        leading: Icon(Icons.edit_rounded, size: 20),
+                        title: Text('Renommer'),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.delete_rounded,
+                          size: 20,
+                          color: AppTheme.negative,
+                        ),
+                        title: Text(
+                          'Supprimer',
+                          style: TextStyle(color: AppTheme.negative),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _EmptyClasses extends StatelessWidget {
-  const _EmptyClasses({required this.onCreateTap});
-
-  final VoidCallback onCreateTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.school_outlined, size: 56, color: Colors.grey[400]),
-          const SizedBox(height: 12),
-          const Text(
-            'Aucune classe créée',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Utilise le bouton + pour créer une classe.',
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-        ],
       ),
     );
   }

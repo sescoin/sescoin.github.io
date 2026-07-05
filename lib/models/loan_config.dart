@@ -27,7 +27,7 @@ class LoanConfig {
   }
 
   static const defaults = LoanConfig(
-    maxDailySc: 5000,
+    maxDailySc: 100,
     maxWeeklySc: 1000,
     maxActiveLoans: 3,
     maxDurationDays: 14,

@@ -52,10 +52,10 @@ class GlobalTransactionTile extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   '${transaction.amount.toStringAsFixed(2)} SC',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.gold,
+                    color: context.accent,
                   ),
                 ),
               ],

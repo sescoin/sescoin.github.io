@@ -165,7 +165,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                                   label: 'Prix actuel',
                                   value:
                                       '${auction.currentPrice.toStringAsFixed(2)} SC',
-                                  color: AppTheme.gold,
+                                  color: context.accent,
                                 ),
                                 _Stat(
                                   label: 'Offres',
@@ -331,7 +331,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                                     '${bid.amount.toStringAsFixed(2)} SC',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      color: i == 0 ? AppTheme.gold : null,
+                                      color: i == 0 ? context.accent : null,
                                     ),
                                   ),
                                 );

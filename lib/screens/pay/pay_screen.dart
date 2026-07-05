@@ -253,14 +253,19 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: context.accent.withValues(alpha: 0.4),
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-                  blurRadius: 16,
+                  color: context.accent.withValues(alpha: isDark ? 0.28 : 0.18),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -268,6 +273,10 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
               data: _myId!,
               version: QrVersions.auto,
               size: 220,
+              eyeStyle: QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Color.lerp(Colors.black, context.accent, 0.55)!,
+              ),
             ),
           ),
           const SizedBox(height: 16),

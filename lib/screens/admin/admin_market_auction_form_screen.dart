@@ -137,18 +137,30 @@ class _AdminMarketAuctionFormScreenState
     }
   }
 
-  String? _validateDuration() {
-    final hours = int.tryParse(_durationHoursCtrl.text.trim());
-    final minutes = int.tryParse(_durationMinutesCtrl.text.trim());
-
+  String? _validateHours(String? value) {
+    final hours = int.tryParse((value ?? '').trim());
     if (hours == null || hours < 0) {
       return 'Heures invalides';
     }
+    final minutes = int.tryParse(_durationMinutesCtrl.text.trim());
+    // La durée totale ne se contrôle qu'une fois les deux champs valides.
+    if (minutes != null &&
+        minutes >= 0 &&
+        minutes <= 59 &&
+        (hours * 60) + minutes <= 0) {
+      return 'Durée nulle';
+    }
+    return null;
+  }
+
+  String? _validateMinutes(String? value) {
+    final minutes = int.tryParse((value ?? '').trim());
     if (minutes == null || minutes < 0 || minutes > 59) {
       return 'Minutes invalides';
     }
-    if ((hours * 60) + minutes <= 0) {
-      return 'Entrez une durée valide';
+    final hours = int.tryParse(_durationHoursCtrl.text.trim());
+    if (hours != null && hours >= 0 && (hours * 60) + minutes <= 0) {
+      return 'Durée nulle';
     }
     return null;
   }
@@ -239,7 +251,7 @@ class _AdminMarketAuctionFormScreenState
                             decoration: const InputDecoration(
                               labelText: 'Heures',
                             ),
-                            validator: (_) => _validateDuration(),
+                            validator: _validateHours,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -250,7 +262,7 @@ class _AdminMarketAuctionFormScreenState
                             decoration: const InputDecoration(
                               labelText: 'Minutes',
                             ),
-                            validator: (_) => _validateDuration(),
+                            validator: _validateMinutes,
                           ),
                         ),
                       ],

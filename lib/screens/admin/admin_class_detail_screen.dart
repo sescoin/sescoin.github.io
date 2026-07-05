@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../common/animations.dart';
+import '../../common/empty_state.dart';
+import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
 import '../../common/user_avatar.dart';
 import '../../core/router.dart';
@@ -10,7 +13,8 @@ import '../../models/profile.dart';
 import '../../providers/class_provider.dart';
 
 class AdminClassDetailScreen extends ConsumerWidget {
-  const AdminClassDetailScreen({super.key, required this.classId, required this.className});
+  const AdminClassDetailScreen(
+      {super.key, required this.classId, required this.className});
 
   final String classId;
   final String className;
@@ -20,85 +24,164 @@ class AdminClassDetailScreen extends ConsumerWidget {
     final membersAsync = ref.watch(classMembersProvider(classId));
     final withoutAsync = ref.watch(usersWithoutClassProvider);
     final state = ref.watch(classActionProvider);
+    final accent = context.accent;
 
     return LoadingOverlay(
       isLoading: state.isLoading,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(className),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.chat_rounded),
-              tooltip: 'Ouvrir le chat de la classe',
-              onPressed: () => context.push(AppRoutes.classChat(classId), extra: className as Object),
-            ),
-          ],
-        ),
+        appBar: AppBar(title: Text(className)),
         body: membersAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Erreur : $e')),
-          data: (members) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
-                  children: [
-                    Text(
-                      '${members.length} membre${members.length > 1 ? 's' : ''}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: AppTheme.gold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const Spacer(),
-                    withoutAsync.when(
-                      data: (available) => available.isEmpty
-                          ? const SizedBox.shrink()
-                          : TextButton.icon(
-                              onPressed: () =>
-                                  _showAddMemberDialog(context, ref, available),
-                              icon: const Icon(Icons.person_add_rounded, size: 18),
-                              label: const Text('Ajouter'),
-                              style: TextButton.styleFrom(foregroundColor: AppTheme.gold),
-                            ),
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: members.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.group_outlined, size: 48, color: Colors.grey[400]),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Aucun membre dans cette classe.',
-                              style: TextStyle(color: Colors.grey[500]),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: members.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1, indent: 70),
-                        itemBuilder: (context, i) => _MemberTile(
-                          profile: members[i],
-                          onRemove: () =>
-                              _confirmRemove(context, ref, members[i]),
-                        ),
-                      ),
-              ),
-            ],
+          loading: () => const InlineLoader(message: 'Chargement...'),
+          error: (e, _) => ErrorRetry(
+            message: 'Impossible de charger les membres',
+            onRetry: () => ref.invalidate(classMembersProvider(classId)),
           ),
+          data: (members) {
+            final available = withoutAsync.valueOrNull ?? const <Profile>[];
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              children: [
+                // ── En-tête de la classe ──────────────────────────────────
+                FadeSlideIn.staggered(
+                  index: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF1A1A2E),
+                          Color.lerp(const Color(0xFF16213E), accent, 0.22)!,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.18),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.18),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: accent.withValues(alpha: 0.55),
+                              width: 1.4,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.school_rounded,
+                            color: accent,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                className,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${members.length} membre${members.length > 1 ? 's' : ''}',
+                                style: TextStyle(
+                                  color: accent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.chat_rounded,
+                            color: Colors.white,
+                          ),
+                          tooltip: 'Ouvrir le chat de la classe',
+                          onPressed: () => context.push(
+                            AppRoutes.classChat(classId),
+                            extra: className as Object,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // ── Barre d'actions ───────────────────────────────────────
+                FadeSlideIn.staggered(
+                  index: 1,
+                  child: Row(
+                    children: [
+                      Text(
+                        'Membres',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const Spacer(),
+                      if (available.isNotEmpty)
+                        FilledButton.tonalIcon(
+                          onPressed: () =>
+                              _showAddMemberDialog(context, ref, available),
+                          icon: const Icon(Icons.person_add_rounded, size: 18),
+                          label: const Text('Ajouter'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: accent.withValues(alpha: 0.14),
+                            foregroundColor: accent,
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // ── Membres ───────────────────────────────────────────────
+                if (members.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: EmptyState(
+                      icon: Icons.group_rounded,
+                      title: 'Aucun membre',
+                      subtitle: 'Les membres ajoutés apparaîtront ici',
+                    ),
+                  )
+                else
+                  for (var i = 0; i < members.length; i++)
+                    FadeSlideIn.staggered(
+                      key: ValueKey(members[i].id),
+                      index: 2 + i,
+                      child: _MemberTile(
+                        profile: members[i],
+                        onRemove: () => _confirmRemove(context, ref, members[i]),
+                      ),
+                    ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -121,7 +204,8 @@ class AdminClassDetailScreen extends ConsumerWidget {
             itemBuilder: (context, i) {
               final p = available[i];
               return ListTile(
-                leading: UserAvatar(username: p.username, avatarUrl: p.avatarUrl, radius: 20),
+                leading: UserAvatar(
+                    username: p.username, avatarUrl: p.avatarUrl, radius: 20),
                 title: Text(p.displayName),
                 subtitle: Text('@${p.username}'),
                 onTap: () => Navigator.pop(ctx, p),
@@ -161,7 +245,7 @@ class AdminClassDetailScreen extends ConsumerWidget {
             child: const Text('Annuler'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Retirer'),
           ),
@@ -177,6 +261,8 @@ class AdminClassDetailScreen extends ConsumerWidget {
   }
 }
 
+// ── Tuile de membre ────────────────────────────────────────────────────────────
+
 class _MemberTile extends StatelessWidget {
   const _MemberTile({required this.profile, required this.onRemove});
 
@@ -185,21 +271,59 @@ class _MemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: UserAvatar(
-        username: profile.username,
-        avatarUrl: profile.avatarUrl,
-        radius: 22,
-      ),
-      title: Text(
-        profile.displayName,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text('@${profile.username}'),
-      trailing: IconButton(
-        icon: const Icon(Icons.person_remove_rounded, color: Colors.red, size: 20),
-        tooltip: 'Retirer de la classe',
-        onPressed: onRemove,
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+          child: Row(
+            children: [
+              UserAvatar(
+                username: profile.username,
+                avatarUrl: profile.avatarUrl,
+                radius: 21,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '@${profile.username}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.person_remove_rounded,
+                  color: AppTheme.negative,
+                  size: 20,
+                ),
+                tooltip: 'Retirer de la classe',
+                onPressed: onRemove,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

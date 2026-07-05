@@ -51,8 +51,8 @@ class MarketItemCard extends StatelessWidget {
               children: [
                 _InfoBadge(
                   label: item.category,
-                  color: AppTheme.gold,
-                  background: AppTheme.gold.withValues(alpha: 0.12),
+                  color: context.accent,
+                  background: context.accent.withValues(alpha: 0.12),
                 ),
                 if (!item.isUnlimited)
                   _InfoBadge(
@@ -156,17 +156,25 @@ class _Placeholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.accent;
     return Container(
       height: 116,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppTheme.gold.withValues(alpha: 0.08),
+        gradient: LinearGradient(
+          colors: [
+            accent.withValues(alpha: 0.16),
+            accent.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Icon(
+      child: Icon(
         Icons.storefront_rounded,
         size: 36,
-        color: AppTheme.gold,
+        color: accent,
       ),
     );
   }

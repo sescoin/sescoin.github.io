@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,6 +46,13 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
   late List<double> _supply;
   late List<double> _price;
 
+  // État de référence pour détecter les modifications non enregistrées.
+  late List<double> _baseDemand;
+  late List<double> _baseSupply;
+  late List<double> _basePrice;
+  late String _baseRate;
+  late String _baseReason;
+
   _Series _series = _Series.price;
 
   /// Échelles gelées pendant le glissement pour éviter l'effet élastique.
@@ -63,7 +71,50 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
     _demand = List.of(current.demandPoints);
     _supply = List.of(current.supplyPoints);
     _price = List.of(current.pricePoints);
+    _baseDemand = List.of(current.demandPoints);
+    _baseSupply = List.of(current.supplyPoints);
+    _basePrice = List.of(current.pricePoints);
+    _baseRate = _rateCtrl.text;
+    _baseReason = _reasonCtrl.text;
     _recomputeAxes();
+  }
+
+  bool get _isDirty =>
+      _rateCtrl.text != _baseRate ||
+      _reasonCtrl.text != _baseReason ||
+      !listEquals(_demand, _baseDemand) ||
+      !listEquals(_supply, _baseSupply) ||
+      !listEquals(_price, _basePrice);
+
+  Future<void> _confirmExit() async {
+    if (!_isDirty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Modifications non enregistrées'),
+        content: const Text(
+          'Les changements apportés au cours n\'ont pas été appliqués. '
+          'Quitter sans enregistrer ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Continuer l\'édition'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Quitter'),
+          ),
+        ],
+      ),
+    );
+    if (leave == true && mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   CurrencyRate _currentOrDefault() {
@@ -260,11 +311,17 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
       _Series.price => accent,
     };
 
-    return LoadingOverlay(
-      isLoading: state.isLoading,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Modifier le cours')),
-        body: ListView(
+    return PopScope(
+      // Intercepte le retour pour avertir si des changements sont en attente.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmExit();
+      },
+      child: LoadingOverlay(
+        isLoading: state.isLoading,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('Modifier le cours')),
+          body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             // ── En-tête ─────────────────────────────────────────────────────
@@ -564,7 +621,8 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
