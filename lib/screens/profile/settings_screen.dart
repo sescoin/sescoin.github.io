@@ -812,7 +812,7 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
                       ),
                     ),
                     Text(
-                      'Ta couleur d\'accent',
+                      'Couleur personnalisée',
                       style: TextStyle(
                         fontSize: 11.5,
                         color: theme.colorScheme.onSurfaceVariant,
@@ -1114,7 +1114,7 @@ class _PreviewCard extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      'Salut ! Voici l\'aperçu 👋',
+                      'Aperçu des messages',
                       style: TextStyle(
                         fontSize: 13,
                         color: theme.colorScheme.onSurface,
@@ -1139,7 +1139,7 @@ class _PreviewCard extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      'Superbe couleur !',
+                      'Couleur d\'accent',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,

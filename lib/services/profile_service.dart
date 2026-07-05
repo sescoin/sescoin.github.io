@@ -180,22 +180,19 @@ class ProfileService {
     });
   }
 
-  /// Bannit un compte
+  /// Bannit un compte (RPC : l'UPDATE direct était bloqué par RLS).
+  /// La notification à l'utilisateur est créée par la fonction SQL.
   Future<void> banUser(String userId, {String? reason}) async {
-    await _client.from('profiles').update({
-      'is_banned': true,
-      'ban_reason': reason,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', userId);
+    await _client.rpc('admin_ban_user', params: {
+      'p_user_id': userId,
+      if (reason != null && reason.trim().isNotEmpty)
+        'p_reason': reason.trim(),
+    });
   }
 
-  /// Débannit un compte
+  /// Débannit un compte (RPC, notification incluse côté SQL).
   Future<void> unbanUser(String userId) async {
-    await _client.from('profiles').update({
-      'is_banned': false,
-      'ban_reason': null,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', userId);
+    await _client.rpc('admin_unban_user', params: {'p_user_id': userId});
   }
 
   /// Supprime un compte définitivement

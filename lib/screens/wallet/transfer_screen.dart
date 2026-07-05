@@ -284,7 +284,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                   maxLength: 100,
                   onFieldSubmitted: (_) => _submit(),
                   decoration: const InputDecoration(
-                    hintText: 'Pour quoi ?',
+                    hintText: 'Raison du transfert…',
                     prefixIcon: Icon(Icons.notes_rounded),
                   ),
                 ),

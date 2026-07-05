@@ -16,7 +16,7 @@ bool ensureNotBanned(BuildContext context, WidgetRef ref) {
   if (profile != null && profile.isBanned) {
     AppFeedback.error(
       context,
-      'Ton compte est suspendu — cette action est désactivée.',
+      'Compte suspendu : cette action n\'est pas autorisée.',
     );
     return false;
   }
@@ -75,10 +75,10 @@ class BannedBanner extends ConsumerWidget {
                 const SizedBox(height: 3),
                 Text(
                   reason == null || reason.isEmpty
-                      ? 'Ton compte a été suspendu par l\'administrateur. '
-                          'Tu peux consulter l\'app, mais aucune action n\'est possible.'
+                      ? 'Ce compte a été suspendu par l\'administrateur. '
+                          'La consultation reste possible, mais aucune action n\'est autorisée.'
                       : 'Motif : $reason\n'
-                          'Tu peux consulter l\'app, mais aucune action n\'est possible.',
+                          'La consultation reste possible, mais aucune action n\'est autorisée.',
                   style: TextStyle(
                     fontSize: 12.5,
                     height: 1.35,

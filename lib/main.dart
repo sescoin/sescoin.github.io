@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'common/app_logo.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'providers/settings_provider.dart';
@@ -132,13 +131,7 @@ class SESCoinApp extends ConsumerWidget {
           data: mq.copyWith(
             textScaler: TextScaler.linear(clamped * settings.textScale),
           ),
-          // L'animation de lancement recouvre l'app puis s'efface.
-          child: Stack(
-            children: [
-              child!,
-              const LaunchSplash(),
-            ],
-          ),
+          child: child!,
         );
       },
     );

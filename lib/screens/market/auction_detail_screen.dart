@@ -71,7 +71,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
         ref.invalidate(auctionBidsProvider(widget.auctionId));
         ref.invalidate(auctionStreamProvider(widget.auctionId));
         ref.invalidate(activeAuctionsProvider);
-        AppFeedback.success(context, 'Enchère placée ! 🔨');
+        AppFeedback.success(context, 'Enchère placée.');
       }
     } catch (e) {
       if (mounted) {

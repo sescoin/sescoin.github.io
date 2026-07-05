@@ -96,12 +96,14 @@ class AuthService {
       return true;
     }
 
+    // Seule une demande encore en attente bloque l'identifiant : une demande
+    // approuvée dont le compte a été supprimé (ou refusée) doit pouvoir être
+    // refaite avec le même identifiant.
     final requestResult = await _client
         .from('account_requests')
         .select('id')
         .eq('username', username)
-        .neq('status', 'rejected')
-        .neq('status', 'cancelled')
+        .eq('status', 'pending')
         .maybeSingle();
 
     return requestResult != null;
@@ -200,7 +202,7 @@ class AuthService {
       if (isInvalidCredentials && await _wasAccountDeleted(cleanUsername)) {
         throw Exception(
           'Ce compte a été supprimé par l\'administrateur.\n'
-          'Contacte l\'administrateur si tu penses qu\'il s\'agit d\'une erreur.',
+          'En cas d\'erreur, contacter l\'administrateur.',
         );
       }
       rethrow;
@@ -220,7 +222,7 @@ class AuthService {
       await _client.auth.signOut();
       throw Exception(
         'Ce compte a été supprimé par l\'administrateur.\n'
-        'Contacte l\'administrateur si tu penses qu\'il s\'agit d\'une erreur.',
+        'En cas d\'erreur, contacter l\'administrateur.',
       );
     }
 

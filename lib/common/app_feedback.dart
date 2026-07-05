@@ -141,7 +141,7 @@ String prettifyError(Object error) {
       return 'Identifiant ou mot de passe incorrect.';
     }
     if (msg.contains('rate limit') || msg.contains('too many')) {
-      return 'Trop de tentatives. Réessaie dans quelques minutes.';
+      return 'Trop de tentatives. Réessayer dans quelques minutes.';
     }
     return _cleanup(error.message);
   }
@@ -151,7 +151,7 @@ String prettifyError(Object error) {
   }
 
   if (error is TimeoutException) {
-    return 'Le serveur met trop de temps à répondre. Réessaie.';
+    return 'Le serveur met trop de temps à répondre.';
   }
 
   final raw = error.toString();
@@ -160,13 +160,13 @@ String prettifyError(Object error) {
       lower.contains('failed host lookup') ||
       lower.contains('connection refused') ||
       lower.contains('network')) {
-    return 'Pas de connexion. Vérifie ton réseau et réessaie.';
+    return 'Pas de connexion réseau.';
   }
   if (lower.contains('timeout') || lower.contains('timed out')) {
-    return 'Le serveur met trop de temps à répondre. Réessaie.';
+    return 'Le serveur met trop de temps à répondre.';
   }
   if (lower.contains('jwt') || lower.contains('token has expired')) {
-    return 'Session expirée. Reconnecte-toi.';
+    return 'Session expirée. Une reconnexion est nécessaire.';
   }
 
   return _cleanup(raw);
@@ -178,7 +178,7 @@ String _cleanup(String message) {
   m = m.replaceFirst(RegExp(r'^PostgrestException\([^)]*\)\s*:?\s*'), '');
   // Les fonctions SQL renvoient déjà des messages français propres —
   // on retire juste le préfixe technique éventuel.
-  if (m.isEmpty) return 'Une erreur est survenue. Réessaie.';
+  if (m.isEmpty) return 'Une erreur est survenue.';
   // Majuscule initiale + point final pour un rendu propre.
   m = m[0].toUpperCase() + m.substring(1);
   if (!m.endsWith('.') && !m.endsWith('!') && !m.endsWith('?')) m = '$m.';

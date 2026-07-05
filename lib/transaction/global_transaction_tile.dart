@@ -168,6 +168,10 @@ class _TypeBadge extends StatelessWidget {
           Icons.account_balance_rounded,
           AppTheme.gold
         ),
+      TransactionType.gift => (
+          Icons.card_giftcard_rounded,
+          const Color(0xFFE84393)
+        ),
     };
 
     return Container(

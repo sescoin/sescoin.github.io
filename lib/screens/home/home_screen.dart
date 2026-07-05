@@ -229,7 +229,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? const EmptyState(
                           icon: Icons.receipt_long_rounded,
                           title: 'Aucune transaction',
-                          subtitle: 'Tes transactions apparaîtront ici',
+                          subtitle: 'Les transactions apparaîtront ici',
                         )
                       : Card(
                           child: ListView.separated(

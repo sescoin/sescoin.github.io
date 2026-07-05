@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auction_provider.dart';
 import '../models/account_request.dart';
-import '../models/app_notification.dart';
 import '../models/loan.dart';
 import '../models/loan_config.dart';
 import 'auth_provider.dart';
@@ -146,21 +145,9 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
   Future<void> banUser(String userId, {String? reason}) async {
     state = state.copyWith(isLoading: true, clearMessages: true);
     try {
+      // Le RPC vérifie le rôle admin, applique le bannissement et notifie
+      // l'utilisateur dans la même transaction.
       await _ref.read(profileServiceProvider).banUser(userId, reason: reason);
-      // Prévient l'utilisateur : il garde l'accès en lecture mais toutes
-      // les actions lui sont fermées.
-      try {
-        await _ref.read(notificationServiceProvider).sendToUser(
-              userId: userId,
-              type: NotificationType.system,
-              title: 'Compte suspendu',
-              body: 'Ton compte a été suspendu par l\'administrateur.'
-                  '${reason != null && reason.trim().isNotEmpty ? '\nMotif : ${reason.trim()}' : ''}'
-                  '\nTu peux consulter l\'app, mais aucune action n\'est possible.',
-            );
-      } catch (_) {
-        // La notification est un bonus : le ban reste effectif sans elle.
-      }
       state = state.copyWith(isLoading: false, successMessage: 'Compte banni');
       _ref.invalidate(allProfilesProvider);
     } catch (e) {
@@ -173,15 +160,6 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
     state = state.copyWith(isLoading: true, clearMessages: true);
     try {
       await _ref.read(profileServiceProvider).unbanUser(userId);
-      try {
-        await _ref.read(notificationServiceProvider).sendToUser(
-              userId: userId,
-              type: NotificationType.system,
-              title: 'Compte réactivé',
-              body:
-                  'Ton compte a été réactivé par l\'administrateur. Bon retour ! 🎉',
-            );
-      } catch (_) {}
       state =
           state.copyWith(isLoading: false, successMessage: 'Compte débanni');
       _ref.invalidate(allProfilesProvider);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../common/animations.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -69,7 +69,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             return const EmptyState(
               icon: Icons.receipt_long_rounded,
               title: 'Aucune transaction',
-              subtitle: 'Tes transactions apparaîtront ici',
+              subtitle: 'Les transactions apparaîtront ici',
             );
           }
 
@@ -79,6 +79,8 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             child: ListView.separated(
               controller: _scrollCtrl,
               physics: const AlwaysScrollableScrollPhysics(),
+              // Pré-construit les tuiles hors écran pour un défilement fluide.
+              scrollCacheExtent: const ScrollCacheExtent.pixels(800),
               itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
               separatorBuilder: (_, __) => const Divider(
                 height: 1,
@@ -96,11 +98,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                     ),
                   );
                 }
-                final tile = TransactionTile(transaction: state.items[i]);
-                // Cascade uniquement sur le premier écran visible
-                return i < 12
-                    ? FadeSlideIn.staggered(index: i, child: tile)
-                    : tile;
+                // Pas d'animation d'apparition sur les tuiles recyclées :
+                // rejouer la cascade à chaque défilement saccade la liste.
+                return TransactionTile(transaction: state.items[i]);
               },
             ),
           );

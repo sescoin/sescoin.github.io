@@ -394,22 +394,91 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                   child: Container(
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: context.isDark
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : Colors.black.withValues(alpha: 0.05),
+                      ),
                     ),
                     child: TabBar(
                       controller: _tabController,
                       dividerColor: Colors.transparent,
                       indicatorSize: TabBarIndicatorSize.tab,
+                      splashBorderRadius: BorderRadius.circular(14),
                       indicator: BoxDecoration(
-                        color: context.accent.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(18),
+                        gradient: LinearGradient(
+                          colors: [
+                            context.accent,
+                            Color.lerp(context.accent, Colors.black, 0.20)!,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.accent.withValues(alpha: 0.30),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      labelColor: context.accent,
-                      tabs: const [
-                        Tab(text: 'Prêts'),
-                        Tab(text: 'Notifications'),
+                      labelColor: context.onAccent,
+                      unselectedLabelColor:
+                          Theme.of(context).colorScheme.onSurfaceVariant,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13.5,
+                      ),
+                      tabs: [
+                        const Tab(
+                          height: 44,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.handshake_rounded, size: 16),
+                              SizedBox(width: 7),
+                              Text('Prêts'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          height: 44,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.notifications_rounded, size: 16),
+                              const SizedBox(width: 7),
+                              const Text('Notifications'),
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final unread = ref
+                                          .watch(unreadCountProvider)
+                                          .valueOrNull ??
+                                      0;
+                                  if (unread <= 0) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(left: 6),
+                                    child: AnimatedBadge(
+                                      count: unread,
+                                      color: AppTheme.negative,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),

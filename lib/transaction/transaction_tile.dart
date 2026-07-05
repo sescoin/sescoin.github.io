@@ -112,6 +112,10 @@ class TransactionTile extends ConsumerWidget {
         return 'Débit';
       case TransactionType.initialBalance:
         return 'Solde initial';
+      case TransactionType.gift:
+        return isCredit
+            ? 'Cadeau récupéré de @$otherParty'
+            : 'Cadeau récupéré par @$otherParty';
     }
   }
 }
@@ -158,6 +162,8 @@ class _TypeIcon extends StatelessWidget {
         return (Icons.remove_circle_rounded, AppTheme.negative);
       case TransactionType.initialBalance:
         return (Icons.account_balance_rounded, AppTheme.gold);
+      case TransactionType.gift:
+        return (Icons.card_giftcard_rounded, const Color(0xFFE84393));
     }
   }
 }

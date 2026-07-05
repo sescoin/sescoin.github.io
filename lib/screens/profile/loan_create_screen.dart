@@ -177,12 +177,12 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     }
 
     if (!_isChatMode && _selectedLenders.isEmpty) {
-      AppFeedback.warning(context, 'Ajoute au moins un prêteur.');
+      AppFeedback.warning(context, 'Au moins un prêteur est requis.');
       return;
     }
 
     if (_dueDate == null) {
-      AppFeedback.warning(context, 'Choisis une date d\'échéance.');
+      AppFeedback.warning(context, 'Une date d\'échéance est requise.');
       return;
     }
 
@@ -255,11 +255,11 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
           AppFeedback.error(
             context,
             errorMessage == null || errorMessage.isEmpty
-                ? 'L\'envoi a échoué. Réessaie.'
+                ? 'L\'envoi a échoué.'
                 : errorMessage,
           );
         } else {
-          AppFeedback.success(context, 'Demande de prêt publiée dans le chat !');
+          AppFeedback.success(context, 'Demande de prêt publiée.');
           context.pop();
         }
       } finally {

@@ -26,7 +26,7 @@
         android:label="SES Coin"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:enableOnBackInvokedCallback="true">
+        android:enableOnBackInvokedCallback="false">
 
         <activity
             android:name=".MainActivity"

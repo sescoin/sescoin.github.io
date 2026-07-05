@@ -241,7 +241,7 @@ class _ShopTab extends ConsumerWidget {
     try {
       await ref.read(purchaseProvider.notifier).purchase(itemId: item.id);
       if (context.mounted) {
-        AppFeedback.success(context, '${item.name} acheté ! 🎉');
+        AppFeedback.success(context, 'Achat effectué : ${item.name}.');
       }
     } catch (error) {
       if (context.mounted) {

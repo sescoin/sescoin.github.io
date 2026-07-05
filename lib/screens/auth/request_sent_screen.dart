@@ -65,9 +65,9 @@ class RequestSentScreen extends StatelessWidget {
               FadeSlideIn.staggered(
                 index: 3,
                 child: Text(
-                  'Ta demande a été transmise à l\'administrateur.\n'
-                  'Il va l\'examiner et créer ton compte avec '
-                  'ton solde initial.',
+                  'La demande a été transmise à l\'administrateur.\n'
+                  'Le compte sera créé après validation, avec '
+                  'son solde initial.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -91,8 +91,8 @@ class RequestSentScreen extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Tu recevras une notification dès que ton '
-                          'compte est approuvé.',
+                          'Une notification sera envoyée dès que le '
+                          'compte sera approuvé.',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

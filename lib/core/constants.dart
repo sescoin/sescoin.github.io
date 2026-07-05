@@ -64,6 +64,7 @@ enum TransactionType {
   adminCredit,
   adminDebit,
   initialBalance,
+  gift,
 }
 
 extension TransactionTypeX on TransactionType {
@@ -77,6 +78,7 @@ extension TransactionTypeX on TransactionType {
         TransactionType.adminCredit => 'Crédit',
         TransactionType.adminDebit => 'Débit',
         TransactionType.initialBalance => 'Solde initial',
+        TransactionType.gift => 'Cadeau',
       };
 
   String get dbValue => switch (this) {
@@ -89,6 +91,7 @@ extension TransactionTypeX on TransactionType {
         TransactionType.adminCredit => 'admin_credit',
         TransactionType.adminDebit => 'admin_debit',
         TransactionType.initialBalance => 'initial_balance',
+        TransactionType.gift => 'gift',
       };
 
   static TransactionType fromDb(String value) => switch (value) {
@@ -101,6 +104,7 @@ extension TransactionTypeX on TransactionType {
         'admin_credit' => TransactionType.adminCredit,
         'admin_debit' => TransactionType.adminDebit,
         'initial_balance' => TransactionType.initialBalance,
+        'gift' => TransactionType.gift,
         _ => TransactionType.transfer,
       };
 }

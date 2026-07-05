@@ -40,7 +40,7 @@ class _AdminRewardScreenState extends ConsumerState<AdminRewardScreen> {
       if (!mounted) {
         return;
       }
-      AppFeedback.success(context, 'Récompense distribuée ! 🎉');
+      AppFeedback.success(context, 'Récompense distribuée.');
       Navigator.of(context).pop();
     } catch (error) {
       if (mounted) {

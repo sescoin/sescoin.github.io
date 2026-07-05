@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
 import '../../core/constants.dart';
 import '../../core/router.dart';
@@ -104,7 +105,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       setState(() => _usernameAvailable = null);
       return;
     }
-    setState(() { _checkingUsername = true; _usernameAvailable = null; });
+    setState(() {
+      _checkingUsername = true;
+      _usernameAvailable = null;
+    });
     _usernameTimer = Timer(const Duration(milliseconds: 700), () async {
       try {
         final available = await Supabase.instance.client
@@ -178,10 +182,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     // Si des classes existent, une doit être sélectionnée
     final classesValue = ref.read(classListProvider).valueOrNull;
-    if (classesValue != null && classesValue.isNotEmpty && _selectedClassId == null) {
+    if (classesValue != null &&
+        classesValue.isNotEmpty &&
+        _selectedClassId == null) {
       AppFeedback.warning(
         context,
-        'Choisis ta classe avant d\'envoyer la demande.',
+        'Une classe doit être sélectionnée avant l\'envoi.',
       );
       return;
     }
@@ -213,376 +219,497 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = context.accent;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Créer un compte')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Choix avatar / photo ──────────────────────────────────────
-              Text(
-                'Choisis ton avatar',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelLarge
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 16),
-
-              // Aperçu + bouton photo
-              Row(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Aperçu circulaire
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: CircleAvatar(
-                      radius: 36,
-                      backgroundColor:
-                          AppTheme.gold.withValues(alpha: 0.12),
-                      backgroundImage: _pickedBytes != null
-                          ? MemoryImage(_pickedBytes!)
-                          : null,
-                      child: _pickedImage == null
-                          ? (_selectedAvatar == _initialsKey
-                              ? Text(
-                                  _previewInitials,
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.gold,
+                  // ── Carte profil ─────────────────────────────────────────
+                  FadeSlideIn.staggered(
+                    index: 0,
+                    child: _SectionCard(
+                      title: 'Profil',
+                      icon: Icons.person_rounded,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: _pickImage,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: accent.withValues(alpha: 0.45),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.all(3),
+                                  child: CircleAvatar(
+                                    radius: 32,
+                                    backgroundColor:
+                                        accent.withValues(alpha: 0.12),
+                                    backgroundImage: _pickedBytes != null
+                                        ? MemoryImage(_pickedBytes!)
+                                        : null,
+                                    child: _pickedImage == null
+                                        ? (_selectedAvatar == _initialsKey
+                                            ? Text(
+                                                _previewInitials,
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: accent,
+                                                ),
+                                              )
+                                            : Text(
+                                                _selectedAvatar.isEmpty
+                                                    ? '🦁'
+                                                    : _selectedAvatar,
+                                                style: const TextStyle(
+                                                    fontSize: 28),
+                                              ))
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _pickImage,
+                                  icon: const Icon(
+                                      Icons.photo_library_outlined,
+                                      size: 18),
+                                  label: Text(
+                                    _pickedImage != null
+                                        ? 'Photo sélectionnée'
+                                        : 'Importer une photo',
+                                  ),
+                                  style: _pickedImage != null
+                                      ? OutlinedButton.styleFrom(
+                                          foregroundColor: AppTheme.positive,
+                                          side: const BorderSide(
+                                            color: AppTheme.positive,
+                                            width: 1.4,
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Ou sélectionner un emoji ou les initiales :',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 56,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              // +1 pour la carte initiales en première position
+                              itemCount: _avatars.length + 1,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 8),
+                              itemBuilder: (context, i) {
+                                if (i == 0) {
+                                  final selected = _pickedImage == null &&
+                                      _selectedAvatar == _initialsKey;
+                                  return _AvatarOption(
+                                    selected: selected,
+                                    onTap: () => setState(() {
+                                      _selectedAvatar = _initialsKey;
+                                      _pickedImage = null;
+                                    }),
+                                    child: Text(
+                                      _previewInitials,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        color: selected
+                                            ? accent
+                                            : theme
+                                                .colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                final avatar = _avatars[i - 1];
+                                final selected = _pickedImage == null &&
+                                    avatar == _selectedAvatar;
+                                return _AvatarOption(
+                                  selected: selected,
+                                  onTap: () => setState(() {
+                                    _selectedAvatar = avatar;
+                                    _pickedImage = null;
+                                  }),
+                                  child: Text(
+                                    avatar,
+                                    style: const TextStyle(fontSize: 26),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _firstNameCtrl,
+                            textCapitalization: TextCapitalization.words,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (_) => _scheduleUsernameCheck(),
+                            decoration: const InputDecoration(
+                              labelText: 'Prénom',
+                              prefixIcon: Icon(Icons.badge_outlined),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Prénom requis';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _lastNameCtrl,
+                            textCapitalization: TextCapitalization.words,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (_) => _scheduleUsernameCheck(),
+                            decoration: const InputDecoration(
+                              labelText: 'Nom',
+                              prefixIcon: Icon(Icons.badge_rounded),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Nom requis';
+                              }
+                              return null;
+                            },
+                          ),
+                          // ── Aperçu identifiant + disponibilité ───────────
+                          if (_previewUsername.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _usernameAvailable == false
+                                    ? AppTheme.negative.withValues(alpha: 0.08)
+                                    : accent.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.alternate_email,
+                                    size: 14,
+                                    color: _usernameAvailable == false
+                                        ? AppTheme.negative
+                                        : accent,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Identifiant : $_previewUsername',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: _usernameAvailable == false
+                                            ? AppTheme.negative
+                                            : accent,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  if (_checkingUsername)
+                                    const SizedBox(
+                                      width: 10,
+                                      height: 10,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 1.5),
+                                    )
+                                  else if (_usernameAvailable == true)
+                                    const Icon(Icons.check_circle_rounded,
+                                        size: 14, color: AppTheme.positive)
+                                  else if (_usernameAvailable == false)
+                                    const Icon(Icons.cancel_rounded,
+                                        size: 14, color: AppTheme.negative),
+                                ],
+                              ),
+                            ),
+                            if (_usernameAvailable == false)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(top: 4, left: 4),
+                                child: Text(
+                                  'Cet identifiant est déjà utilisé ou en attente '
+                                  'd\'approbation. Ajouter une initiale peut '
+                                  'résoudre le conflit.',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.negative
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ── Carte sécurité ───────────────────────────────────────
+                  FadeSlideIn.staggered(
+                    index: 1,
+                    child: _SectionCard(
+                      title: 'Sécurité',
+                      icon: Icons.lock_rounded,
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _passwordCtrl,
+                            obscureText: _obscure,
+                            textInputAction: TextInputAction.next,
+                            decoration: InputDecoration(
+                              labelText: 'Mot de passe',
+                              hintText: '8 caractères minimum',
+                              prefixIcon: const Icon(Icons.key_rounded),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscure
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _obscure = !_obscure),
+                              ),
+                            ),
+                            validator: (v) {
+                              if (v == null ||
+                                  v.length < AppConstants.passwordMinLength) {
+                                return 'Minimum ${AppConstants.passwordMinLength} caractères';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _confirmCtrl,
+                            obscureText: _obscure,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _submit(),
+                            decoration: const InputDecoration(
+                              labelText: 'Confirmer le mot de passe',
+                              prefixIcon:
+                                  Icon(Icons.check_circle_outline_rounded),
+                            ),
+                            validator: (v) {
+                              if (v != _passwordCtrl.text) {
+                                return 'Les mots de passe ne correspondent pas';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── Carte classe ─────────────────────────────────────────
+                  _ClassSelector(
+                    selectedClassId: _selectedClassId,
+                    onChanged: (id) => setState(() => _selectedClassId = id),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ── Bouton ───────────────────────────────────────────────
+                  FadeSlideIn.staggered(
+                    index: 3,
+                    child: PressableScale(
+                      onTap: _isLoading ? null : _submit,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              accent,
+                              Color.lerp(accent, Colors.black, 0.22)!,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accent.withValues(
+                                alpha: _isLoading ? 0.15 : 0.35,
+                              ),
+                              blurRadius: 14,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: _isLoading
+                              ? SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: context.onAccent,
                                   ),
                                 )
                               : Text(
-                                  _selectedAvatar.isEmpty ? '🦁' : _selectedAvatar,
-                                  style: const TextStyle(fontSize: 30),
-                                ))
-                          : null,
+                                  'Envoyer la demande',
+                                  style: TextStyle(
+                                    color: context.onAccent,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.photo_library_outlined),
-                      label: Text(
-                        _pickedImage != null
-                            ? 'Photo choisie ✓'
-                            : 'Choisir une photo',
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _pickedImage != null
-                            ? AppTheme.positive
-                            : AppTheme.gold,
-                        side: BorderSide(
-                          color: _pickedImage != null
-                              ? AppTheme.positive
-                              : AppTheme.gold,
+                  const SizedBox(height: 12),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => context.pop(),
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'Déjà un compte ?  ',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Se connecter',
+                              style: TextStyle(
+                                color: accent,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // Ou choisir un emoji
-              Text(
-                'Ou choisir un emoji / initiales',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 60,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  // +1 pour la carte initiales en première position
-                  itemCount: _avatars.length + 1,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, i) {
-                    // Première carte = initiales
-                    if (i == 0) {
-                      final selected =
-                          _pickedImage == null && _selectedAvatar == _initialsKey;
-                      return GestureDetector(
-                        onTap: () => setState(() {
-                          _selectedAvatar = _initialsKey;
-                          _pickedImage = null;
-                        }),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: selected
-                                ? AppTheme.gold.withValues(alpha: 0.2)
-                                : Colors.grey.withValues(alpha: 0.12),
-                            border: Border.all(
-                              color: selected ? AppTheme.gold : Colors.transparent,
-                              width: 2,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              _previewInitials,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: selected
-                                    ? AppTheme.gold
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-
-                    final avatar = _avatars[i - 1];
-                    final selected =
-                        _pickedImage == null && avatar == _selectedAvatar;
-                    return GestureDetector(
-                      onTap: () => setState(() {
-                        _selectedAvatar = avatar;
-                        _pickedImage = null;
-                      }),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppTheme.gold.withValues(alpha: 0.2)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color:
-                                selected ? AppTheme.gold : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            avatar,
-                            style: const TextStyle(fontSize: 28),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // ── Prénom ───────────────────────────────────────────────────
-              Text(
-                'Prénom',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelLarge
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _firstNameCtrl,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.next,
-                onChanged: (_) => _scheduleUsernameCheck(),
-                decoration: const InputDecoration(hintText: 'Prénom'),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Prénom requis';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // ── Nom ──────────────────────────────────────────────────────
-              Text(
-                'Nom',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelLarge
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _lastNameCtrl,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.next,
-                onChanged: (_) => _scheduleUsernameCheck(),
-                decoration: const InputDecoration(hintText: 'Nom'),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Nom requis';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 8),
-
-              // ── Aperçu username + disponibilité ─────────────────────────
-              if (_previewUsername.isNotEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _usernameAvailable == false
-                        ? AppTheme.negative.withValues(alpha: 0.08)
-                        : AppTheme.gold.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.alternate_email,
-                          size: 14,
-                          color: _usernameAvailable == false
-                              ? AppTheme.negative
-                              : AppTheme.gold),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Identifiant : $_previewUsername',
-                        style: TextStyle(
-                          color: _usernameAvailable == false
-                              ? AppTheme.negative
-                              : AppTheme.gold,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (_checkingUsername)
-                        const SizedBox(
-                          width: 10,
-                          height: 10,
-                          child: CircularProgressIndicator(strokeWidth: 1.5),
-                        )
-                      else if (_usernameAvailable == true)
-                        const Icon(Icons.check_circle_rounded,
-                            size: 14, color: AppTheme.positive)
-                      else if (_usernameAvailable == false)
-                        const Icon(Icons.cancel_rounded,
-                            size: 14, color: AppTheme.negative),
-                    ],
-                  ),
-                ),
-                if (_usernameAvailable == false)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 4),
-                    child: Text(
-                      'Ce prénom + nom est déjà utilisé ou en attente d\'approbation.\nChoisis un autre prénom ou ajoute une initiale.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.negative.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ),
-              ],
-              const SizedBox(height: 24),
-
-              // ── Mot de passe ─────────────────────────────────────────────
-              Text(
-                'Mot de passe',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelLarge
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _passwordCtrl,
-                obscureText: _obscure,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  hintText: '8 caractères minimum',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                    onPressed: () => setState(() => _obscure = !_obscure),
-                  ),
-                ),
-                validator: (v) {
-                  if (v == null || v.length < AppConstants.passwordMinLength) {
-                    return 'Minimum ${AppConstants.passwordMinLength} caractères';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                'Confirmer le mot de passe',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelLarge
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _confirmCtrl,
-                obscureText: _obscure,
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _submit(),
-                decoration: const InputDecoration(
-                  hintText: 'Confirme ton mot de passe',
-                ),
-                validator: (v) {
-                  if (v != _passwordCtrl.text) {
-                    return 'Les mots de passe ne correspondent pas';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // ── Classe ──────────────────────────────────────────────────
-              _ClassSelector(
-                selectedClassId: _selectedClassId,
-                onChanged: (id) => setState(() => _selectedClassId = id),
-              ),
-              const SizedBox(height: 32),
-
-              // ── Bouton ───────────────────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: context.onAccent,
-                          ),
-                        )
-                      : const Text('Envoyer la demande'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: TextButton(
-                  onPressed: () => context.pop(),
-                  child: const Text('Déjà un compte ? Se connecter'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Carte de section ───────────────────────────────────────────────────────────
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(icon, size: 16, color: accent),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Option d'avatar (emoji ou initiales) ──────────────────────────────────────
+
+class _AvatarOption extends StatelessWidget {
+  const _AvatarOption({
+    required this.selected,
+    required this.onTap,
+    required this.child,
+  });
+
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppMotion.duration(const Duration(milliseconds: 200)),
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: selected
+              ? accent.withValues(alpha: 0.16)
+              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? accent : Colors.transparent,
+            width: 1.8,
+          ),
+        ),
+        child: Center(child: child),
       ),
     );
   }
@@ -609,29 +736,28 @@ class _ClassSelector extends ConsumerWidget {
       data: (classes) {
         if (classes.isEmpty) return const SizedBox.shrink();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Classe',
-              style: Theme.of(context)
-                  .textTheme
-                  .labelLarge
-                  ?.copyWith(fontWeight: FontWeight.w600),
+        return Padding(
+          padding: const EdgeInsets.only(top: 14),
+          child: FadeSlideIn.staggered(
+            index: 2,
+            child: _SectionCard(
+              title: 'Classe',
+              icon: Icons.school_rounded,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: classes
+                    .map(
+                      (c) => _ClassChip(
+                        label: c.name,
+                        selected: selectedClassId == c.id,
+                        onTap: () => onChanged(c.id),
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: classes.map(
-                (c) => _ClassChip(
-                  label: c.name,
-                  selected: selectedClassId == c.id,
-                  onTap: () => onChanged(c.id),
-                ),
-              ).toList(),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -651,25 +777,26 @@ class _ClassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: AppMotion.duration(const Duration(milliseconds: 180)),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected
-              ? AppTheme.gold.withValues(alpha: 0.15)
-              : Colors.transparent,
+          color: selected ? accent.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppTheme.gold : Colors.grey.withValues(alpha: 0.4),
+            color: selected ? accent : Colors.grey.withValues(alpha: 0.4),
             width: selected ? 1.5 : 1,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? AppTheme.gold : Theme.of(context).colorScheme.onSurfaceVariant,
+            color: selected
+                ? accent
+                : Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             fontSize: 13,
           ),

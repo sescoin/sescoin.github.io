@@ -143,7 +143,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Sécurise ton compte',
+                                'Sécurité du compte',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 14.5,
@@ -151,8 +151,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                'Choisis un mot de passe d\'au moins '
-                                '8 caractères, que toi seul connais.',
+                                'Le nouveau mot de passe doit contenir '
+                                'au moins 8 caractères.',
                                 style: TextStyle(
                                   fontSize: 12,
                                   height: 1.35,
@@ -194,7 +194,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Entre ton mot de passe actuel';
+                                return 'Mot de passe actuel requis';
                               }
                               return null;
                             },
@@ -288,7 +288,7 @@ class _StrengthBar extends StatelessWidget {
   /// 1 → 4.
   final int strength;
 
-  static const _labels = ['', 'Fragile', 'Moyen', 'Solide', 'Béton !'];
+  static const _labels = ['', 'Fragile', 'Moyen', 'Solide', 'Excellent'];
 
   Color get _color => switch (strength) {
         1 => AppTheme.negative,

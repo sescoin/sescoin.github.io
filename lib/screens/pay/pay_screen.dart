@@ -246,8 +246,8 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
           ],
           Text(
             _hceActive
-                ? 'Ou montre ce QR à l’envoyeur'
-                : 'Montre ce QR pour recevoir un paiement',
+                ? 'QR de réception (alternative au NFC)'
+                : 'QR de réception de paiement',
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 13, color: Colors.grey),
           ),

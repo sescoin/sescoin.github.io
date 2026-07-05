@@ -174,14 +174,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Ravi de te revoir 👋',
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
                                 const SizedBox(height: 18),
                                 TextFormField(
                                   controller: _usernameCtrl,
