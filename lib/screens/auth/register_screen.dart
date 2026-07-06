@@ -142,6 +142,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
+  /// Retire la photo importée pour revenir aux initiales / emoji.
+  void _removePhoto() {
+    setState(() {
+      _pickedImage = null;
+      _pickedBytes = null;
+      _selectedAvatar = _initialsKey;
+    });
+  }
+
   Future<String> _resolveAvatarUrl() async {
     if (_pickedImage == null) {
       return _selectedAvatar == _initialsKey ? '' : _selectedAvatar;
@@ -245,44 +254,76 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         children: [
                           Row(
                             children: [
-                              GestureDetector(
-                                onTap: _pickImage,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: accent.withValues(alpha: 0.45),
-                                      width: 2,
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  GestureDetector(
+                                    onTap: _pickImage,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color:
+                                              accent.withValues(alpha: 0.45),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      padding: const EdgeInsets.all(3),
+                                      child: CircleAvatar(
+                                        radius: 32,
+                                        backgroundColor:
+                                            accent.withValues(alpha: 0.12),
+                                        backgroundImage: _pickedBytes != null
+                                            ? MemoryImage(_pickedBytes!)
+                                            : null,
+                                        child: _pickedImage == null
+                                            ? (_selectedAvatar == _initialsKey
+                                                ? Text(
+                                                    _previewInitials,
+                                                    style: TextStyle(
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      color: accent,
+                                                    ),
+                                                  )
+                                                : Text(
+                                                    _selectedAvatar.isEmpty
+                                                        ? '🦁'
+                                                        : _selectedAvatar,
+                                                    style: const TextStyle(
+                                                        fontSize: 28),
+                                                  ))
+                                            : null,
+                                      ),
                                     ),
                                   ),
-                                  padding: const EdgeInsets.all(3),
-                                  child: CircleAvatar(
-                                    radius: 32,
-                                    backgroundColor:
-                                        accent.withValues(alpha: 0.12),
-                                    backgroundImage: _pickedBytes != null
-                                        ? MemoryImage(_pickedBytes!)
-                                        : null,
-                                    child: _pickedImage == null
-                                        ? (_selectedAvatar == _initialsKey
-                                            ? Text(
-                                                _previewInitials,
-                                                style: TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: accent,
-                                                ),
-                                              )
-                                            : Text(
-                                                _selectedAvatar.isEmpty
-                                                    ? '🦁'
-                                                    : _selectedAvatar,
-                                                style: const TextStyle(
-                                                    fontSize: 28),
-                                              ))
-                                        : null,
-                                  ),
-                                ),
+                                  // Croix de suppression (photo importée).
+                                  if (_pickedImage != null)
+                                    Positioned(
+                                      top: -4,
+                                      right: -4,
+                                      child: GestureDetector(
+                                        onTap: _removePhoto,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.negative,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: theme.cardColor,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.close_rounded,
+                                            size: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                               const SizedBox(width: 14),
                               Expanded(
@@ -311,60 +352,67 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            'Ou sélectionner un emoji ou les initiales :',
+                            _pickedImage != null
+                                ? 'Retirez la photo (croix rouge) pour choisir un emoji ou les initiales.'
+                                : 'Ou sélectionner un emoji ou les initiales :',
                             style: TextStyle(
                               fontSize: 12,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          SizedBox(
-                            height: 56,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              // +1 pour la carte initiales en première position
-                              itemCount: _avatars.length + 1,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(width: 8),
-                              itemBuilder: (context, i) {
-                                if (i == 0) {
-                                  final selected = _pickedImage == null &&
-                                      _selectedAvatar == _initialsKey;
-                                  return _AvatarOption(
-                                    selected: selected,
-                                    onTap: () => setState(() {
-                                      _selectedAvatar = _initialsKey;
-                                      _pickedImage = null;
-                                    }),
-                                    child: Text(
-                                      _previewInitials,
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w800,
-                                        color: selected
-                                            ? accent
-                                            : theme
-                                                .colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  );
-                                }
+                          // Bande d'emoji désactivée tant qu'une photo est importée.
+                          Opacity(
+                            opacity: _pickedImage != null ? 0.4 : 1,
+                            child: IgnorePointer(
+                              ignoring: _pickedImage != null,
+                              child: SizedBox(
+                                height: 56,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  // +1 pour la carte initiales en première position
+                                  itemCount: _avatars.length + 1,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 8),
+                                  itemBuilder: (context, i) {
+                                    if (i == 0) {
+                                      final selected = _pickedImage == null &&
+                                          _selectedAvatar == _initialsKey;
+                                      return _AvatarOption(
+                                        selected: selected,
+                                        onTap: () => setState(() {
+                                          _selectedAvatar = _initialsKey;
+                                        }),
+                                        child: Text(
+                                          _previewInitials,
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w800,
+                                            color: selected
+                                                ? accent
+                                                : theme.colorScheme
+                                                    .onSurfaceVariant,
+                                          ),
+                                        ),
+                                      );
+                                    }
 
-                                final avatar = _avatars[i - 1];
-                                final selected = _pickedImage == null &&
-                                    avatar == _selectedAvatar;
-                                return _AvatarOption(
-                                  selected: selected,
-                                  onTap: () => setState(() {
-                                    _selectedAvatar = avatar;
-                                    _pickedImage = null;
-                                  }),
-                                  child: Text(
-                                    avatar,
-                                    style: const TextStyle(fontSize: 26),
-                                  ),
-                                );
-                              },
+                                    final avatar = _avatars[i - 1];
+                                    final selected = _pickedImage == null &&
+                                        avatar == _selectedAvatar;
+                                    return _AvatarOption(
+                                      selected: selected,
+                                      onTap: () => setState(() {
+                                        _selectedAvatar = avatar;
+                                      }),
+                                      child: Text(
+                                        avatar,
+                                        style: const TextStyle(fontSize: 26),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),

@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
@@ -13,6 +15,7 @@ import '../../common/ban_guard.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../services/nfc_hce_service.dart';
 
@@ -207,6 +210,8 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final banned =
+        ref.watch(currentProfileProvider).valueOrNull?.isBanned ?? false;
 
     if (_myId == null) {
       return const Center(child: Text('Non connecté'));
@@ -253,35 +258,52 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: context.accent.withValues(alpha: 0.4),
-                width: 2,
-              ),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: context.accent.withValues(alpha: isDark ? 0.28 : 0.18),
-                  blurRadius: 28,
-                  offset: const Offset(0, 10),
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
+                  blurRadius: 16,
                 ),
               ],
             ),
-            child: QrImageView(
-              data: _myId!,
-              version: QrVersions.auto,
-              size: 220,
-              eyeStyle: QrEyeStyle(
-                eyeShape: QrEyeShape.square,
-                color: Color.lerp(Colors.black, context.accent, 0.55)!,
-              ),
-            ),
+            child: banned
+                // Compte suspendu : le QR est masqué et inutilisable.
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        ImageFiltered(
+                          imageFilter:
+                              ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: QrImageView(
+                            data: 'suspended',
+                            version: QrVersions.auto,
+                            size: 220,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.lock_rounded,
+                          size: 48,
+                          color: Colors.black54,
+                        ),
+                      ],
+                    ),
+                  )
+                : QrImageView(
+                    data: _myId!,
+                    version: QrVersions.auto,
+                    size: 220,
+                  ),
           ),
           const SizedBox(height: 16),
           Text(
-            'L’envoyeur choisit le montant de son côté',
+            banned
+                ? 'Ce compte est suspendu : la réception de paiements est désactivée.'
+                : 'L’envoyeur choisit le montant de son côté',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),

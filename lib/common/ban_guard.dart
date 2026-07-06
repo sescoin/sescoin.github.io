@@ -76,9 +76,9 @@ class BannedBanner extends ConsumerWidget {
                 Text(
                   reason == null || reason.isEmpty
                       ? 'Ce compte a été suspendu par l\'administrateur. '
-                          'La consultation reste possible, mais aucune action n\'est autorisée.'
+                          'Aucune action n\'est autorisée.'
                       : 'Motif : $reason\n'
-                          'La consultation reste possible, mais aucune action n\'est autorisée.',
+                          'Aucune action n\'est autorisée.',
                   style: TextStyle(
                     fontSize: 12.5,
                     height: 1.35,

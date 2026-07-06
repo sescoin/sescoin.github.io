@@ -172,9 +172,20 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
 
   void _setPoint(int index, double rawValue) {
     final value = _series == _Series.price
-        ? (rawValue * 10).roundToDouble() / 10 // pas de 0,10 €
+        ? (rawValue * 100).roundToDouble() / 100 // pas de 0,01 €
         : rawValue.roundToDouble(); // volumes entiers
     setState(() => _activePoints[index] = value.clamp(0, _activeAxisMax));
+  }
+
+  /// Formate un prix en retirant les zéros inutiles (jusqu'à 4 décimales),
+  /// pour pouvoir éditer des valeurs très proches de zéro.
+  static String _formatPrice(double value) {
+    var text = value.toStringAsFixed(4);
+    if (text.contains('.')) {
+      text = text.replaceFirst(RegExp(r'0+$'), '');
+      text = text.replaceFirst(RegExp(r'\.$'), '');
+    }
+    return text;
   }
 
   void _onDragAt(Offset local, Size size) {
@@ -205,7 +216,7 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
   Future<void> _editExactValue(int index) async {
     final ctrl = TextEditingController(
       text: _series == _Series.price
-          ? _activePoints[index].toStringAsFixed(2)
+          ? _formatPrice(_activePoints[index])
           : _activePoints[index].toStringAsFixed(0),
     );
     final result = await showDialog<double>(
@@ -244,7 +255,7 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
     if (result == null || result < 0) return;
     setState(() {
       _activePoints[index] =
-          _series == _Series.price ? (result * 100).round() / 100 : result;
+          _series == _Series.price ? (result * 10000).round() / 10000 : result;
       _recomputeAxes();
     });
   }

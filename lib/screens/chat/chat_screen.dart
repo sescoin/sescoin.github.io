@@ -1840,9 +1840,11 @@ Future<void> _showGiftDialog(
   noteCtrl.dispose();
 
   if (confirmed != true) return;
-  if (amount <= 0) {
+  // Le solde est stocké à 2 décimales : un cadeau doit valoir au moins 0,01 SC,
+  // sinon il s'affiche « 0.00 » et sa récupération est refusée par la base.
+  if (amount < 0.01) {
     if (context.mounted) {
-      AppFeedback.warning(context, 'Montant invalide.');
+      AppFeedback.warning(context, 'Le cadeau doit valoir au moins 0,01 SC.');
     }
     return;
   }
