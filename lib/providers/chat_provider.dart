@@ -205,6 +205,25 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
     await _ref.read(chatServiceProvider).adminDeleteMessage(messageId);
   }
 
+  /// Modifier un message du chat annonces (admin).
+  Future<ChatSendResult?> editGlobalMessage(
+    String messageId,
+    String content,
+  ) async {
+    state = state.copyWith(isSending: true, clearError: true);
+    try {
+      final result = await _ref
+          .read(chatServiceProvider)
+          .editMessage(messageId, content);
+      state = state.copyWith(isSending: false);
+      return result;
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(isSending: false, error: msg);
+      return null;
+    }
+  }
+
   Future<void> acceptChatLoanRequest(String messageId) async {
     await _ref.read(chatServiceProvider).acceptChatLoanRequest(messageId);
   }

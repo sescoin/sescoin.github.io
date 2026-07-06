@@ -201,7 +201,8 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
           children: [
             if (!_isChatMode) ...[
               Text(
-                'Prêteurs : ${_selectedLenders.map((l) => l['display_name']).join(', ')}',
+                '${_selectedLenders.length > 1 ? 'Prêteurs' : 'Prêteur'} : '
+                '${_selectedLenders.map((l) => l['display_name']).join(', ')}',
               ),
               const SizedBox(height: 4),
             ],

@@ -8,8 +8,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../common/app_feedback.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
+import '../../core/theme.dart';
 import '../../models/marketplace_item.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/marketplace_provider.dart';
 
 class AdminMarketItemFormScreen extends ConsumerStatefulWidget {
   const AdminMarketItemFormScreen({
@@ -235,6 +237,48 @@ class _AdminMarketItemFormScreenState
                           return 'Entrez une catégorie';
                         }
                         return null;
+                      },
+                    ),
+                    // Suggestions : catégories des offres déjà en vente.
+                    Builder(
+                      builder: (context) {
+                        final existing = ref
+                                .watch(marketplaceItemsProvider)
+                                .valueOrNull
+                                ?.map((e) => e.category.trim())
+                                .where((c) => c.isNotEmpty)
+                                .toSet()
+                                .toList()
+                            ?..sort();
+                        if (existing == null || existing.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final cat in existing)
+                                ActionChip(
+                                  label: Text(cat),
+                                  labelStyle: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.accent,
+                                  ),
+                                  backgroundColor:
+                                      context.accent.withValues(alpha: 0.10),
+                                  side: BorderSide(
+                                    color:
+                                        context.accent.withValues(alpha: 0.30),
+                                  ),
+                                  onPressed: () => setState(
+                                      () => _categoryCtrl.text = cat),
+                                ),
+                            ],
+                          ),
+                        );
                       },
                     ),
                     const SizedBox(height: 12),

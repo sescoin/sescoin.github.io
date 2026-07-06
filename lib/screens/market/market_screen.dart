@@ -126,8 +126,56 @@ class _ShopTab extends ConsumerWidget {
           );
         }
 
-        final categories = items.map((item) => item.category).toSet().toList()
-          ..sort();
+        // Regroupe par catégorie. Les catégories à une seule offre sont
+        // rassemblées dans une grille commune (côte à côte), les catégories
+        // à plusieurs offres gardent leur propre section.
+        final grouped = <String, List<MarketplaceItem>>{};
+        for (final item in items) {
+          grouped.putIfAbsent(item.category, () => []).add(item);
+        }
+        final multiCategories = grouped.entries
+            .where((e) => e.value.length > 1)
+            .toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
+        final singleItems = (grouped.entries
+                .where((e) => e.value.length == 1)
+                .map((e) => e.value.first)
+                .toList())
+          ..sort((a, b) => a.category.compareTo(b.category));
+
+        Widget buildCard(MarketplaceItem item) {
+          final alreadyBought = purchaseCounts[item.id] ?? 0;
+          final hasReachedPurchaseLimit =
+              item.hasPurchaseLimit && alreadyBought >= item.maxPerUser;
+          return MarketItemCard(
+            item: item,
+            actionLabel: hasReachedPurchaseLimit ? 'Limite atteinte' : null,
+            isLoading: purchaseState.isLoading &&
+                purchaseState.loadingItemId == item.id,
+            onBuy: hasReachedPurchaseLimit
+                ? null
+                : () => _confirmPurchase(context, ref, item),
+          );
+        }
+
+        Widget buildGrid(List<MarketplaceItem> gridItems) {
+          const spacing = 12.0;
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = (constraints.maxWidth -
+                      (spacing * (crossAxisCount - 1))) /
+                  crossAxisCount;
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: [
+                  for (final item in gridItems)
+                    SizedBox(width: itemWidth, child: buildCard(item)),
+                ],
+              );
+            },
+          );
+        }
 
         return LoadingOverlay(
           isLoading: purchaseState.isLoading,
@@ -135,71 +183,35 @@ class _ShopTab extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              for (final category in categories) ...[
+              for (final entry in multiCategories) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
-                    category,
+                    entry.key,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: context.accent,
                         ),
                   ),
                 ),
-                Builder(
-                  builder: (context) {
-                    final categoryItems = items
-                        .where((item) => item.category == category)
-                        .toList(growable: false);
-                    const spacing = 12.0;
-
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        final itemWidth = (constraints.maxWidth -
-                                (spacing * (crossAxisCount - 1))) /
-                            crossAxisCount;
-
-                        return Wrap(
-                          spacing: spacing,
-                          runSpacing: spacing,
-                          children: [
-                            for (final item in categoryItems)
-                              SizedBox(
-                                width: itemWidth,
-                                child: Builder(
-                                  builder: (context) {
-                                    final alreadyBought =
-                                        purchaseCounts[item.id] ?? 0;
-                                    final hasReachedPurchaseLimit =
-                                        item.hasPurchaseLimit &&
-                                            alreadyBought >= item.maxPerUser;
-
-                                    return MarketItemCard(
-                                      item: item,
-                                      actionLabel: hasReachedPurchaseLimit
-                                          ? 'Limite atteinte'
-                                          : null,
-                                      isLoading: purchaseState.isLoading &&
-                                          purchaseState.loadingItemId ==
-                                              item.id,
-                                      onBuy: hasReachedPurchaseLimit
-                                          ? null
-                                          : () => _confirmPurchase(
-                                                context,
-                                                ref,
-                                                item,
-                                              ),
-                                    );
-                                  },
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
+                buildGrid(entry.value),
                 const SizedBox(height: 8),
+              ],
+              if (singleItems.isNotEmpty) ...[
+                if (multiCategories.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Autres offres',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: context.accent,
+                          ),
+                    ),
+                  )
+                else
+                  const SizedBox(height: 4),
+                buildGrid(singleItems),
               ],
             ],
           ),

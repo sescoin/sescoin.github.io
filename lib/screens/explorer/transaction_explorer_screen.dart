@@ -7,6 +7,7 @@ import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/constants.dart';
 import '../../core/router.dart';
+import '../../core/theme.dart';
 import '../../models/transaction.dart';
 import '../../providers/transaction_explorer_provider.dart';
 import '../../transaction/global_transaction_tile.dart';
@@ -79,7 +80,13 @@ class _TransactionExplorerScreenState
         hasActiveFilters: _hasActiveFilters,
         onQueryChanged: (value) => setState(() => _query = value.trim()),
         onAmountChanged: () => setState(() {}),
-        onTypeChanged: (value) => setState(() => _selectedType = value),
+        onTypeChanged: (value) => setState(() {
+          _selectedType = value;
+          // La méthode de paiement (QR/NFC) ne concerne que les virements.
+          if (value != null && value != TransactionType.transfer) {
+            _selectedPaymentMethod = null;
+          }
+        }),
         onPaymentMethodChanged: (value) =>
             setState(() => _selectedPaymentMethod = value),
         onSortChanged: (value) => setState(() => _sort = value),
@@ -442,6 +449,114 @@ class _ExplorerHeader extends StatelessWidget {
   }
 }
 
+// ── Section de filtre (en-tête icône + titre) ─────────────────────────────────
+
+class _FilterSection extends StatelessWidget {
+  const _FilterSection({
+    required this.icon,
+    required this.title,
+    required this.accent,
+    required this.child,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final Color accent;
+  final Widget child;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: accent),
+              const SizedBox(width: 7),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    subtitle!,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+// ── Puce de filtre sélectionnable ─────────────────────────────────────────────
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? accent.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected
+                ? accent
+                : Theme.of(context).colorScheme.onSurfaceVariant
+                    .withValues(alpha: 0.35),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected
+                ? accent
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ExplorerDrawer extends StatelessWidget {
   const _ExplorerDrawer({
     required this.searchController,
@@ -485,20 +600,36 @@ class _ExplorerDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.accent;
+    // Le paiement QR/NFC n'existe que sur les virements.
+    final paymentEnabled =
+        selectedType == null || selectedType == TransactionType.transfer;
+
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(20, 18, 12, 8),
               child: Row(
                 children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Icon(Icons.tune_rounded, color: accent, size: 20),
+                  ),
+                  const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
-                      'Filtres blockchain',
+                      'Filtres',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 19,
                         fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
                       ),
                     ),
                   ),
@@ -511,143 +642,199 @@ class _ExplorerDrawer extends StatelessWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                 children: [
-                  TextField(
-                    controller: searchController,
-                    onChanged: onQueryChanged,
-                    decoration: InputDecoration(
-                      labelText: 'Utilisateur, raison ou note',
-                      prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: query.isEmpty
-                          ? null
-                          : IconButton(
-                              onPressed: () {
-                                searchController.clear();
-                                onQueryChanged('');
-                              },
-                              icon: const Icon(Icons.close_rounded),
+                  _FilterSection(
+                    icon: Icons.search_rounded,
+                    title: 'Recherche',
+                    accent: accent,
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: onQueryChanged,
+                      decoration: InputDecoration(
+                        hintText: 'Utilisateur, raison ou note',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        isDense: true,
+                        suffixIcon: query.isEmpty
+                            ? null
+                            : IconButton(
+                                onPressed: () {
+                                  searchController.clear();
+                                  onQueryChanged('');
+                                },
+                                icon: const Icon(Icons.close_rounded, size: 18),
+                              ),
+                      ),
+                    ),
+                  ),
+                  _FilterSection(
+                    icon: Icons.payments_rounded,
+                    title: 'Montant',
+                    accent: accent,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: minAmountController,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(
+                              decimal: true,
                             ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: minAmountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          onChanged: (_) => onAmountChanged(),
-                          decoration: const InputDecoration(
-                            labelText: 'Montant min.',
-                            suffixText: 'SC',
+                            onChanged: (_) => onAmountChanged(),
+                            decoration: const InputDecoration(
+                              labelText: 'Min.',
+                              suffixText: 'SC',
+                              isDense: true,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: maxAmountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          onChanged: (_) => onAmountChanged(),
-                          decoration: const InputDecoration(
-                            labelText: 'Montant max.',
-                            suffixText: 'SC',
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: maxAmountController,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            onChanged: (_) => onAmountChanged(),
+                            decoration: const InputDecoration(
+                              labelText: 'Max.',
+                              suffixText: 'SC',
+                              isDense: true,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<_TransactionSort>(
-                    initialValue: sort,
-                    decoration: const InputDecoration(labelText: 'Trier par'),
-                    items: const [
-                      DropdownMenuItem(
-                        value: _TransactionSort.newest,
-                        child: Text('Date décroissante'),
-                      ),
-                      DropdownMenuItem(
-                        value: _TransactionSort.oldest,
-                        child: Text('Date croissante'),
-                      ),
-                      DropdownMenuItem(
-                        value: _TransactionSort.amountHigh,
-                        child: Text('Montant décroissant'),
-                      ),
-                      DropdownMenuItem(
-                        value: _TransactionSort.amountLow,
-                        child: Text('Montant croissant'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        onSortChanged(value);
-                      }
-                    },
+                  _FilterSection(
+                    icon: Icons.category_rounded,
+                    title: 'Type de transaction',
+                    accent: accent,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _FilterChip(
+                          label: 'Tous',
+                          selected: selectedType == null,
+                          accent: accent,
+                          onTap: () => onTypeChanged(null),
+                        ),
+                        ...TransactionType.values.map(
+                          (type) => _FilterChip(
+                            label: type.label,
+                            selected: selectedType == type,
+                            accent: accent,
+                            onTap: () => onTypeChanged(type),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<TransactionType?>(
-                    initialValue: selectedType,
-                    decoration: const InputDecoration(labelText: 'Type'),
-                    items: [
-                      const DropdownMenuItem<TransactionType?>(
-                        value: null,
-                        child: Text('Tous les types'),
-                      ),
-                      ...TransactionType.values.map(
-                        (type) => DropdownMenuItem<TransactionType?>(
-                          value: type,
-                          child: Text(type.label),
+                  _FilterSection(
+                    icon: Icons.contactless_rounded,
+                    title: 'Méthode de paiement',
+                    accent: accent,
+                    subtitle: paymentEnabled
+                        ? null
+                        : 'Uniquement pour les virements',
+                    child: Opacity(
+                      opacity: paymentEnabled ? 1 : 0.4,
+                      child: IgnorePointer(
+                        ignoring: !paymentEnabled,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _FilterChip(
+                              label: 'Toutes',
+                              selected: selectedPaymentMethod == null,
+                              accent: accent,
+                              onTap: () => onPaymentMethodChanged(null),
+                            ),
+                            _FilterChip(
+                              label: 'NFC',
+                              selected: selectedPaymentMethod == 'nfc',
+                              accent: accent,
+                              onTap: () => onPaymentMethodChanged('nfc'),
+                            ),
+                            _FilterChip(
+                              label: 'QR',
+                              selected: selectedPaymentMethod == 'qr',
+                              accent: accent,
+                              onTap: () => onPaymentMethodChanged('qr'),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                    onChanged: onTypeChanged,
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String?>(
-                    initialValue: selectedPaymentMethod,
-                    decoration: const InputDecoration(
-                      labelText: 'Paiement QR / NFC',
-                    ),
-                    items: const [
-                      DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('Tous'),
-                      ),
-                      DropdownMenuItem<String?>(
-                        value: 'nfc',
-                        child: Text('NFC'),
-                      ),
-                      DropdownMenuItem<String?>(
-                        value: 'qr',
-                        child: Text('QR'),
-                      ),
-                    ],
-                    onChanged: onPaymentMethodChanged,
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: onPickStartDate,
-                    icon: const Icon(Icons.event_rounded),
-                    label: Text(
-                      startDate == null
-                          ? 'Date minimum'
-                          : 'Depuis le ${startDate!.day.toString().padLeft(2, '0')}/${startDate!.month.toString().padLeft(2, '0')}/${startDate!.year}',
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: onPickEndDate,
-                    icon: const Icon(Icons.event_available_rounded),
-                    label: Text(
-                      endDate == null
-                          ? 'Date maximum'
-                          : 'Jusqu\'au ${endDate!.day.toString().padLeft(2, '0')}/${endDate!.month.toString().padLeft(2, '0')}/${endDate!.year}',
+                  _FilterSection(
+                    icon: Icons.sort_rounded,
+                    title: 'Trier par',
+                    accent: accent,
+                    child: DropdownButtonFormField<_TransactionSort>(
+                      initialValue: sort,
+                      decoration: const InputDecoration(isDense: true),
+                      items: const [
+                        DropdownMenuItem(
+                          value: _TransactionSort.newest,
+                          child: Text('Date décroissante'),
+                        ),
+                        DropdownMenuItem(
+                          value: _TransactionSort.oldest,
+                          child: Text('Date croissante'),
+                        ),
+                        DropdownMenuItem(
+                          value: _TransactionSort.amountHigh,
+                          child: Text('Montant décroissant'),
+                        ),
+                        DropdownMenuItem(
+                          value: _TransactionSort.amountLow,
+                          child: Text('Montant croissant'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          onSortChanged(value);
+                        }
+                      },
+                    ),
+                  ),
+                  _FilterSection(
+                    icon: Icons.date_range_rounded,
+                    title: 'Période',
+                    accent: accent,
+                    child: Column(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: onPickStartDate,
+                          icon: const Icon(Icons.event_rounded, size: 18),
+                          label: Text(
+                            startDate == null
+                                ? 'Date minimum'
+                                : 'Depuis le ${startDate!.day.toString().padLeft(2, '0')}/${startDate!.month.toString().padLeft(2, '0')}/${startDate!.year}',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: onPickEndDate,
+                          icon:
+                              const Icon(Icons.event_available_rounded, size: 18),
+                          label: Text(
+                            endDate == null
+                                ? 'Date maximum'
+                                : 'Jusqu\'au ${endDate!.day.toString().padLeft(2, '0')}/${endDate!.month.toString().padLeft(2, '0')}/${endDate!.year}',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

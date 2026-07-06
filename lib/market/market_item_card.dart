@@ -18,6 +18,27 @@ class MarketItemCard extends StatelessWidget {
   final bool isLoading;
   final String? actionLabel;
 
+  void _showFullDescription(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(item.name),
+        content: SingleChildScrollView(
+          child: Text(
+            item.description,
+            style: const TextStyle(height: 1.4),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isUnavailable = !item.isAvailable;
@@ -88,14 +109,17 @@ class MarketItemCard extends StatelessWidget {
             ),
             if (hasDescription) ...[
               const SizedBox(height: 4),
-              Text(
-                item.description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+              GestureDetector(
+                onTap: () => _showFullDescription(context),
+                child: Text(
+                  item.description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
             const SizedBox(height: 10),

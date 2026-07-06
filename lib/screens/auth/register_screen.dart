@@ -510,8 +510,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                     const EdgeInsets.only(top: 4, left: 4),
                                 child: Text(
                                   'Cet identifiant est déjà utilisé ou en attente '
-                                  'd\'approbation. Ajouter une initiale peut '
-                                  'résoudre le conflit.',
+                                  'd\'approbation.',
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: AppTheme.negative

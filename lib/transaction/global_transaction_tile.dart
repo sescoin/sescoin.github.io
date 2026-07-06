@@ -27,7 +27,12 @@ class GlobalTransactionTile extends StatelessWidget {
         transaction.toDisplayName ?? transaction.toUsername ?? 'Inconnu';
     final isBuyerTransaction = transaction.type == TransactionType.purchase ||
         transaction.type == TransactionType.auction;
-    final description = _visibleDescription;
+    final rawDescription = _visibleDescription;
+    // Sur un virement, la description est la raison saisie par l'envoyeur.
+    final description = (rawDescription != null &&
+            transaction.type == TransactionType.transfer)
+        ? 'Raison : $rawDescription'
+        : rawDescription;
 
     return Card(
       child: Padding(
@@ -66,6 +71,12 @@ class GlobalTransactionTile extends StatelessWidget {
                 label: 'Acheteur : @$fromLabel',
                 onTap: onFromTap,
               )
+            else if (transaction.fromUserId == null)
+              // Opération système (crédit, récompense…) : pas de contrepartie.
+              _UserChip(label: 'Vers @$toLabel', onTap: onToTap)
+            else if (transaction.toUserId == null)
+              // Opération système (débit, taxe…) : pas de contrepartie.
+              _UserChip(label: 'De @$fromLabel', onTap: onFromTap)
             else
               Wrap(
                 spacing: 8,

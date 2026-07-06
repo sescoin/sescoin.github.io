@@ -480,6 +480,107 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     }
   }
 
+  /// Menu admin sur une annonce : proposer d'abord Modifier ou Supprimer.
+  void _showAdminAnnouncementActions(ChatMessage msg) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.7),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Options de l\'annonce',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                _ChatActionTile(
+                  icon: Icons.edit_rounded,
+                  label: 'Modifier',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _editAnnouncement(msg);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ChatActionTile(
+                  icon: Icons.delete_outline_rounded,
+                  label: 'Supprimer',
+                  color: Colors.red,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _adminDeleteMessage(msg);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _editAnnouncement(ChatMessage msg) async {
+    final ctrl = TextEditingController(text: msg.content);
+    final newContent = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _ChatDialog(
+        icon: Icons.edit_rounded,
+        title: 'Modifier l\'annonce',
+        accentColor: Theme.of(context).colorScheme.primary,
+        content: TextField(
+          controller: ctrl,
+          maxLength: 500,
+          maxLines: null,
+          autofocus: true,
+          decoration: const InputDecoration(
+            counterText: '',
+            hintText: 'Annonce',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (!mounted) return;
+    if (newContent == null ||
+        newContent.isEmpty ||
+        newContent == msg.content) {
+      return;
+    }
+    try {
+      await ref
+          .read(chatActionProvider.notifier)
+          .editGlobalMessage(msg.id, newContent);
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Erreur : $e', Colors.red);
+    }
+  }
+
   Future<void> _deleteOwnLoanRequest(ChatMessage msg) async {
     if (!ensureNotBanned(context, ref)) return;
     setState(() => _locallyDeletedIds.add(msg.id));
@@ -661,10 +762,11 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                         isOwn: isOwn,
                         showHeader: item.showHeader,
                         readers: const [],
+                        showEditedLabel: false,
                         onTapUsername: () =>
                             context.push('/user/${msg.username}'),
                         onLongPress: widget.isAdmin
-                            ? () => _adminDeleteMessage(msg)
+                            ? () => _showAdminAnnouncementActions(msg)
                             : null,
                       );
                     },
@@ -693,6 +795,10 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                     AppRoutes.loanCreate,
                     extra: {'chatMode': true},
                   );
+                },
+                onGift: () {
+                  if (!ensureNotBanned(context, ref)) return;
+                  _showGiftDialog(context, ref, classId: null);
                 },
               ),
           ],
@@ -1309,9 +1415,12 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
 // ── Barre demande de prêt (utilisateurs dans le chat global) ──────────────────
 
 class _LoanRequestBar extends StatelessWidget {
-  const _LoanRequestBar({required this.onTap});
+  const _LoanRequestBar({required this.onTap, this.onGift});
 
   final VoidCallback onTap;
+
+  /// Si fourni, ajoute un bouton cadeau à côté de la demande de prêt.
+  final VoidCallback? onGift;
 
   @override
   Widget build(BuildContext context) {
@@ -1328,43 +1437,74 @@ class _LoanRequestBar extends StatelessWidget {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-          child: PressableScale(
-            onTap: onTap,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [accent, Color.lerp(accent, Colors.black, 0.22)!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.32),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
+          child: Row(
+            children: [
+              if (onGift != null) ...[
+                PressableScale(
+                  onTap: onGift,
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: accent.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Icon(Icons.card_giftcard_rounded,
+                        color: accent, size: 22),
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.handshake_rounded, color: onAccent, size: 19),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Envoyer une demande de prêt',
-                    style: TextStyle(
-                      color: onAccent,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.1,
+                ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: PressableScale(
+                  onTap: onTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          accent,
+                          Color.lerp(accent, Colors.black, 0.22)!
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.32),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.handshake_rounded,
+                            color: onAccent, size: 19),
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Text(
+                            'Demande de prêt',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: onAccent,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -2441,6 +2581,7 @@ class _MessageBubble extends StatelessWidget {
     required this.readers,
     required this.onTapUsername,
     this.onLongPress,
+    this.showEditedLabel = true,
   });
 
   final ChatMessage message;
@@ -2449,6 +2590,9 @@ class _MessageBubble extends StatelessWidget {
   final List<ChatRead> readers;
   final VoidCallback onTapUsername;
   final VoidCallback? onLongPress;
+
+  /// Affiche « (modifié) » sous le message. Désactivé pour les annonces.
+  final bool showEditedLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -2558,7 +2702,7 @@ class _MessageBubble extends StatelessWidget {
                         style:
                             const TextStyle(fontSize: 10, color: Colors.grey),
                       ),
-                      if (message.editedAt != null) ...[
+                      if (showEditedLabel && message.editedAt != null) ...[
                         const SizedBox(width: 4),
                         Text(
                           '(modifié)',

@@ -4,8 +4,8 @@ import '../core/text_sanitizer.dart';
 class Transaction {
   const Transaction({
     required this.id,
-    required this.fromUserId,
-    required this.toUserId,
+    this.fromUserId,
+    this.toUserId,
     required this.amount,
     required this.type,
     required this.createdAt,
@@ -18,8 +18,8 @@ class Transaction {
   });
 
   final String id;
-  final String fromUserId;
-  final String toUserId;
+  final String? fromUserId;
+  final String? toUserId;
   final double amount;
   final TransactionType type;
   final DateTime createdAt;
@@ -70,8 +70,8 @@ class Transaction {
 
     return Transaction(
       id: json['id'] as String,
-      fromUserId: json['from_user_id'] as String,
-      toUserId: json['to_user_id'] as String,
+      fromUserId: json['from_user_id'] as String?,
+      toUserId: json['to_user_id'] as String?,
       amount: (json['amount'] as num).toDouble(),
       type: TransactionTypeX.fromDb(json['type'] as String? ?? 'transfer'),
       createdAt: DateTime.parse(json['created_at'] as String),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../common/animations.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -18,6 +19,10 @@ class WalletScreen extends ConsumerStatefulWidget {
 
 class _WalletScreenState extends ConsumerState<WalletScreen> {
   final _scrollCtrl = ScrollController();
+
+  // Transactions déjà apparues : on n'anime chaque tuile qu'une seule fois,
+  // pour garder l'effet cascade sans rejouer l'animation au défilement.
+  final _animated = <String>{};
 
   @override
   void initState() {
@@ -98,9 +103,19 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                     ),
                   );
                 }
-                // Pas d'animation d'apparition sur les tuiles recyclées :
-                // rejouer la cascade à chaque défilement saccade la liste.
-                return TransactionTile(transaction: state.items[i]);
+                final tx = state.items[i];
+                final tile = TransactionTile(transaction: tx);
+                // Première apparition : cascade rapide du haut vers le bas.
+                // Ensuite, tuile simple (pas de rejeu au recyclage/défilement).
+                if (_animated.add(tx.id)) {
+                  return FadeSlideIn.staggered(
+                    key: ValueKey(tx.id),
+                    index: i,
+                    step: const Duration(milliseconds: 35),
+                    child: tile,
+                  );
+                }
+                return tile;
               },
             ),
           );

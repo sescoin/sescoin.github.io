@@ -645,15 +645,12 @@ class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
                           ),
                         )
                       else
-                        const EmptyState(
-                          icon: Icons.gavel_rounded,
-                          title: 'Aucune offre enregistrée',
-                        ),
+                        const SizedBox.shrink(),
                       const SizedBox(height: 12),
                       Expanded(
                         child: bids.isEmpty
                             ? const EmptyState(
-                                icon: Icons.list_alt_rounded,
+                                icon: Icons.gavel_rounded,
                                 title: 'Aucune offre enregistrée',
                               )
                             : ListView.separated(

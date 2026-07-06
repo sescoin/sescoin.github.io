@@ -114,23 +114,59 @@ class _PayScreenState extends ConsumerState<PayScreen>
         body: Column(
           children: [
             if (_isAndroid && _nfcDisabled)
-              MaterialBanner(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                leading: Icon(Icons.nfc_rounded, color: context.accent),
-                content: const Text(
-                  'Active le NFC pour les paiements de proximité',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: NfcHceService.openNfcSettings,
-                    child: const Text(
-                      'Activer',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                  decoration: BoxDecoration(
+                    color: context.accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: context.accent.withValues(alpha: 0.30),
                     ),
                   ),
-                ],
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: context.accent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: Icon(Icons.nfc_rounded,
+                            color: context.accent, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Activer le NFC pour les paiements de proximité',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.tonal(
+                        onPressed: NfcHceService.openNfcSettings,
+                        style: FilledButton.styleFrom(
+                          backgroundColor:
+                              context.accent.withValues(alpha: 0.16),
+                          foregroundColor: context.accent,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        child: const Text('Activer'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             Expanded(
               child: TabBarView(
@@ -261,7 +297,11 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: context.accent.withValues(alpha: 0.55),
+                width: 2.5,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
