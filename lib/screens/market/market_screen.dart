@@ -149,6 +149,7 @@ class _ShopTab extends ConsumerWidget {
               item.hasPurchaseLimit && alreadyBought >= item.maxPerUser;
           return MarketItemCard(
             item: item,
+            fillHeight: true,
             actionLabel: hasReachedPurchaseLimit ? 'Limite atteinte' : null,
             isLoading: purchaseState.isLoading &&
                 purchaseState.loadingItemId == item.id,
@@ -160,21 +161,38 @@ class _ShopTab extends ConsumerWidget {
 
         Widget buildGrid(List<MarketplaceItem> gridItems) {
           const spacing = 12.0;
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final itemWidth = (constraints.maxWidth -
-                      (spacing * (crossAxisCount - 1))) /
-                  crossAxisCount;
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: [
-                  for (final item in gridItems)
-                    SizedBox(width: itemWidth, child: buildCard(item)),
-                ],
+          // Lignes de `crossAxisCount` cartes, chacune étirée à la hauteur de
+          // la plus grande de sa ligne (IntrinsicHeight + stretch).
+          final rows = <Widget>[];
+          for (var i = 0; i < gridItems.length; i += crossAxisCount) {
+            final rowItems = gridItems.sublist(
+              i,
+              (i + crossAxisCount).clamp(0, gridItems.length),
+            );
+            final cells = <Widget>[];
+            for (var j = 0; j < crossAxisCount; j++) {
+              if (j > 0) cells.add(const SizedBox(width: spacing));
+              cells.add(
+                Expanded(
+                  child: j < rowItems.length
+                      ? buildCard(rowItems[j])
+                      : const SizedBox.shrink(),
+                ),
               );
-            },
-          );
+            }
+            rows.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: spacing),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: cells,
+                  ),
+                ),
+              ),
+            );
+          }
+          return Column(children: rows);
         }
 
         return LoadingOverlay(

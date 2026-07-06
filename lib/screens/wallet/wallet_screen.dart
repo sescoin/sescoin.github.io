@@ -47,6 +47,12 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(walletProvider);
 
+    // À chaque retour sur l'onglet, on oublie les tuiles déjà animées pour
+    // rejouer la cascade d'apparition.
+    ref.listen(walletVisitProvider, (_, __) {
+      if (mounted) setState(_animated.clear);
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Portefeuille'),

@@ -55,7 +55,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SES Coin'),
+        title: const _BrandTitle(),
         actions: [
           Stack(
             children: [
@@ -332,6 +332,102 @@ class _QuickAction extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Titre de marque animé (« SES Coin ») ──────────────────────────────────────
+
+class _BrandTitle extends StatefulWidget {
+  const _BrandTitle();
+
+  @override
+  State<_BrandTitle> createState() => _BrandTitleState();
+}
+
+class _BrandTitleState extends State<_BrandTitle>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    );
+    if (!AppMotion.reduce) _controller.repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = context.accent;
+    final base = Theme.of(context).colorScheme.onSurface;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [accent, Color.lerp(accent, Colors.black, 0.28)!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.4),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            'S',
+            style: TextStyle(
+              color: AppTheme.onAccent(accent),
+              fontWeight: FontWeight.w900,
+              fontSize: 14,
+              height: 1,
+            ),
+          ),
+        ),
+        const SizedBox(width: 9),
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            // Bande lumineuse d'accent qui balaie le texte.
+            final dx = -1.6 + 3.2 * _controller.value;
+            return ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (rect) => LinearGradient(
+                begin: Alignment(dx - 0.35, 0),
+                end: Alignment(dx + 0.35, 0),
+                colors: [base, accent, base],
+                stops: const [0.2, 0.5, 0.8],
+              ).createShader(rect),
+              child: child,
+            );
+          },
+          child: const Text(
+            'SES Coin',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

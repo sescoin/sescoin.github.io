@@ -11,6 +11,7 @@ class MarketItemCard extends StatelessWidget {
     required this.onBuy,
     this.isLoading = false,
     this.actionLabel,
+    this.fillHeight = false,
   });
 
   final MarketplaceItem item;
@@ -18,24 +19,111 @@ class MarketItemCard extends StatelessWidget {
   final bool isLoading;
   final String? actionLabel;
 
+  /// Occupe toute la hauteur disponible (bouton d'achat aligné en bas) pour
+  /// que les cartes d'une même ligne aient la même taille.
+  final bool fillHeight;
+
   void _showFullDescription(BuildContext context) {
+    final accent = context.accent;
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(item.name),
-        content: SingleChildScrollView(
-          child: Text(
-            item.description,
-            style: const TextStyle(height: 1.4),
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Fermer'),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (item.imageUrl != null)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    child: Image.network(
+                      item.imageUrl!,
+                      height: 150,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              item.category,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: accent,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${item.price.toStringAsFixed(2)} SC',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: accent,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                    child: Text(
+                      item.description,
+                      style: TextStyle(
+                        height: 1.45,
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Fermer'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -49,7 +137,7 @@ class MarketItemCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (item.imageUrl != null)
@@ -77,7 +165,9 @@ class MarketItemCard extends StatelessWidget {
                 ),
                 if (!item.isUnlimited)
                   _InfoBadge(
-                    label: '${item.stock} restant${item.stock > 1 ? 's' : ''}',
+                    label: item.stock == 1
+                        ? 'un restant'
+                        : '${item.stock} restants',
                     color: item.stock <= 3
                         ? AppTheme.negative
                         : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -122,7 +212,8 @@ class MarketItemCard extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 10),
+            // Pousse le prix + bouton vers le bas pour aligner les cartes.
+            if (fillHeight) const Spacer() else const SizedBox(height: 10),
             AmountDisplay(
               amount: item.price,
               fontSize: 17,

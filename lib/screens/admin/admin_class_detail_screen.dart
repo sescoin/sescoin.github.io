@@ -101,7 +101,9 @@ class AdminClassDetailScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                '${members.length} membre${members.length > 1 ? 's' : ''}',
+                                members.length == 1
+                                    ? 'un membre'
+                                    : '${members.length} membres',
                                 style: TextStyle(
                                   color: accent,
                                   fontSize: 13,

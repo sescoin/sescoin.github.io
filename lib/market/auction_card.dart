@@ -198,7 +198,9 @@ class _AuctionCardState extends State<AuctionCard> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${auction.bidCount} offre${auction.bidCount > 1 ? 's' : ''}',
+                  auction.bidCount == 1
+                      ? 'une offre'
+                      : '${auction.bidCount} offres',
                   style: TextStyle(
                     fontSize: 11,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,

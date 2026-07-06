@@ -21,25 +21,44 @@ class NotificationBridge extends ConsumerStatefulWidget {
   ConsumerState<NotificationBridge> createState() => _NotificationBridgeState();
 }
 
-class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
+class _NotificationBridgeState extends ConsumerState<NotificationBridge>
+    with WidgetsBindingObserver {
   /// Les notifications antérieures au lancement ne sont pas rejouées.
   final DateTime _bootTime = DateTime.now();
   final Set<String> _shownIds = {};
 
+  AppLifecycleState _lifecycle = AppLifecycleState.resumed;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await initSystemNotifications();
       await requestSystemNotificationPermission();
     });
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _lifecycle = state;
+  }
+
   void _relay(List<AppNotification> notifications) {
+    // Pas de notification système quand l'app est au premier plan : l'info est
+    // déjà visible dans l'app. On ne notifie qu'en arrière-plan.
+    final inForeground = _lifecycle == AppLifecycleState.resumed;
     for (final notification in notifications) {
       if (notification.isRead) continue;
       if (!notification.createdAt.isAfter(_bootTime)) continue;
       if (!_shownIds.add(notification.id)) continue;
+      if (inForeground) continue;
       if (!shouldShowSystemNotification) continue;
       showSystemNotification(
         title: notification.title,

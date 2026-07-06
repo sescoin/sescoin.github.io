@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -382,10 +383,118 @@ class _ClassChatScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(className)),
+      appBar: AppBar(
+        title: Text(className),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.groups_rounded),
+            tooltip: 'Membres de la classe',
+            onPressed: () => _showClassMembers(context, classId, className),
+          ),
+        ],
+      ),
       body: _ClassChatBody(classId: classId, isAdmin: isAdmin),
     );
   }
+}
+
+/// Feuille listant les membres d'une classe (accessible à tout membre).
+void _showClassMembers(BuildContext context, String classId, String className) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      minChildSize: 0.35,
+      builder: (context, scrollController) => Consumer(
+        builder: (context, ref, _) {
+          final membersAsync = ref.watch(classMembersProvider(classId));
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.groups_rounded, color: context.accent, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Membres · $className',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: membersAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'Impossible de charger les membres.',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                  data: (members) {
+                    if (members.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'Aucun membre.',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+                      itemCount: members.length,
+                      separatorBuilder: (_, __) =>
+                          const Divider(height: 1, indent: 68),
+                      itemBuilder: (context, i) {
+                        final m = members[i];
+                        return ListTile(
+                          leading: UserAvatar(
+                            username: m.username,
+                            avatarUrl: m.avatarUrl,
+                            radius: 20,
+                          ),
+                          title: Text(
+                            m.displayName,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text('@${m.username}'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.push('/user/${m.username}');
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  );
 }
 
 // ── Corps du chat global ───────────────────────────────────────────────────────
@@ -464,9 +573,11 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
-    _focusNode.requestFocus();
+    // Sur le web, garder le focus après l'envoi laisse un espace blanc là où
+    // était le clavier lors d'un retour arrière : on ne re-focus que sur mobile.
+    if (!kIsWeb) _focusNode.requestFocus();
     await ref.read(chatActionProvider.notifier).sendGlobalMessage(text);
-    if (mounted) _focusNode.requestFocus();
+    if (mounted && !kIsWeb) _focusNode.requestFocus();
   }
 
   Future<void> _adminDeleteMessage(ChatMessage msg) async {
@@ -485,6 +596,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
       builder: (_) {
         final theme = Theme.of(context);
         final isDark = theme.brightness == Brightness.dark;
@@ -502,6 +614,15 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Container(
+                  width: 38,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
                 Text(
                   'Options de l\'annonce',
                   style: theme.textTheme.titleMedium
@@ -583,6 +704,13 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
 
   Future<void> _deleteOwnLoanRequest(ChatMessage msg) async {
     if (!ensureNotBanned(context, ref)) return;
+    if (ref.read(chatActionProvider).isMuted) {
+      _showSnackBar(
+        'Vous êtes muet : suppression indisponible.',
+        Colors.orange,
+      );
+      return;
+    }
     setState(() => _locallyDeletedIds.add(msg.id));
     try {
       await ref.read(chatActionProvider.notifier).deleteMessage(msg.id);
@@ -664,6 +792,19 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     final messagesAsync = ref.watch(globalMessagesProvider);
     final chatState = ref.watch(chatActionProvider);
     final currentUserId = ref.watch(currentUserIdProvider) ?? '';
+
+    // Compteurs quotidiens (annonces) pour afficher les limites.
+    final allMsgs = messagesAsync.valueOrNull ?? const <ChatMessage>[];
+    final giftsToday = allMsgs
+        .where((m) =>
+            m.isGift && m.userId == currentUserId && _isToday(m.createdAt))
+        .length;
+    final loansToday = allMsgs
+        .where((m) =>
+            m.isLoanRequest &&
+            m.userId == currentUserId &&
+            _isToday(m.createdAt))
+        .length;
 
     return KeyboardDismissUnfocus(
         child: Stack(
@@ -789,8 +930,19 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
               )
             else
               _LoanRequestBar(
+                loanUsed: loansToday,
+                loanMax: 1,
+                giftUsed: giftsToday,
+                giftMax: 2,
                 onTap: () {
                   if (!ensureNotBanned(context, ref)) return;
+                  if (loansToday >= 1) {
+                    _showSnackBar(
+                      'Limite atteinte : une demande de prêt par jour.',
+                      Colors.orange,
+                    );
+                    return;
+                  }
                   context.push(
                     AppRoutes.loanCreate,
                     extra: {'chatMode': true},
@@ -798,6 +950,13 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                 },
                 onGift: () {
                   if (!ensureNotBanned(context, ref)) return;
+                  if (giftsToday >= 2) {
+                    _showSnackBar(
+                      'Limite atteinte : deux cadeaux par jour.',
+                      Colors.orange,
+                    );
+                    return;
+                  }
                   _showGiftDialog(context, ref, classId: null);
                 },
               ),
@@ -903,12 +1062,13 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     if (ref.read(chatActionProvider).isMuted) return;
 
     _controller.clear();
-    _focusNode.requestFocus();
+    // Web : pas de re-focus (évite l'espace blanc du clavier au retour arrière).
+    if (!kIsWeb) _focusNode.requestFocus();
     final result = await ref
         .read(chatActionProvider.notifier)
         .sendClassMessage(widget.classId, text);
 
-    if (mounted) _focusNode.requestFocus();
+    if (mounted && !kIsWeb) _focusNode.requestFocus();
     if (!mounted || result == null) return;
     if (result.warning) {
       final remaining = 3 - result.warningCount;
@@ -983,6 +1143,13 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
 
   Future<void> _deleteOwnLoanRequest(ChatMessage msg) async {
     if (!ensureNotBanned(context, ref)) return;
+    if (ref.read(chatActionProvider).isMuted) {
+      _showSnackBar(
+        'Vous êtes muet : suppression indisponible.',
+        Colors.orange,
+      );
+      return;
+    }
     setState(() => _locallyDeletedIds.add(msg.id));
     try {
       await ref.read(chatActionProvider.notifier).deleteMessage(msg.id);
@@ -1016,9 +1183,23 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
   void _showAttachSheet() {
     if (!ensureNotBanned(context, ref)) return;
     final theme = Theme.of(context);
+    // Compteurs quotidiens (classe) : cadeaux 3/jour, prêts 2/jour.
+    final myId = ref.read(currentUserIdProvider) ?? '';
+    final classMsgs =
+        ref.read(classMessagesProvider(widget.classId)).valueOrNull ??
+            const <ChatMessage>[];
+    final giftsToday = classMsgs
+        .where(
+            (m) => m.isGift && m.userId == myId && _isToday(m.createdAt))
+        .length;
+    final loansToday = classMsgs
+        .where((m) =>
+            m.isLoanRequest && m.userId == myId && _isToday(m.createdAt))
+        .length;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
       builder: (sheetCtx) => SafeArea(
         child: Container(
           margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
@@ -1056,8 +1237,16 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                 _ChatActionTile(
                   icon: Icons.handshake_rounded,
                   label: 'Demander un prêt à la classe',
+                  badge: '$loansToday/2',
                   onTap: () {
                     Navigator.pop(sheetCtx);
+                    if (loansToday >= 2) {
+                      _showSnackBar(
+                        'Limite atteinte : deux demandes de prêt par jour.',
+                        Colors.orange,
+                      );
+                      return;
+                    }
                     context.push(
                       AppRoutes.loanCreate,
                       extra: {'chatMode': true, 'classId': widget.classId},
@@ -1069,8 +1258,16 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
               _ChatActionTile(
                 icon: Icons.card_giftcard_rounded,
                 label: 'Envoyer un cadeau',
+                badge: widget.isAdmin ? null : '$giftsToday/3',
                 onTap: () {
                   Navigator.pop(sheetCtx);
+                  if (!widget.isAdmin && giftsToday >= 3) {
+                    _showSnackBar(
+                      'Limite atteinte : trois cadeaux par jour.',
+                      Colors.orange,
+                    );
+                    return;
+                  }
                   _showGiftDialog(context, ref, classId: widget.classId);
                 },
               ),
@@ -1187,9 +1384,18 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
 
   void _showMessageActions(
       BuildContext context, ChatMessage message, bool isOwn) {
+    // Un compte muet ne peut ni modifier ni supprimer ses messages.
+    if (!widget.isAdmin && ref.read(chatActionProvider).isMuted) {
+      _showSnackBar(
+        'Vous êtes muet : modification et suppression indisponibles.',
+        Colors.orange,
+      );
+      return;
+    }
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1415,18 +1621,32 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
 // ── Barre demande de prêt (utilisateurs dans le chat global) ──────────────────
 
 class _LoanRequestBar extends StatelessWidget {
-  const _LoanRequestBar({required this.onTap, this.onGift});
+  const _LoanRequestBar({
+    required this.onTap,
+    this.onGift,
+    this.loanUsed = 0,
+    this.loanMax = 1,
+    this.giftUsed = 0,
+    this.giftMax = 2,
+  });
 
   final VoidCallback onTap;
 
   /// Si fourni, ajoute un bouton cadeau à côté de la demande de prêt.
   final VoidCallback? onGift;
 
+  final int loanUsed;
+  final int loanMax;
+  final int giftUsed;
+  final int giftMax;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
     final onAccent = theme.colorScheme.onPrimary;
+    final giftReached = giftUsed >= giftMax;
+    final loanReached = loanUsed >= loanMax;
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -1440,68 +1660,119 @@ class _LoanRequestBar extends StatelessWidget {
           child: Row(
             children: [
               if (onGift != null) ...[
-                PressableScale(
-                  onTap: onGift,
-                  child: Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: accent.withValues(alpha: 0.3),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PressableScale(
+                      onTap: onGift,
+                      child: Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: accent.withValues(
+                              alpha: giftReached ? 0.06 : 0.12),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: accent.withValues(
+                                alpha: giftReached ? 0.15 : 0.3),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.card_giftcard_rounded,
+                          color: accent
+                              .withValues(alpha: giftReached ? 0.4 : 1),
+                          size: 22,
+                        ),
                       ),
                     ),
-                    child: Icon(Icons.card_giftcard_rounded,
-                        color: accent, size: 22),
-                  ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$giftUsed/$giftMax',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: giftReached
+                            ? AppTheme.negative
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 10),
               ],
               Expanded(
-                child: PressableScale(
-                  onTap: onTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          accent,
-                          Color.lerp(accent, Colors.black, 0.22)!
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accent.withValues(alpha: 0.32),
-                          blurRadius: 14,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.handshake_rounded,
-                            color: onAccent, size: 19),
-                        const SizedBox(width: 10),
-                        Flexible(
-                          child: Text(
-                            'Demande de prêt',
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: onAccent,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.1,
-                            ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PressableScale(
+                      onTap: onTap,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: loanReached
+                                ? [
+                                    accent.withValues(alpha: 0.4),
+                                    accent.withValues(alpha: 0.3),
+                                  ]
+                                : [
+                                    accent,
+                                    Color.lerp(accent, Colors.black, 0.22)!
+                                  ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: loanReached
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: accent.withValues(alpha: 0.32),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
                         ),
-                      ],
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.handshake_rounded,
+                                color: onAccent, size: 19),
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: Text(
+                                'Demande de prêt',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: onAccent,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.1,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: onAccent.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                '$loanUsed/$loanMax',
+                                style: TextStyle(
+                                  color: onAccent,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -1876,6 +2147,15 @@ class _AttachIconButton extends StatelessWidget {
 }
 
 // ── Envoi d'un cadeau ─────────────────────────────────────────────────────────
+
+/// Vrai si la date est dans la journée courante (pour les limites/jour).
+bool _isToday(DateTime date) {
+  final now = DateTime.now();
+  final local = date.toLocal();
+  return local.year == now.year &&
+      local.month == now.month &&
+      local.day == now.day;
+}
 
 Future<void> _showGiftDialog(
   BuildContext context,
@@ -2419,12 +2699,16 @@ class _ChatActionTile extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.color,
+    this.badge,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final Color? color;
+
+  /// Petit compteur de limite (ex. « 1/3 ») affiché à droite.
+  final String? badge;
 
   @override
   Widget build(BuildContext context) {
@@ -2442,14 +2726,34 @@ class _ChatActionTile extends StatelessWidget {
             children: [
               Icon(icon, color: actionColor, size: 21),
               const SizedBox(width: 12),
-              Text(
-                label,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: actionColor,
-                  fontWeight: FontWeight.w700,
+              Flexible(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: actionColor,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               const Spacer(),
+              if (badge != null)
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: actionColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    badge!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: actionColor,
+                    ),
+                  ),
+                ),
               Icon(
                 Icons.chevron_right_rounded,
                 color: actionColor.withValues(alpha: 0.55),
@@ -2949,21 +3253,12 @@ class _InputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMuted = chatState.isMuted;
-    final errorMsg = chatState.error;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (errorMsg != null)
-          Container(
-            width: double.infinity,
-            color: Colors.red.withValues(alpha: 0.08),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Text(errorMsg,
-                style: const TextStyle(color: Colors.red, fontSize: 12)),
-          ),
         if (isMuted)
           Container(
             width: double.infinity,

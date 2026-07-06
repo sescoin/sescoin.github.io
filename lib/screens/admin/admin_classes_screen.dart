@@ -248,7 +248,9 @@ class _ClassCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${classRoom.memberCount} membre${classRoom.memberCount > 1 ? 's' : ''}',
+                            classRoom.memberCount == 1
+                                ? 'un membre'
+                                : '${classRoom.memberCount} membres',
                             style: TextStyle(
                               fontSize: 12,
                               color: theme.colorScheme.onSurfaceVariant,

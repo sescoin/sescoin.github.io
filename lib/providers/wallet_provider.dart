@@ -5,6 +5,10 @@ import '../models/transaction.dart';
 import 'auth_provider.dart';
 import 'service_providers.dart';
 
+/// Incrémenté chaque fois que l'onglet Portefeuille est (re)sélectionné, pour
+/// rejouer l'animation d'apparition des transactions à chaque retour.
+final walletVisitProvider = StateProvider<int>((ref) => 0);
+
 // ── Transactions récentes (dashboard) ─────────────────────────────────────────
 final recentTransactionsProvider =
     FutureProvider<List<Transaction>>((ref) async {

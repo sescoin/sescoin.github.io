@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../common/notification_bridge.dart';
+import '../providers/wallet_provider.dart';
 import '../screens/admin/admin_accounts_screen.dart';
 import '../screens/admin/admin_avatar_review_screen.dart';
 import '../screens/admin/admin_class_detail_screen.dart';
@@ -381,7 +382,7 @@ class GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
@@ -420,7 +421,7 @@ class MainShell extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       // Le pont relaie les notifications temps réel vers les notifications
       // système (Android / navigateur) tant que l'app tourne.
@@ -432,10 +433,17 @@ class MainShell extends StatelessWidget {
         maxScaleFactor: 1.0,
         child: NavigationBar(
           selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: (index) => navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          ),
+          onDestinationSelected: (index) {
+            // Onglet Portefeuille (index 1) : signale la visite pour rejouer
+            // l'animation d'apparition des transactions.
+            if (index == 1) {
+              ref.read(walletVisitProvider.notifier).state++;
+            }
+            navigationShell.goBranch(
+              index,
+              initialLocation: index == navigationShell.currentIndex,
+            );
+          },
           destinations: _tabs
               .map(
                 (tab) => NavigationDestination(
