@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../providers/settings_provider.dart';
+import 'app_fonts.dart';
 
 class AppTheme {
   AppTheme._();
@@ -25,7 +26,11 @@ class AppTheme {
       accent.computeLuminance() > 0.55 ? Colors.black87 : Colors.white;
 
   // ── Typographie ────────────────────────────────────────────────────────────
-  static TextTheme _textTheme(TextTheme base) => base.copyWith(
+  // La famille choisie dans les réglages est appliquée d'abord, puis les
+  // graisses et interlettrages propres à l'app : changer de police ne modifie
+  // donc jamais la hiérarchie typographique.
+  static TextTheme _textTheme(TextTheme base, String fontKey) =>
+      applyAppFont(fontKey, base).copyWith(
         headlineLarge: base.headlineLarge
             ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.8),
         headlineMedium: base.headlineMedium
@@ -56,7 +61,11 @@ class AppTheme {
   );
 
   // ── Thème clair ────────────────────────────────────────────────────────────
-  static ThemeData light(AppAccent accent, {AppAmbiance? ambiance}) {
+  static ThemeData light(
+    AppAccent accent, {
+    AppAmbiance? ambiance,
+    String fontKey = 'system',
+  }) {
     final amb = ambiance ?? appAmbiances.first;
     final scaffold = amb.lightScaffold;
     final input = amb.lightInput;
@@ -75,7 +84,7 @@ class AppTheme {
 
     return base.copyWith(
       scaffoldBackgroundColor: scaffold,
-      textTheme: _textTheme(base.textTheme),
+      textTheme: _textTheme(base.textTheme, fontKey),
       pageTransitionsTheme: _pageTransitions,
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
@@ -287,6 +296,7 @@ class AppTheme {
     AppAccent accent, {
     AppAmbiance? ambiance,
     bool pureBlack = false,
+    String fontKey = 'system',
   }) {
     final amb = ambiance ?? appAmbiances.first;
     final primary = accent.color;
@@ -309,7 +319,7 @@ class AppTheme {
 
     return base.copyWith(
       scaffoldBackgroundColor: scaffold,
-      textTheme: _textTheme(base.textTheme),
+      textTheme: _textTheme(base.textTheme, fontKey),
       pageTransitionsTheme: _pageTransitions,
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(

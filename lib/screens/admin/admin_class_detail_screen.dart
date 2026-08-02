@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../common/animations.dart';
+import '../../common/app_dialog.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -385,8 +386,11 @@ class AdminClassDetailScreen extends ConsumerWidget {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Retirer ${profile.displayName} ?'),
+      builder: (ctx) => AppDialog(
+        icon: Icons.person_remove_rounded,
+        tone: AppDialogTone.danger,
+        title: 'Retirer ${profile.displayName} ?',
+        subtitle: '@${profile.username}',
         content: const Text('Ce membre sera retiré de la classe.'),
         actions: [
           TextButton(

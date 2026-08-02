@@ -11,52 +11,42 @@ class AppLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
-    final dark = Color.lerp(accent, Colors.black, 0.35)!;
 
+    // Le logo porte déjà son propre fond : on l'affiche tel quel, détouré au
+    // cercle. Pas d'anneau ni de dégradé ajouté par-dessus — seul un halo
+    // d'accent reste, en arrière-plan.
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [accent, dark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
         boxShadow: glow
             ? [
                 BoxShadow(
-                  color: accent.withValues(alpha: 0.45),
-                  blurRadius: size * 0.35,
-                  offset: Offset(0, size * 0.08),
+                  color: accent.withValues(alpha: 0.38),
+                  blurRadius: size * 0.32,
+                  offset: Offset(0, size * 0.07),
                 ),
               ]
             : null,
       ),
-      padding: EdgeInsets.all(size * 0.055),
-      // Anneau intérieur clair, puis la pièce elle-même.
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.85),
-            width: size * 0.025,
-          ),
-        ),
-        padding: EdgeInsets.all(size * 0.04),
-        child: ClipOval(
-          child: Image.asset(
-            'assets/icons/logo.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, _, __) => Center(
-              child: Text(
-                'SC',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: size * 0.34,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1,
-                ),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/icons/logo.jpg',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (context, _, __) => Container(
+            color: const Color(0xFF0B0B0B),
+            alignment: Alignment.center,
+            child: Text(
+              'S',
+              style: TextStyle(
+                color: accent,
+                fontSize: size * 0.42,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1,
               ),
             ),
           ),

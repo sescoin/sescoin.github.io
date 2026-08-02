@@ -8,6 +8,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/class_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../common/animations.dart';
+import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
 import '../../common/dispose_scope.dart';
 import '../../common/empty_state.dart';
@@ -119,8 +120,11 @@ class AdminRequestsScreen extends ConsumerWidget {
       context: ctx,
       builder: (d) => DisposeScope(
         disposables: [reasonCtrl],
-        child: AlertDialog(
-          title: const Text('Refuser la demande'),
+        child: AppDialog(
+          icon: Icons.person_off_rounded,
+          tone: AppDialogTone.danger,
+          title: 'Refuser la demande',
+          subtitle: 'L\'élève sera informé du refus',
           content: TextField(
             controller: reasonCtrl,
             decoration:
@@ -197,8 +201,10 @@ class _RequestCardState extends State<_RequestCard> {
       builder: (d) => DisposeScope(
         disposables: [balanceCtrl],
         child: StatefulBuilder(
-          builder: (d, setS) => AlertDialog(
-            title: const Text('Approuver le compte'),
+          builder: (d, setS) => AppDialog(
+            icon: Icons.how_to_reg_rounded,
+            title: 'Approuver le compte',
+            subtitle: '@${widget.req.username}',
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

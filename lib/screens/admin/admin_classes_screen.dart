@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../common/animations.dart';
+import '../../common/app_dialog.dart';
 import '../../common/dispose_scope.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
@@ -82,8 +83,10 @@ class AdminClassesScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => DisposeScope(
         disposables: [ctrl],
-        child: AlertDialog(
-          title: const Text('Nouvelle classe'),
+        child: AppDialog(
+          icon: Icons.add_rounded,
+          title: 'Nouvelle classe',
+          subtitle: 'Choisis un nom reconnaissable par les élèves',
           content: TextField(
             controller: ctrl,
             autofocus: true,
@@ -119,8 +122,10 @@ class AdminClassesScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => DisposeScope(
         disposables: [ctrl],
-        child: AlertDialog(
-          title: const Text('Renommer la classe'),
+        child: AppDialog(
+          icon: Icons.drive_file_rename_outline_rounded,
+          title: 'Renommer la classe',
+          subtitle: classRoom.name,
           content: TextField(
             controller: ctrl,
             autofocus: true,
@@ -155,8 +160,11 @@ class AdminClassesScreen extends ConsumerWidget {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Supprimer « ${classRoom.name} » ?'),
+      builder: (ctx) => AppDialog(
+        icon: Icons.delete_outline_rounded,
+        tone: AppDialogTone.danger,
+        title: 'Supprimer « ${classRoom.name} » ?',
+        subtitle: 'Cette action est définitive',
         content: Text(
           'Les ${classRoom.memberCount} membre(s) seront retirés de cette classe. '
           'Les messages du chat de cette classe seront supprimés.',

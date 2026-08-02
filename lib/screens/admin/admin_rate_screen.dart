@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../common/animations.dart';
+import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
 import '../../common/dispose_scope.dart';
 import '../../common/loading_overlay.dart';
@@ -94,8 +95,11 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
     }
     final leave = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Modifications non enregistrées'),
+      builder: (ctx) => AppDialog(
+        icon: Icons.warning_amber_rounded,
+        tone: AppDialogTone.danger,
+        title: 'Modifications non enregistrées',
+        subtitle: 'Les changements seront perdus',
         content: const Text(
           'Les changements apportés au cours n\'ont pas été appliqués. '
           'Quitter sans enregistrer ?',
@@ -224,8 +228,10 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
       context: context,
       builder: (ctx) => DisposeScope(
         disposables: [ctrl],
-        child: AlertDialog(
-          title: Text('${_series.label} — point ${index + 1}'),
+        child: AppDialog(
+          icon: _series.icon,
+          title: '${_series.label} — point ${index + 1}',
+          subtitle: 'Saisis la valeur exacte',
           content: TextField(
             controller: ctrl,
             autofocus: true,

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../common/animations.dart';
+import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
 import '../../common/ban_guard.dart';
 import '../../common/empty_state.dart';
@@ -145,8 +146,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   Future<void> _signOut() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Se déconnecter ?'),
+      builder: (dialogContext) => AppDialog(
+        icon: Icons.logout_rounded,
+        tone: AppDialogTone.danger,
+        title: 'Se déconnecter ?',
+        subtitle: 'Ta session sera fermée sur cet appareil',
         content: const Text('Vous serez redirigé vers la page de connexion.'),
         actions: [
           TextButton(

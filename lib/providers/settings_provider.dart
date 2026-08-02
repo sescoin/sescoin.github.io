@@ -29,6 +29,13 @@ class AppAccent {
 }
 
 const appAccents = <AppAccent>[
+  // Reprend le dégradé du logo (jaune chaud → rouge orangé).
+  AppAccent(
+    key: 'flame',
+    label: 'Flamme',
+    color: Color(0xFFF5883C),
+    dark: Color(0xFFE1502F),
+  ),
   AppAccent(
     key: 'gold',
     label: 'Or',
@@ -222,9 +229,10 @@ AppAmbiance ambianceByKey(String key) => appAmbiances
 class AppSettings {
   const AppSettings({
     this.themeMode = ThemeMode.system,
-    this.accentKey = 'gold',
+    this.accentKey = 'flame',
     this.customAccent,
-    this.ambianceKey = 'rose',
+    this.ambianceKey = 'ember',
+    this.fontKey = 'system',
     this.pureBlack = false,
     this.reduceMotion = false,
     this.textScale = 1.0,
@@ -235,6 +243,9 @@ class AppSettings {
 
   /// Ambiance des surfaces (fonds, cartes) pour les deux modes.
   final String ambianceKey;
+
+  /// Police de caractères de l'app (voir core/app_fonts.dart).
+  final String fontKey;
 
   /// Couleur libre choisie au sélecteur (utilisée quand
   /// [accentKey] == [customAccentKey]).
@@ -260,6 +271,7 @@ class AppSettings {
     String? accentKey,
     Color? customAccent,
     String? ambianceKey,
+    String? fontKey,
     bool? pureBlack,
     bool? reduceMotion,
     double? textScale,
@@ -269,6 +281,7 @@ class AppSettings {
       accentKey: accentKey ?? this.accentKey,
       customAccent: customAccent ?? this.customAccent,
       ambianceKey: ambianceKey ?? this.ambianceKey,
+      fontKey: fontKey ?? this.fontKey,
       pureBlack: pureBlack ?? this.pureBlack,
       reduceMotion: reduceMotion ?? this.reduceMotion,
       textScale: textScale ?? this.textScale,
@@ -289,6 +302,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   static const _kAccent = 'settings.accent';
   static const _kCustomAccent = 'settings.customAccent';
   static const _kAmbiance = 'settings.ambiance';
+  static const _kFont = 'settings.font';
   static const _kPureBlack = 'settings.pureBlack';
   static const _kReduceMotion = 'settings.reduceMotion';
   static const _kTextScale = 'settings.textScale';
@@ -302,9 +316,10 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
               modeIndex < ThemeMode.values.length
           ? ThemeMode.values[modeIndex]
           : ThemeMode.system,
-      accentKey: prefs.getString(_kAccent) ?? 'gold',
+      accentKey: prefs.getString(_kAccent) ?? 'flame',
       customAccent: customValue != null ? Color(customValue) : null,
-      ambianceKey: prefs.getString(_kAmbiance) ?? 'rose',
+      ambianceKey: prefs.getString(_kAmbiance) ?? 'ember',
+      fontKey: prefs.getString(_kFont) ?? 'system',
       pureBlack: prefs.getBool(_kPureBlack) ?? false,
       reduceMotion: prefs.getBool(_kReduceMotion) ?? false,
       textScale: prefs.getDouble(_kTextScale) ?? 1.0,
@@ -333,6 +348,11 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     _prefs.setString(_kAmbiance, key);
   }
 
+  void setFont(String key) {
+    state = state.copyWith(fontKey: key);
+    _prefs.setString(_kFont, key);
+  }
+
   void setPureBlack(bool value) {
     state = state.copyWith(pureBlack: value);
     _prefs.setBool(_kPureBlack, value);
@@ -356,6 +376,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     _prefs.remove(_kAccent);
     _prefs.remove(_kCustomAccent);
     _prefs.remove(_kAmbiance);
+    _prefs.remove(_kFont);
     _prefs.remove(_kPureBlack);
     _prefs.remove(_kReduceMotion);
     _prefs.remove(_kTextScale);

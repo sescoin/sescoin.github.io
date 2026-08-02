@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../common/animations.dart';
+import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
 import '../../common/ban_guard.dart';
 import '../../common/date_utils.dart';
@@ -97,6 +98,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         appBar: AppBar(
           title: const Text('Chat'),
           actions: [
+            // Membres de la classe : accessible depuis l'onglet de classe,
+            // là où la liste a du sens pour l'élève.
+            if (_tabController!.index == 1)
+              IconButton(
+                icon: const Icon(Icons.groups_rounded),
+                tooltip: 'Membres de la classe',
+                onPressed: () =>
+                    _showClassMembers(context, userClassId, userClassName),
+              ),
             if (!isAdmin)
               _ChatInfoButton(classMode: _tabController!.index == 1),
           ],
@@ -384,16 +394,9 @@ class _ClassChatScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(className),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.groups_rounded),
-            tooltip: 'Membres de la classe',
-            onPressed: () => _showClassMembers(context, classId, className),
-          ),
-        ],
-      ),
+      // Pas de bouton « Membres » ici : cet écran n'est atteint que depuis le
+      // panneau admin, qui affiche déjà la liste des élèves de la classe.
+      appBar: AppBar(title: Text(className)),
       body: _ClassChatBody(classId: classId, isAdmin: isAdmin),
     );
   }
@@ -662,10 +665,10 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
       context: context,
       builder: (ctx) => DisposeScope(
         disposables: [ctrl],
-        child: _ChatDialog(
+        child: AppDialog(
           icon: Icons.edit_rounded,
           title: 'Modifier l\'annonce',
-          accentColor: Theme.of(context).colorScheme.primary,
+          subtitle: 'Visible par toute la classe',
           content: TextField(
             controller: ctrl,
             maxLength: 500,
@@ -1287,10 +1290,10 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
       context: context,
       builder: (ctx) => DisposeScope(
         disposables: [ctrl],
-        child: _ChatDialog(
+        child: AppDialog(
           icon: Icons.edit_rounded,
           title: 'Modifier le message',
-          accentColor: Theme.of(context).colorScheme.primary,
+          subtitle: 'La mention « modifié » sera ajoutée',
           content: TextField(
             controller: ctrl,
             maxLength: 500,
@@ -1348,10 +1351,11 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
   Future<void> _deleteMessage(ChatMessage message) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => _ChatDialog(
+      builder: (ctx) => AppDialog(
         icon: Icons.delete_outline_rounded,
+        tone: AppDialogTone.danger,
         title: 'Supprimer le message ?',
-        accentColor: Colors.red,
+        subtitle: 'Cette action est définitive',
         content: Text(
           'Cette action est définitive.',
           style: TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
@@ -2638,64 +2642,6 @@ class _ClaimGiftButtonState extends State<_ClaimGiftButton>
   }
 }
 
-// ── Dialogue réutilisable ──────────────────────────────────────────────────────
-
-class _ChatDialog extends StatelessWidget {
-  const _ChatDialog({
-    required this.icon,
-    required this.title,
-    required this.content,
-    required this.actions,
-    required this.accentColor,
-  });
-
-  final IconData icon;
-  final String title;
-  final Widget content;
-  final List<Widget> actions;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: accentColor, size: 22),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            content,
-            const SizedBox(height: 18),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: actions,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ── Action tile (bottom sheet) ────────────────────────────────────────────────
 
@@ -2957,9 +2903,10 @@ class _MessageBubble extends StatelessWidget {
                       child: Text(
                         message.displayName,
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
+                          letterSpacing: 0.1,
                         ),
                       ),
                     ),
@@ -2968,38 +2915,81 @@ class _MessageBubble extends StatelessWidget {
                   onLongPress: onLongPress,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 11),
+                        horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: bubbleColor,
+                      // Léger dégradé sur ses propres messages : la bulle
+                      // prend du relief sans nuire à la lisibilité.
+                      gradient: isOwn && !isCensored
+                          ? LinearGradient(
+                              colors: [
+                                accent,
+                                Color.lerp(accent, Colors.black, 0.18)!,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: isOwn && !isCensored ? null : bubbleColor,
                       borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(20),
-                        topRight: const Radius.circular(20),
-                        bottomLeft: Radius.circular(isOwn ? 20 : 6),
-                        bottomRight: Radius.circular(isOwn ? 6 : 20),
+                        topLeft: const Radius.circular(18),
+                        topRight: const Radius.circular(18),
+                        bottomLeft: Radius.circular(isOwn ? 18 : 5),
+                        bottomRight: Radius.circular(isOwn ? 5 : 18),
                       ),
                       border: isCensored
                           ? Border.all(
-                              color: Colors.red.withValues(alpha: 0.3),
-                              width: 1.1)
-                          : null,
+                              color: AppTheme.negative.withValues(alpha: 0.45),
+                              width: 1.1,
+                            )
+                          : (!isOwn && !isDark)
+                              // Contour discret : sans lui, une bulle blanche
+                              // se fond dans un fond clair.
+                              ? Border.all(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                )
+                              : null,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
+                          color: isOwn && !isCensored
+                              ? accent.withValues(alpha: 0.26)
+                              : Colors.black
+                                  .withValues(alpha: isDark ? 0.26 : 0.06),
+                          blurRadius: isOwn ? 12 : 8,
                           offset: const Offset(0, 3),
                         ),
                       ],
                     ),
-                    child: Text(
-                      message.content,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 14.6,
-                        height: 1.38,
-                        fontStyle:
-                            isCensored ? FontStyle.italic : FontStyle.normal,
-                      ),
-                    ),
+                    child: isCensored
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.block_rounded,
+                                size: 14,
+                                color: Colors.grey[500],
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  message.content,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 14.2,
+                                    height: 1.35,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            message.content,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 14.6,
+                              height: 1.38,
+                            ),
+                          ),
                   ),
                 ),
                 Padding(
@@ -3268,15 +3258,25 @@ class _InputBar extends StatelessWidget {
         if (isMuted)
           Container(
             width: double.infinity,
-            color: Colors.orange.withValues(alpha: 0.1),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: AppTheme.warning.withValues(alpha: 0.13),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
             child: Row(
-              children: const [
-                Icon(Icons.volume_off_rounded, color: Colors.orange, size: 15),
-                SizedBox(width: 8),
-                Text(
-                  'Vous êtes muet — comportement inapproprié détecté.',
-                  style: TextStyle(color: Colors.orange, fontSize: 12),
+              children: [
+                Icon(
+                  Icons.volume_off_rounded,
+                  color: AppTheme.warning,
+                  size: 15,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Vous êtes muet — comportement inapproprié détecté.',
+                    style: TextStyle(
+                      color: AppTheme.warning,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -3292,9 +3292,9 @@ class _InputBar extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
+                color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.05),
+                blurRadius: 14,
+                offset: const Offset(0, -3),
               ),
             ],
           ),
@@ -3315,6 +3315,12 @@ class _InputBar extends StatelessWidget {
                             ? theme.inputDecorationTheme.fillColor
                             : Colors.grey[100],
                         borderRadius: BorderRadius.circular(24),
+                        // Liseré d'accent : le champ se détache du fond au
+                        // lieu de flotter sans limite visible.
+                        border: Border.all(
+                          color: context.accent.withValues(alpha: 0.22),
+                          width: 1.2,
+                        ),
                       ),
                       child: Focus(
                         onKeyEvent: (node, event) {

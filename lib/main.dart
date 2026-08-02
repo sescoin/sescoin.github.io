@@ -178,11 +178,16 @@ class SESCoinApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'SES Coin',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(settings.accent, ambiance: settings.ambiance),
+      theme: AppTheme.light(
+        settings.accent,
+        ambiance: settings.ambiance,
+        fontKey: settings.fontKey,
+      ),
       darkTheme: AppTheme.dark(
         settings.accent,
         ambiance: settings.ambiance,
         pureBlack: settings.pureBlack,
+        fontKey: settings.fontKey,
       ),
       themeMode: settings.themeMode,
       // Fondu doux quand on change de thème ou de couleur d'accent.

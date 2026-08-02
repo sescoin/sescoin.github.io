@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
+import '../../core/app_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 
@@ -140,6 +141,31 @@ class SettingsScreen extends ConsumerWidget {
                     onTap: () {
                       HapticFeedback.selectionClick();
                       notifier.setAmbiance(ambiance.key);
+                    },
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          FadeSlideIn.staggered(
+            index: 3,
+            child: _SectionTitle(
+              icon: Icons.text_fields_rounded,
+              title: 'Police',
+              trailing: fontByKey(settings.fontKey).label,
+            ),
+          ),
+          FadeSlideIn.staggered(
+            index: 3,
+            child: Column(
+              children: [
+                for (final font in appFonts)
+                  _FontCard(
+                    font: font,
+                    selected: settings.fontKey == font.key,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      notifier.setFont(font.key);
                     },
                   ),
               ],
@@ -508,6 +534,106 @@ class _AccentDot extends StatelessWidget {
 }
 
 // ── Carte d'ambiance ───────────────────────────────────────────────────────────
+
+/// Carte de choix de police. Le nom et l'échantillon sont rendus dans la
+/// famille concernée : l'aperçu montre directement le résultat, accents et
+/// chiffres compris.
+class _FontCard extends StatelessWidget {
+  const _FontCard({
+    required this.font,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AppFont font;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = context.accent;
+    final preview = applyAppFont(font.key, theme.textTheme);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: selected
+            ? accent.withValues(alpha: 0.12)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected ? accent : Colors.transparent,
+                width: 1.6,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        font.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: preview.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        font.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      // Échantillon avec accents et chiffres : permet de
+                      // repérer d'un coup d'œil un rendu qui déraille.
+                      Text(
+                        'Solde : 1 234,50 SC — éàçùî',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: preview.bodyMedium?.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(
+                  selected
+                      ? Icons.check_circle_rounded
+                      : Icons.circle_outlined,
+                  color: selected
+                      ? accent
+                      : theme.colorScheme.onSurfaceVariant
+                          .withValues(alpha: 0.4),
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _AmbianceCard extends StatelessWidget {
   const _AmbianceCard({
