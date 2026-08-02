@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
+import '../../common/password_strength.dart';
 import '../../core/constants.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
@@ -353,8 +354,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           const SizedBox(height: 14),
                           Text(
                             _pickedImage != null
-                                ? 'Retirez la photo (croix rouge) pour choisir un emoji ou les initiales.'
-                                : 'Ou sélectionner un emoji ou les initiales :',
+                                ? 'Retirez la photo pour choisir un émoji ou les initiales.'
+                                : 'Ou sélectionner un émoji ou les initiales :',
                             style: TextStyle(
                               fontSize: 12,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -551,6 +552,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                     setState(() => _obscure = !_obscure),
                               ),
                             ),
+                            onChanged: (_) => setState(() {}),
                             validator: (v) {
                               if (v == null ||
                                   v.length < AppConstants.passwordMinLength) {
@@ -559,6 +561,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               return null;
                             },
                           ),
+                          // ── Robustesse ─────────────────────────────────
+                          if (_passwordCtrl.text.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            PasswordStrengthBar(
+                              strength: passwordStrength(_passwordCtrl.text),
+                            ),
+                          ],
                           const SizedBox(height: 14),
                           TextFormField(
                             controller: _confirmCtrl,

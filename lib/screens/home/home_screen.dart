@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../common/animations.dart';
 import '../../common/ban_guard.dart';
@@ -356,7 +357,15 @@ class _BrandTitleState extends State<_BrandTitle>
       vsync: this,
       duration: const Duration(milliseconds: 3200),
     );
-    if (!AppMotion.reduce) _controller.repeat();
+    // Le balayage lumineux repose sur un ShaderMask. Le compiler pendant la
+    // construction de l'accueil provoque une saccade brève au tout premier
+    // affichage : on laisse la page se poser avant de démarrer.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || AppMotion.reduce) return;
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) _controller.repeat();
+      });
+    });
   }
 
   @override
@@ -393,10 +402,10 @@ class _BrandTitleState extends State<_BrandTitle>
           alignment: Alignment.center,
           child: Text(
             'S',
-            style: TextStyle(
+            style: GoogleFonts.spaceGrotesk(
               color: AppTheme.onAccent(accent),
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
               height: 1,
             ),
           ),
@@ -405,6 +414,9 @@ class _BrandTitleState extends State<_BrandTitle>
         AnimatedBuilder(
           animation: _controller,
           builder: (context, child) {
+            // Tant que l'animation n'a pas démarré, on rend le texte nu :
+            // aucun shader n'est compilé au premier affichage.
+            if (!_controller.isAnimating) return child!;
             // Bande lumineuse d'accent qui balaie le texte.
             final dx = -1.6 + 3.2 * _controller.value;
             return ShaderMask(
@@ -418,12 +430,12 @@ class _BrandTitleState extends State<_BrandTitle>
               child: child,
             );
           },
-          child: const Text(
+          child: Text(
             'SES Coin',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.3,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 21,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
             ),
           ),
         ),

@@ -299,8 +299,8 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: context.accent.withValues(alpha: 0.55),
-                width: 2.5,
+                color: context.accent.withValues(alpha: 0.85),
+                width: 5,
               ),
               boxShadow: [
                 BoxShadow(

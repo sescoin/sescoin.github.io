@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../common/animations.dart';
@@ -120,22 +121,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           index: 1,
                           child: Text(
                             'SES Coin',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.8,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        FadeSlideIn.staggered(
-                          index: 2,
-                          child: Text(
-                            'La monnaie de la classe',
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              color: accent,
-                              letterSpacing: 0.3,
+                            style: GoogleFonts.spaceGrotesk(
+                              textStyle: theme.textTheme.headlineMedium,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
                             ),
                           ),
                         ),

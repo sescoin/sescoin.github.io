@@ -66,31 +66,49 @@ class BalanceCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          profileAsync.when(
-            data: (profile) => profile == null
-                ? const Text(
-                    '— SC',
-                    style: TextStyle(color: Colors.white54, fontSize: 36),
-                  )
-                : CountUpAmount(
-                    value: profile.balance,
-                    builder: (context, animated) => Text(
-                      '${_format(animated)} SC',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
+          // Le montant et son « SC » doivent tenir sur une seule ligne :
+          // au-delà d'une certaine longueur, la taille se réduit au lieu de
+          // renvoyer « SC » à la ligne suivante.
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: profileAsync.when(
+                data: (profile) => profile == null
+                    ? const Text(
+                        '— SC',
+                        maxLines: 1,
+                        softWrap: false,
+                        style: TextStyle(color: Colors.white54, fontSize: 36),
+                      )
+                    : CountUpAmount(
+                        value: profile.balance,
+                        builder: (context, animated) => Text(
+                          '${_format(animated)} SC',
+                          maxLines: 1,
+                          softWrap: false,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-            loading: () => const Text(
-              '— SC',
-              style: TextStyle(color: Colors.white54, fontSize: 36),
-            ),
-            error: (_, __) => const Text(
-              'Erreur',
-              style: TextStyle(color: Colors.redAccent, fontSize: 24),
+                loading: () => const Text(
+                  '— SC',
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(color: Colors.white54, fontSize: 36),
+                ),
+                error: (_, __) => const Text(
+                  'Erreur',
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(color: Colors.redAccent, fontSize: 24),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),

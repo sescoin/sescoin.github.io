@@ -9,6 +9,7 @@ import '../../providers/class_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
+import '../../common/dispose_scope.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -116,29 +117,31 @@ class AdminRequestsScreen extends ConsumerWidget {
     final reasonCtrl = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: ctx,
-      builder: (d) => AlertDialog(
-        title: const Text('Refuser la demande'),
-        content: TextField(
-          controller: reasonCtrl,
-          decoration:
-              const InputDecoration(labelText: 'Raison (optionnelle)'),
+      builder: (d) => DisposeScope(
+        disposables: [reasonCtrl],
+        child: AlertDialog(
+          title: const Text('Refuser la demande'),
+          content: TextField(
+            controller: reasonCtrl,
+            decoration:
+                const InputDecoration(labelText: 'Raison (optionnelle)'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(d, false),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(d, true),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppTheme.negative),
+              child: const Text('Refuser'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(d, false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(d, true),
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppTheme.negative),
-            child: const Text('Refuser'),
-          ),
-        ],
       ),
     );
     final reason = reasonCtrl.text;
-    reasonCtrl.dispose();
     if (confirmed == true) {
       try {
         await ref.read(adminActionsProvider.notifier).rejectRequest(
@@ -191,63 +194,65 @@ class _RequestCardState extends State<_RequestCard> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (d) => StatefulBuilder(
-        builder: (d, setS) => AlertDialog(
-          title: const Text('Approuver le compte'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Solde initial à attribuer :'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: balanceCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(suffixText: 'SC'),
-              ),
-              if (widget.classes.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text('Classe :',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
+      builder: (d) => DisposeScope(
+        disposables: [balanceCtrl],
+        child: StatefulBuilder(
+          builder: (d, setS) => AlertDialog(
+            title: const Text('Approuver le compte'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Solde initial à attribuer :'),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _ClassChip(
-                      label: 'Aucune',
-                      selected: dialogClassId == null,
-                      onTap: () => setS(() => dialogClassId = null),
-                    ),
-                    ...widget.classes.map(
-                      (c) => _ClassChip(
-                        label: c.name,
-                        selected: dialogClassId == c.id,
-                        onTap: () => setS(() => dialogClassId = c.id),
-                      ),
-                    ),
-                  ],
+                TextField(
+                  controller: balanceCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(suffixText: 'SC'),
                 ),
+                if (widget.classes.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text('Classe :',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _ClassChip(
+                        label: 'Aucune',
+                        selected: dialogClassId == null,
+                        onTap: () => setS(() => dialogClassId = null),
+                      ),
+                      ...widget.classes.map(
+                        (c) => _ClassChip(
+                          label: c.name,
+                          selected: dialogClassId == c.id,
+                          onTap: () => setS(() => dialogClassId = c.id),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(d, false),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(d, true),
+                child: const Text('Approuver'),
+              ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(d, false),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(d, true),
-              child: const Text('Approuver'),
-            ),
-          ],
         ),
       ),
     );
 
     final balance = double.tryParse(balanceCtrl.text) ?? 100;
-    balanceCtrl.dispose();
 
     if (confirmed == true) {
       setState(() => _selectedClassId = dialogClassId);
@@ -271,7 +276,10 @@ class _RequestCardState extends State<_RequestCard> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
+                // La pastille d'agrandissement chevauche le bord de la photo
+                // plutôt que d'occuper une ligne sous elle.
+                Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     UserAvatar(
                       username: widget.req.username,
@@ -279,15 +287,33 @@ class _RequestCardState extends State<_RequestCard> {
                       radius: 28,
                     ),
                     if (hasAvatar)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
                         child: GestureDetector(
-                          onTap: () =>
-                              _showAvatarPreview(context, widget.req),
-                          child: Icon(
-                            Icons.open_in_full_rounded,
-                            size: 16,
-                            color: context.accent,
+                          onTap: () => _showAvatarPreview(context, widget.req),
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: context.accent,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.surface,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.28),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.open_in_full_rounded,
+                              size: 12,
+                              color: context.onAccent,
+                            ),
                           ),
                         ),
                       ),
@@ -440,49 +466,103 @@ class _RequestCardState extends State<_RequestCard> {
 
     await showDialog<void>(
       context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (d) => Dialog(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                req.displayName,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 16),
+        clipBehavior: Clip.antiAlias,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 44),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(26),
+        ),
+        child: Stack(
+          children: [
+            // La photo occupe tout le cadre, en carré.
+            AspectRatio(
+              aspectRatio: 1,
+              child: Image.network(
+                avatarUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : Container(
+                        alignment: Alignment.center,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                errorBuilder: (_, __, ___) => Container(
+                  alignment: Alignment.center,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const Icon(Icons.broken_image_rounded, size: 44),
+                ),
               ),
-              const SizedBox(height: 4),
-              Text('@${req.username}',
-                  style: TextStyle(
-                      color:
-                          Theme.of(context).colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  avatarUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 240,
-                    alignment: Alignment.center,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest,
-                    child: const Icon(Icons.broken_image_rounded, size: 40),
+            ),
+            // Dégradé sombre pour rendre le nom lisible sur n'importe quelle
+            // photo.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 40, 20, 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.78),
+                    ],
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      req.displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '@${req.username}',
+                      style: TextStyle(
+                        color: context.accent,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Fermeture en pastille flottante.
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Material(
+                color: Colors.black.withValues(alpha: 0.45),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(d),
+                  child: const Padding(
+                    padding: EdgeInsets.all(7),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(d),
-                  child: const Text('Fermer'),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

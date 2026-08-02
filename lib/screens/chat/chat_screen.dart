@@ -11,6 +11,7 @@ import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
 import '../../common/ban_guard.dart';
 import '../../common/date_utils.dart';
+import '../../common/dispose_scope.dart';
 import '../../common/keyboard_fix.dart';
 import '../../common/user_avatar.dart';
 import '../../core/router.dart';
@@ -659,33 +660,35 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     final ctrl = TextEditingController(text: msg.content);
     final newContent = await showDialog<String>(
       context: context,
-      builder: (ctx) => _ChatDialog(
-        icon: Icons.edit_rounded,
-        title: 'Modifier l\'annonce',
-        accentColor: Theme.of(context).colorScheme.primary,
-        content: TextField(
-          controller: ctrl,
-          maxLength: 500,
-          maxLines: null,
-          autofocus: true,
-          decoration: const InputDecoration(
-            counterText: '',
-            hintText: 'Annonce',
+      builder: (ctx) => DisposeScope(
+        disposables: [ctrl],
+        child: _ChatDialog(
+          icon: Icons.edit_rounded,
+          title: 'Modifier l\'annonce',
+          accentColor: Theme.of(context).colorScheme.primary,
+          content: TextField(
+            controller: ctrl,
+            maxLength: 500,
+            maxLines: null,
+            autofocus: true,
+            decoration: const InputDecoration(
+              counterText: '',
+              hintText: 'Annonce',
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Enregistrer'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Enregistrer'),
-          ),
-        ],
       ),
     );
-    ctrl.dispose();
     if (!mounted) return;
     if (newContent == null ||
         newContent.isEmpty ||
@@ -1282,33 +1285,35 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     final ctrl = TextEditingController(text: message.content);
     final newContent = await showDialog<String>(
       context: context,
-      builder: (ctx) => _ChatDialog(
-        icon: Icons.edit_rounded,
-        title: 'Modifier le message',
-        accentColor: Theme.of(context).colorScheme.primary,
-        content: TextField(
-          controller: ctrl,
-          maxLength: 500,
-          maxLines: null,
-          autofocus: true,
-          decoration: const InputDecoration(
-            counterText: '',
-            hintText: 'Message',
+      builder: (ctx) => DisposeScope(
+        disposables: [ctrl],
+        child: _ChatDialog(
+          icon: Icons.edit_rounded,
+          title: 'Modifier le message',
+          accentColor: Theme.of(context).colorScheme.primary,
+          content: TextField(
+            controller: ctrl,
+            maxLength: 500,
+            maxLines: null,
+            autofocus: true,
+            decoration: const InputDecoration(
+              counterText: '',
+              hintText: 'Message',
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Enregistrer'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Enregistrer'),
-          ),
-        ],
       ),
     );
-    ctrl.dispose();
     if (!mounted) return;
     if (newContent == null ||
         newContent.isEmpty ||
@@ -2170,84 +2175,87 @@ Future<void> _showGiftDialog(
 
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (ctx) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [accent, Color.lerp(accent, Colors.black, 0.22)!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+    builder: (ctx) => DisposeScope(
+      disposables: [amountCtrl, noteCtrl],
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [accent, Color.lerp(accent, Colors.black, 0.22)!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.35),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
+                child: Icon(
+                  Icons.card_giftcard_rounded,
+                  color: theme.colorScheme.onPrimary,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Envoyer un cadeau',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: amountCtrl,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Montant',
+                  suffixText: 'SC',
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: noteCtrl,
+                maxLength: 120,
+                decoration: const InputDecoration(
+                  labelText: 'Raison (optionnelle)',
+                  counterText: '',
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Annuler'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton.icon(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      icon: const Icon(Icons.card_giftcard_rounded, size: 17),
+                      label: const Text('Envoyer'),
+                    ),
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.card_giftcard_rounded,
-                color: theme.colorScheme.onPrimary,
-                size: 26,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Envoyer un cadeau',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountCtrl,
-              autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Montant',
-                suffixText: 'SC',
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: noteCtrl,
-              maxLength: 120,
-              decoration: const InputDecoration(
-                labelText: 'Raison (optionnelle)',
-                counterText: '',
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Annuler'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton.icon(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    icon: const Icon(Icons.card_giftcard_rounded, size: 17),
-                    label: const Text('Envoyer'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ),
@@ -2256,8 +2264,6 @@ Future<void> _showGiftDialog(
   final amount =
       double.tryParse(amountCtrl.text.trim().replaceAll(',', '.')) ?? 0;
   final note = noteCtrl.text.trim();
-  amountCtrl.dispose();
-  noteCtrl.dispose();
 
   if (confirmed != true) return;
   // Le solde est stocké à 2 décimales : un cadeau doit valoir au moins 0,01 SC,

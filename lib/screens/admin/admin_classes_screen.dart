@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../common/animations.dart';
+import '../../common/dispose_scope.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -79,29 +80,31 @@ class AdminClassesScreen extends ConsumerWidget {
     final ctrl = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nouvelle classe'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Nom de la classe'),
-          textCapitalization: TextCapitalization.words,
-          onSubmitted: (_) => Navigator.pop(ctx, true),
+      builder: (ctx) => DisposeScope(
+        disposables: [ctrl],
+        child: AlertDialog(
+          title: const Text('Nouvelle classe'),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Nom de la classe'),
+            textCapitalization: TextCapitalization.words,
+            onSubmitted: (_) => Navigator.pop(ctx, true),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Créer'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Créer'),
-          ),
-        ],
       ),
     );
     final name = ctrl.text.trim();
-    ctrl.dispose();
     if (confirmed != true || name.isEmpty) return;
     await ref.read(classActionProvider.notifier).createClass(name);
   }
@@ -114,29 +117,31 @@ class AdminClassesScreen extends ConsumerWidget {
     final ctrl = TextEditingController(text: classRoom.name);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Renommer la classe'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Nouveau nom'),
-          textCapitalization: TextCapitalization.words,
-          onSubmitted: (_) => Navigator.pop(ctx, true),
+      builder: (ctx) => DisposeScope(
+        disposables: [ctrl],
+        child: AlertDialog(
+          title: const Text('Renommer la classe'),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Nouveau nom'),
+            textCapitalization: TextCapitalization.words,
+            onSubmitted: (_) => Navigator.pop(ctx, true),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Renommer'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Renommer'),
-          ),
-        ],
       ),
     );
     final name = ctrl.text.trim();
-    ctrl.dispose();
     if (confirmed != true || name.isEmpty) return;
     await ref
         .read(classActionProvider.notifier)

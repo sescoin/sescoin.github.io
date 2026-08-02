@@ -441,42 +441,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       tabs: [
                         const Tab(
                           height: 44,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.handshake_rounded, size: 16),
-                              SizedBox(width: 7),
-                              Text('Prêts'),
-                            ],
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.handshake_rounded, size: 16),
+                                SizedBox(width: 7),
+                                Text('Prêts'),
+                              ],
+                            ),
                           ),
                         ),
+                        // FittedBox : l'arrivée du badge de non-lus allongeait
+                        // la ligne au-delà de la largeur de l'onglet.
                         Tab(
                           height: 44,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.notifications_rounded, size: 16),
-                              const SizedBox(width: 7),
-                              const Text('Notifications'),
-                              Consumer(
-                                builder: (context, ref, _) {
-                                  final unread = ref
-                                          .watch(unreadCountProvider)
-                                          .valueOrNull ??
-                                      0;
-                                  if (unread <= 0) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return Padding(
-                                    padding: const EdgeInsets.only(left: 6),
-                                    child: AnimatedBadge(
-                                      count: unread,
-                                      color: AppTheme.info,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.notifications_rounded,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 7),
+                                const Text('Notifications'),
+                                Consumer(
+                                  builder: (context, ref, _) {
+                                    final unread = ref
+                                            .watch(unreadCountProvider)
+                                            .valueOrNull ??
+                                        0;
+                                    if (unread <= 0) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.only(left: 6),
+                                      child: AnimatedBadge(
+                                        count: unread,
+                                        color: AppTheme.info,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],

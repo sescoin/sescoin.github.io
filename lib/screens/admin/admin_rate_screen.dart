@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../common/animations.dart';
 import '../../common/app_feedback.dart';
+import '../../common/dispose_scope.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/theme.dart';
 import '../../models/currency_rate.dart';
@@ -221,37 +222,39 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
     );
     final result = await showDialog<double>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('${_series.label} — point ${index + 1}'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: 'Valeur exacte',
-            suffixText: _series == _Series.price ? 'EUR' : 'SC',
-          ),
-          onSubmitted: (_) => Navigator.pop(
-            ctx,
-            double.tryParse(ctrl.text.replaceAll(',', '.')),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(
+      builder: (ctx) => DisposeScope(
+        disposables: [ctrl],
+        child: AlertDialog(
+          title: Text('${_series.label} — point ${index + 1}'),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: 'Valeur exacte',
+              suffixText: _series == _Series.price ? 'EUR' : 'SC',
+            ),
+            onSubmitted: (_) => Navigator.pop(
               ctx,
               double.tryParse(ctrl.text.replaceAll(',', '.')),
             ),
-            child: const Text('Valider'),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                ctx,
+                double.tryParse(ctrl.text.replaceAll(',', '.')),
+              ),
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
       ),
     );
-    ctrl.dispose();
     if (result == null || result < 0) return;
     setState(() {
       _activePoints[index] =
