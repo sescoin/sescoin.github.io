@@ -16,10 +16,10 @@ class AppLogo extends StatelessWidget {
     Color(0xFFE1502F),
   ];
 
-  /// Dans le fichier source, le disque noir n'occupe qu'environ 70 % du cadre,
-  /// le reste étant blanc. On agrandit l'image pour ne conserver que le
-  /// disque, sinon un liseré blanc apparaît sous l'anneau.
-  static const _crop = 1.46;
+  /// Dans le fichier source (500 px), le disque noir ne mesure que 337 px, le
+  /// reste étant transparent. On agrandit d'autant pour que le disque remplisse
+  /// le cercle : sans cela, l'anneau cerclerait du vide.
+  static const _crop = 500 / 337;
 
   @override
   Widget build(BuildContext context) {
