@@ -552,14 +552,33 @@ class _FontCard extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    font.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: preview.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        font.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: preview.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      // Échantillon avec chiffres et accents : permet de
+                      // repérer d'un coup d'œil un rendu qui déraille.
+                      Text(
+                        'Solde : 1 234,50 SC — éàçùî',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: preview.bodyMedium?.copyWith(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: accent,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),

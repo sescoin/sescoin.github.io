@@ -26,59 +26,154 @@ Future<void> main() async {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Material(
-        color: const Color(0xFF15172B),
+        color: const Color(0xFF14161F),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.bug_report_rounded,
-                    size: 56, color: Colors.orangeAccent),
-                const SizedBox(height: 16),
-                const Text(
-                  'Cet élément n\'a pas pu s\'afficher',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Il s\'agit d\'une erreur d\'affichage, pas d\'un problème '
-                  'de connexion. Détail technique :',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: SelectableText(
-                    message,
-                    style: const TextStyle(
-                      color: Color(0xFFFFB4A2),
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      height: 1.4,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(26, 32, 26, 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Pastille dans les couleurs de l'app plutôt qu'une icône
+                    // de débogage posée à nu.
+                    Center(
+                      child: Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFF7C948), Color(0xFFE1502F)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  const Color(0xFFE1502F).withValues(alpha: 0.38),
+                              blurRadius: 26,
+                              offset: const Offset(0, 9),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 38,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Une erreur est survenue',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Cette partie de l\'application n\'a pas pu s\'afficher. '
+                      'Revenir en arrière, puis relancer l\'application si le '
+                      'problème se répète.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFA8AEC6),
+                        fontSize: 13.5,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 26),
+                    // Détail technique relégué au second plan : utile pour
+                    // remonter un bug, invisible pour qui ne le cherche pas.
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(14, 11, 14, 13),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.28),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.07),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.terminal_rounded,
+                                size: 14,
+                                color: Color(0xFF767C99),
+                              ),
+                              const SizedBox(width: 6),
+                              const Expanded(
+                                child: Text(
+                                  'Détail technique',
+                                  style: TextStyle(
+                                    color: Color(0xFF767C99),
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () => Clipboard.setData(
+                                  ClipboardData(
+                                    text: '$message\n\n${details.stack}',
+                                  ),
+                                ),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 4,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.copy_rounded,
+                                        size: 13,
+                                        color: Color(0xFF9AA0BC),
+                                      ),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        'Copier',
+                                        style: TextStyle(
+                                          color: Color(0xFF9AA0BC),
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 9),
+                          SelectableText(
+                            message,
+                            style: const TextStyle(
+                              color: Color(0xFFE79A86),
+                              fontFamily: 'monospace',
+                              fontSize: 11.5,
+                              height: 1.45,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                TextButton.icon(
-                  onPressed: () => Clipboard.setData(
-                    ClipboardData(text: '$message\n\n${details.stack}'),
-                  ),
-                  icon: const Icon(Icons.copy_rounded, size: 18),
-                  label: const Text('Copier l\'erreur complète'),
-                ),
-              ],
+              ),
             ),
           ),
         ),

@@ -3307,7 +3307,7 @@ class _InputBar extends StatelessWidget {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -3321,7 +3321,7 @@ class _InputBar extends StatelessWidget {
                         color: isDark
                             ? theme.inputDecorationTheme.fillColor
                             : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(21),
                         // Liseré d'accent : le champ se détache du fond au
                         // lieu de flotter sans limite visible.
                         border: Border.all(
@@ -3361,7 +3361,7 @@ class _InputBar extends StatelessWidget {
                             focusedBorder: InputBorder.none,
                             disabledBorder: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
+                                horizontal: 14, vertical: 7),
                           ),
                         ),
                       ),

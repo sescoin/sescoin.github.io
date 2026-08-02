@@ -4,9 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 /// Police de caractères de l'application, choisie dans les réglages.
 ///
 /// Les familles retenues sont volontairement éloignées les unes des autres —
-/// grotesque neutre, géométrique, serif classique, slab, arrondie,
-/// monospace — pour que le changement se voie immédiatement. Toutes couvrent
-/// le latin étendu et restent lisibles en petit corps.
+/// humaniste, géométrique élancée, grotesque, technique, display, monospace —
+/// pour que le changement se voie immédiatement.
+///
+/// Si une clé enregistrée ne correspond plus à aucune entrée (famille retirée
+/// d'une version à l'autre), [fontByKey] retombe sur la police système.
 class AppFont {
   const AppFont({required this.key, required this.label, this.family});
 
@@ -20,12 +22,16 @@ class AppFont {
 
 const appFonts = <AppFont>[
   AppFont(key: 'system', label: 'Système'),
-  AppFont(key: 'inter', label: 'Inter', family: 'Inter'),
+  AppFont(key: 'ubuntu', label: 'Ubuntu', family: 'Ubuntu'),
+  AppFont(key: 'josefinSans', label: 'Josefin Sans', family: 'Josefin Sans'),
   AppFont(key: 'spaceGrotesk', label: 'Space Grotesk', family: 'Space Grotesk'),
-  AppFont(key: 'lora', label: 'Lora', family: 'Lora'),
-  AppFont(key: 'robotoSlab', label: 'Roboto Slab', family: 'Roboto Slab'),
-  AppFont(key: 'quicksand', label: 'Quicksand', family: 'Quicksand'),
-  AppFont(key: 'jetBrainsMono', label: 'JetBrains Mono', family: 'JetBrains Mono'),
+  AppFont(key: 'orbitron', label: 'Orbitron', family: 'Orbitron'),
+  AppFont(key: 'righteous', label: 'Righteous', family: 'Righteous'),
+  AppFont(
+    key: 'jetBrainsMono',
+    label: 'JetBrains Mono',
+    family: 'JetBrains Mono',
+  ),
 ];
 
 AppFont fontByKey(String key) =>

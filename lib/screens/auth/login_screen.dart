@@ -114,7 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         FadeSlideIn(
                           duration: const Duration(milliseconds: 550),
                           offset: const Offset(0, -0.12),
-                          child: const AppLogo(size: 96),
+                          child: const AppLogo(size: 124),
                         ),
                         const SizedBox(height: 22),
                         FadeSlideIn.staggered(
