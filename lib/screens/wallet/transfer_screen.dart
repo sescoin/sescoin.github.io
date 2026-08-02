@@ -78,7 +78,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     if (!ensureNotBanned(context, ref)) return;
     if (!_formKey.currentState!.validate()) return;
     if (_selectedUser == null) {
-      AppFeedback.warning(context, 'Choisis d\'abord un destinataire.');
+      AppFeedback.warning(context, 'Aucun destinataire sélectionné.');
       return;
     }
 

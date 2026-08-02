@@ -8,6 +8,7 @@ import '../../common/animations.dart';
 import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
 import '../../common/ban_guard.dart';
+import '../../common/dispose_scope.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -150,8 +151,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         icon: Icons.logout_rounded,
         tone: AppDialogTone.danger,
         title: 'Se déconnecter ?',
-        subtitle: 'Ta session sera fermée sur cet appareil',
-        content: const Text('Vous serez redirigé vers la page de connexion.'),
+        content: const Text('Retour à l\'écran de connexion.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -180,36 +180,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Rembourser le prêt'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Montant restant : ${loan.remainingAmount.toStringAsFixed(2)} SC',
+      builder: (dialogContext) => DisposeScope(
+        disposables: [controller],
+        child: AppDialog(
+          icon: Icons.payments_rounded,
+          title: 'Rembourser le prêt',
+          subtitle:
+              'Restant : ${loan.remainingAmount.toStringAsFixed(2)} SC',
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Montant à rembourser',
+              suffixText: 'SC',
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Montant à rembourser',
-                suffixText: 'SC',
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Rembourser'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Rembourser'),
-          ),
-        ],
       ),
     );
 
@@ -219,7 +215,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
     final amount = double.tryParse(controller.text.replaceAll(',', '.'));
     if (amount == null || amount <= 0) {
-      AppFeedback.warning(context, 'Entre un montant valide pour rembourser.');
+      AppFeedback.warning(context, 'Montant de remboursement invalide.');
       return;
     }
 

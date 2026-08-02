@@ -80,4 +80,4 @@ flutter_launcher_icons:
   ios: true
   web:
     generate: true
-  image_path: assets/icons/logo.jpg
+  image_path: assets/icons/logo.png

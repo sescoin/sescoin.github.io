@@ -55,7 +55,7 @@ class AdminRequestsScreen extends ConsumerWidget {
                         child: EmptyState(
                           icon: Icons.inbox_rounded,
                           title: 'Aucune demande en attente',
-                          subtitle: 'Tire vers le bas pour rafraîchir',
+                          subtitle: 'Glisser vers le bas pour actualiser',
                         ),
                       ),
                     ],

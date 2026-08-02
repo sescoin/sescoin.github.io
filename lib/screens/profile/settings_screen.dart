@@ -91,30 +91,6 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 10),
-          FadeSlideIn.staggered(
-            index: 2,
-            child: _SettingsCard(
-              child: SwitchListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                secondary: const Icon(Icons.contrast_rounded),
-                title: const Text(
-                  'Noir pur (OLED)',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                ),
-                subtitle: Text(
-                  'Fond entièrement noir en mode sombre',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                value: settings.pureBlack,
-                onChanged: (v) => notifier.setPureBlack(v),
-              ),
-            ),
-          ),
           const SizedBox(height: 24),
           FadeSlideIn.staggered(
             index: 3,
@@ -535,9 +511,8 @@ class _AccentDot extends StatelessWidget {
 
 // ── Carte d'ambiance ───────────────────────────────────────────────────────────
 
-/// Carte de choix de police. Le nom et l'échantillon sont rendus dans la
-/// famille concernée : l'aperçu montre directement le résultat, accents et
-/// chiffres compris.
+/// Ligne de choix de police. Le nom est rendu dans la famille concernée :
+/// il sert lui-même d'aperçu, sans texte d'explication.
 class _FontCard extends StatelessWidget {
   const _FontCard({
     required this.font,
@@ -556,66 +531,38 @@ class _FontCard extends StatelessWidget {
     final preview = applyAppFont(font.key, theme.textTheme);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Material(
         color: selected
             ? accent.withValues(alpha: 0.12)
             : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(13),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(13),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(13),
               border: Border.all(
                 color: selected ? accent : Colors.transparent,
-                width: 1.6,
+                width: 1.4,
               ),
             ),
             child: Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        font.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: preview.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        font.description,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      // Échantillon avec accents et chiffres : permet de
-                      // repérer d'un coup d'œil un rendu qui déraille.
-                      Text(
-                        'Solde : 1 234,50 SC — éàçùî',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: preview.bodyMedium?.copyWith(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: accent,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    font.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: preview.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Icon(
                   selected
                       ? Icons.check_circle_rounded
@@ -624,7 +571,7 @@ class _FontCard extends StatelessWidget {
                       ? accent
                       : theme.colorScheme.onSurfaceVariant
                           .withValues(alpha: 0.4),
-                  size: 22,
+                  size: 19,
                 ),
               ],
             ),
@@ -854,6 +801,11 @@ class _ColorPickerDialog extends StatefulWidget {
 
 class _ColorPickerDialogState extends State<_ColorPickerDialog> {
   late HSVColor _hsv;
+  late final TextEditingController _hexCtrl;
+
+  /// Vrai pendant que l'utilisateur tape : évite que la synchronisation
+  /// réécrive le champ sous ses doigts.
+  bool _editingHex = false;
 
   @override
   void initState() {
@@ -864,12 +816,39 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
     if (_hsv.saturation < 0.05 && _hsv.value < 0.05) {
       _hsv = const HSVColor.fromAHSV(1, 210, 0.8, 0.9);
     }
+    _hexCtrl = TextEditingController(text: _hex);
   }
 
   Color get _color => _hsv.toColor();
 
   String get _hex =>
       '#${_color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+
+  /// Met à jour la teinte depuis les curseurs et répercute la valeur dans le
+  /// champ hexadécimal.
+  void _setHsv(HSVColor hsv) {
+    setState(() {
+      _hsv = hsv;
+      if (!_editingHex) _hexCtrl.text = _hex;
+    });
+  }
+
+  /// Accepte `#RRGGBB`, `RRGGBB` et la forme courte `RGB`.
+  void _applyHex(String raw) {
+    var value = raw.trim().replaceAll('#', '').toUpperCase();
+    if (value.length == 3) {
+      value = value.split('').map((c) => '$c$c').join();
+    }
+    if (value.length != 6 || !RegExp(r'^[0-9A-F]{6}$').hasMatch(value)) return;
+    final parsed = int.parse(value, radix: 16) | 0xFF000000;
+    setState(() => _hsv = HSVColor.fromColor(Color(parsed)));
+  }
+
+  @override
+  void dispose() {
+    _hexCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -891,7 +870,7 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
                 aspectRatio: 1.55,
                 child: _SaturationValueBox(
                   hsv: _hsv,
-                  onChanged: (hsv) => setState(() => _hsv = hsv),
+                  onChanged: _setHsv,
                 ),
               ),
             ),
@@ -899,7 +878,7 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
             // Teinte
             _HueSlider(
               hue: _hsv.hue,
-              onChanged: (hue) => setState(() => _hsv = _hsv.withHue(hue)),
+              onChanged: (hue) => _setHsv(_hsv.withHue(hue)),
             ),
             const SizedBox(height: 16),
             // Aperçu
@@ -927,24 +906,37 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _hex,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
+                // Code hexadécimal éditable : la couleur peut être saisie
+                // directement au lieu d'être cherchée au curseur.
+                SizedBox(
+                  width: 116,
+                  child: TextField(
+                    controller: _hexCtrl,
+                    maxLength: 7,
+                    textCapitalization: TextCapitalization.characters,
+                    onTap: () => _editingHex = true,
+                    onChanged: (value) {
+                      _editingHex = true;
+                      _applyHex(value);
+                    },
+                    onEditingComplete: () {
+                      _editingHex = false;
+                      _hexCtrl.text = _hex;
+                      FocusScope.of(context).unfocus();
+                    },
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
                     ),
-                    Text(
-                      'Couleur personnalisée',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                    decoration: const InputDecoration(
+                      counterText: '',
+                      isDense: true,
+                      labelText: 'Hex',
+                      hintText: '#RRGGBB',
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     ),
-                  ],
+                  ),
                 ),
                 const Spacer(),
                 // Mini aperçu bouton

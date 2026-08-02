@@ -186,7 +186,6 @@ class SESCoinApp extends ConsumerWidget {
       darkTheme: AppTheme.dark(
         settings.accent,
         ambiance: settings.ambiance,
-        pureBlack: settings.pureBlack,
         fontKey: settings.fontKey,
       ),
       themeMode: settings.themeMode,
@@ -244,7 +243,7 @@ class _StartupErrorApp extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Vérifie ta connexion internet et relance l\'app.',
+                  'Vérifier la connexion internet, puis relancer l\'application.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white70),
                 ),

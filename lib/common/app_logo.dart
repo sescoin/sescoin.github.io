@@ -1,52 +1,71 @@
 import 'package:flutter/material.dart';
 
-/// Logo SES Coin stylisé : pièce au dégradé d'accent, anneau lumineux et
-/// halo. Utilisé sur la connexion et les écrans d'accueil.
+/// Logo SES Coin : le visuel est détouré au cercle et cerclé d'un fin anneau
+/// dégradé repris de ses propres couleurs, pour le poser sur n'importe quel
+/// fond sans qu'il paraisse flotter.
 class AppLogo extends StatelessWidget {
   const AppLogo({super.key, this.size = 96, this.glow = true});
 
   final double size;
   final bool glow;
 
+  /// Dégradé du « S » du logo, réutilisé pour l'anneau.
+  static const _ringColors = [
+    Color(0xFFF7C948),
+    Color(0xFFF5883C),
+    Color(0xFFE1502F),
+  ];
+
+  /// Dans le fichier source, le disque noir n'occupe qu'environ 70 % du cadre,
+  /// le reste étant blanc. On agrandit l'image pour ne conserver que le
+  /// disque, sinon un liseré blanc apparaît sous l'anneau.
+  static const _crop = 1.46;
+
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
 
-    // Le logo porte déjà son propre fond : on l'affiche tel quel, détouré au
-    // cercle. Pas d'anneau ni de dégradé ajouté par-dessus — seul un halo
-    // d'accent reste, en arrière-plan.
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: _ringColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: glow
             ? [
                 BoxShadow(
-                  color: accent.withValues(alpha: 0.38),
-                  blurRadius: size * 0.32,
+                  color: accent.withValues(alpha: 0.34),
+                  blurRadius: size * 0.30,
                   offset: Offset(0, size * 0.07),
                 ),
               ]
             : null,
       ),
+      // Épaisseur de l'anneau, proportionnelle à la taille demandée.
+      padding: EdgeInsets.all(size * 0.032),
       child: ClipOval(
-        child: Image.asset(
-          'assets/icons/logo.jpg',
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.high,
-          errorBuilder: (context, _, __) => Container(
-            color: const Color(0xFF0B0B0B),
-            alignment: Alignment.center,
-            child: Text(
-              'S',
-              style: TextStyle(
-                color: accent,
-                fontSize: size * 0.42,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -1,
+        child: Container(
+          color: const Color(0xFF0A0A0A),
+          child: Transform.scale(
+            scale: _crop,
+            child: Image.asset(
+              'assets/icons/logo.png',
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (context, _, __) => Center(
+                child: Text(
+                  'S',
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: size * 0.42,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1,
+                  ),
+                ),
               ),
             ),
           ),

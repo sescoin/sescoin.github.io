@@ -132,7 +132,7 @@ class _TransactionExplorerScreenState
                       icon: Icons.hub_rounded,
                       title: 'Aucune transaction trouvée',
                       subtitle:
-                          'Essaie un autre filtre ou élargis la recherche',
+                          'Aucun résultat pour ces filtres',
                     )
                   else
                     ...filtered.map(

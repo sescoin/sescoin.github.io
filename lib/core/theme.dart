@@ -15,12 +15,6 @@ class AppTheme {
   static const Color _positive = Color(0xFF2ECC71);
   static const Color _negative = Color(0xFFE74C3C);
 
-  // Surfaces noir pur (OLED)
-  static const Color _blackScaffold = Color(0xFF000000);
-  static const Color _blackSurface = Color(0xFF0B0C12);
-  static const Color _blackCard = Color(0xFF101118);
-  static const Color _blackInput = Color(0xFF16171F);
-
   /// Texte lisible par-dessus la couleur d'accent.
   static Color onAccent(Color accent) =>
       accent.computeLuminance() > 0.55 ? Colors.black87 : Colors.white;
@@ -80,7 +74,14 @@ class AppTheme {
       surface: Colors.white,
       error: _negative,
     );
-    final base = ThemeData(useMaterial3: true, colorScheme: scheme);
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      // Pose la famille sur tout le thème : les composants qui n'utilisent pas
+      // la TextTheme (menus, info-bulles, champs…) suivraient sinon la police
+      // du système et le changement ne s'appliquerait qu'à moitié.
+      fontFamily: appFontFamily(fontKey),
+    );
 
     return base.copyWith(
       scaffoldBackgroundColor: scaffold,
@@ -295,16 +296,15 @@ class AppTheme {
   static ThemeData dark(
     AppAccent accent, {
     AppAmbiance? ambiance,
-    bool pureBlack = false,
     String fontKey = 'system',
   }) {
     final amb = ambiance ?? appAmbiances.first;
     final primary = accent.color;
     final onPrimary = onAccent(primary);
-    final scaffold = pureBlack ? _blackScaffold : amb.darkScaffold;
-    final surface = pureBlack ? _blackSurface : amb.darkSurface;
-    final card = pureBlack ? _blackCard : amb.darkCard;
-    final input = pureBlack ? _blackInput : amb.darkInput;
+    final scaffold = amb.darkScaffold;
+    final surface = amb.darkSurface;
+    final card = amb.darkCard;
+    final input = amb.darkInput;
 
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
@@ -315,7 +315,14 @@ class AppTheme {
       surface: surface,
       error: _negative,
     );
-    final base = ThemeData(useMaterial3: true, colorScheme: scheme);
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      // Pose la famille sur tout le thème : les composants qui n'utilisent pas
+      // la TextTheme (menus, info-bulles, champs…) suivraient sinon la police
+      // du système et le changement ne s'appliquerait qu'à moitié.
+      fontFamily: appFontFamily(fontKey),
+    );
 
     return base.copyWith(
       scaffoldBackgroundColor: scaffold,

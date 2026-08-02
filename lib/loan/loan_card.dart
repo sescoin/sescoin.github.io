@@ -95,7 +95,7 @@ class LoanCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _isLender ? 'Vous prêtez à' : 'Prêteur',
+                        _isLender ? 'Prêt accordé à' : 'Prêteur',
                         style: TextStyle(
                           fontSize: 11,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,

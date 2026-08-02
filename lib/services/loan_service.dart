@@ -162,7 +162,7 @@ class LoanService {
         .inFilter('status', ['pending', 'active']);
     if ((activeLoans as List).length >= AppConstants.maxActiveLoansBorrowed) {
       throw Exception(
-        'Tu as déjà ${AppConstants.maxActiveLoansBorrowed} prêts actifs ou en attente. Rembourse-en un avant d\'en demander un nouveau.',
+        'Limite de ${AppConstants.maxActiveLoansBorrowed} prêts actifs ou en attente atteinte. En rembourser un avant d\'en demander un nouveau.',
       );
     }
 

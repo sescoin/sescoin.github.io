@@ -712,7 +712,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
     if (!ensureNotBanned(context, ref)) return;
     if (ref.read(chatActionProvider).isMuted) {
       _showSnackBar(
-        'Vous êtes muet : suppression indisponible.',
+        'Compte muet : suppression indisponible.',
         Colors.orange,
       );
       return;
@@ -1151,7 +1151,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     if (!ensureNotBanned(context, ref)) return;
     if (ref.read(chatActionProvider).isMuted) {
       _showSnackBar(
-        'Vous êtes muet : suppression indisponible.',
+        'Compte muet : suppression indisponible.',
         Colors.orange,
       );
       return;
@@ -1396,7 +1396,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     // Un compte muet ne peut ni modifier ni supprimer ses messages.
     if (!widget.isAdmin && ref.read(chatActionProvider).isMuted) {
       _showSnackBar(
-        'Vous êtes muet : modification et suppression indisponibles.',
+        'Compte muet : modification et suppression indisponibles.',
         Colors.orange,
       );
       return;
@@ -2666,51 +2666,58 @@ class _ChatActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final actionColor = color ?? theme.colorScheme.onSurface;
-    return Material(
-      color: actionColor.withValues(alpha: 0.07),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
+    // Largeur forcée : dans une Column, chaque tuile prendrait sinon sa
+    // largeur intrinsèque et les chevrons ne seraient plus alignés d'une
+    // ligne à l'autre.
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: actionColor.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          child: Row(
-            children: [
-              Icon(icon, color: actionColor, size: 21),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  label,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: actionColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              if (badge != null)
-                Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: actionColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                Icon(icon, color: actionColor, size: 21),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Text(
-                    badge!,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyLarge?.copyWith(
                       color: actionColor,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: actionColor.withValues(alpha: 0.55),
-              ),
-            ],
+                if (badge != null)
+                  Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: actionColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      badge!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: actionColor,
+                      ),
+                    ),
+                  ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: actionColor.withValues(alpha: 0.55),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -3270,7 +3277,7 @@ class _InputBar extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Vous êtes muet — comportement inapproprié détecté.',
+                    'Compte muet — comportement inapproprié détecté.',
                     style: TextStyle(
                       color: AppTheme.warning,
                       fontSize: 12,
@@ -3342,9 +3349,17 @@ class _InputBar extends StatelessWidget {
                           textInputAction: TextInputAction.newline,
                           style: const TextStyle(fontSize: 14.5),
                           decoration: InputDecoration(
-                            hintText: isMuted ? 'Vous êtes muet…' : hintText,
+                            hintText: isMuted ? 'Compte muet…' : hintText,
                             counterText: '',
+                            // Le contour appartient au Container parent. Sans
+                            // neutraliser aussi enabled/focused/disabled, le
+                            // thème global redessine son propre cadre par
+                            // dessus, avec un rayon différent.
+                            filled: false,
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 10),
                           ),

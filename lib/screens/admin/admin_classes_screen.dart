@@ -86,7 +86,6 @@ class AdminClassesScreen extends ConsumerWidget {
         child: AppDialog(
           icon: Icons.add_rounded,
           title: 'Nouvelle classe',
-          subtitle: 'Choisis un nom reconnaissable par les élèves',
           content: TextField(
             controller: ctrl,
             autofocus: true,

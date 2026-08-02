@@ -219,6 +219,19 @@ const appAmbiances = <AppAmbiance>[
     darkCard: Color(0xFF3B1D0F),
     darkInput: Color(0xFF562C18),
   ),
+  // Noir franc : remplace l'ancien réglage « noir pur », désormais choisi
+  // comme une ambiance à part entière.
+  AppAmbiance(
+    key: 'noir',
+    label: 'Noir',
+    icon: Icons.contrast_rounded,
+    lightScaffold: Color(0xFFF3F3F5),
+    lightInput: Color(0xFFE5E5E9),
+    darkScaffold: Color(0xFF000000),
+    darkSurface: Color(0xFF0A0A0C),
+    darkCard: Color(0xFF131317),
+    darkInput: Color(0xFF1D1D23),
+  ),
 ];
 
 AppAmbiance ambianceByKey(String key) => appAmbiances
@@ -233,7 +246,6 @@ class AppSettings {
     this.customAccent,
     this.ambianceKey = 'ember',
     this.fontKey = 'system',
-    this.pureBlack = false,
     this.reduceMotion = false,
     this.textScale = 1.0,
   });
@@ -250,9 +262,6 @@ class AppSettings {
   /// Couleur libre choisie au sélecteur (utilisée quand
   /// [accentKey] == [customAccentKey]).
   final Color? customAccent;
-
-  /// Fond noir pur en mode sombre (écrans OLED).
-  final bool pureBlack;
 
   /// Désactive les animations décoratives.
   final bool reduceMotion;
@@ -272,7 +281,6 @@ class AppSettings {
     Color? customAccent,
     String? ambianceKey,
     String? fontKey,
-    bool? pureBlack,
     bool? reduceMotion,
     double? textScale,
   }) {
@@ -282,7 +290,6 @@ class AppSettings {
       customAccent: customAccent ?? this.customAccent,
       ambianceKey: ambianceKey ?? this.ambianceKey,
       fontKey: fontKey ?? this.fontKey,
-      pureBlack: pureBlack ?? this.pureBlack,
       reduceMotion: reduceMotion ?? this.reduceMotion,
       textScale: textScale ?? this.textScale,
     );
@@ -303,7 +310,6 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   static const _kCustomAccent = 'settings.customAccent';
   static const _kAmbiance = 'settings.ambiance';
   static const _kFont = 'settings.font';
-  static const _kPureBlack = 'settings.pureBlack';
   static const _kReduceMotion = 'settings.reduceMotion';
   static const _kTextScale = 'settings.textScale';
 
@@ -320,7 +326,6 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       customAccent: customValue != null ? Color(customValue) : null,
       ambianceKey: prefs.getString(_kAmbiance) ?? 'ember',
       fontKey: prefs.getString(_kFont) ?? 'system',
-      pureBlack: prefs.getBool(_kPureBlack) ?? false,
       reduceMotion: prefs.getBool(_kReduceMotion) ?? false,
       textScale: prefs.getDouble(_kTextScale) ?? 1.0,
     );
@@ -353,11 +358,6 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     _prefs.setString(_kFont, key);
   }
 
-  void setPureBlack(bool value) {
-    state = state.copyWith(pureBlack: value);
-    _prefs.setBool(_kPureBlack, value);
-  }
-
   void setReduceMotion(bool value) {
     state = state.copyWith(reduceMotion: value);
     AppMotion.reduce = value;
@@ -377,7 +377,6 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     _prefs.remove(_kCustomAccent);
     _prefs.remove(_kAmbiance);
     _prefs.remove(_kFont);
-    _prefs.remove(_kPureBlack);
     _prefs.remove(_kReduceMotion);
     _prefs.remove(_kTextScale);
   }

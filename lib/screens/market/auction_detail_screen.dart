@@ -261,7 +261,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(
-                          'Vous êtes actuellement en tête',
+                          'Meilleure enchère actuelle',
                           style: TextStyle(
                             color: AppTheme.positive,
                             fontWeight: FontWeight.w700,
@@ -270,7 +270,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Choisissez un emoji à afficher sur l’enchère',
+                        'Émoji affiché sur l’enchère',
                         style: Theme.of(context)
                             .textTheme
                             .titleSmall

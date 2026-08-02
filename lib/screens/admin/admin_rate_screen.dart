@@ -231,7 +231,6 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
         child: AppDialog(
           icon: _series.icon,
           title: '${_series.label} — point ${index + 1}',
-          subtitle: 'Saisis la valeur exacte',
           content: TextField(
             controller: ctrl,
             autofocus: true,
@@ -381,8 +380,8 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Choisissez une série, puis faites glisser votre '
-                            'doigt sur le graphique pour dessiner la courbe. '
+                            'Sélectionner une série, puis glisser sur le '
+                            'graphique pour dessiner la courbe. '
                             'Appui long sur une colonne : valeur exacte.',
                             style: TextStyle(
                               fontSize: 12,
