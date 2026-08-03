@@ -540,7 +540,8 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
                       label: const Text('Rétablir'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 11),
-                        textStyle: const TextStyle(
+                        textStyle: TextStyle(
+                          fontFamily: context.fontFamily,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -560,7 +561,8 @@ class _AdminRateScreenState extends ConsumerState<AdminRateScreen> {
                           width: 1.4,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 11),
-                        textStyle: const TextStyle(
+                        textStyle: TextStyle(
+                          fontFamily: context.fontFamily,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),

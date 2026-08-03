@@ -152,13 +152,11 @@ class _AdminLoansScreenState extends ConsumerState<AdminLoansScreen>
                         const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Center(child: Text('Erreur : $e')),
                     data: (loans) {
-                      // Vue admin : seuls les prêts encore en cours ont un
-                      // intérêt opérationnel. Les prêts remboursés, refusés,
-                      // annulés ou en attente d'acceptation sont écartés.
+                      // Vue admin : seuls les prêts en cours. Sont écartés les
+                      // prêts remboursés, refusés, annulés, en attente
+                      // d'acceptation — et ceux en retard.
                       final filtered = _filter(loans)
-                          .where((l) =>
-                              l.status == LoanStatus.active ||
-                              l.status == LoanStatus.defaulted)
+                          .where((l) => l.status == LoanStatus.active)
                           .toList();
                       if (filtered.isEmpty) {
                         return Center(

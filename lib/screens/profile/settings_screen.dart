@@ -126,31 +126,6 @@ class SettingsScreen extends ConsumerWidget {
           FadeSlideIn.staggered(
             index: 3,
             child: _SectionTitle(
-              icon: Icons.text_fields_rounded,
-              title: 'Police',
-              trailing: fontByKey(settings.fontKey).label,
-            ),
-          ),
-          FadeSlideIn.staggered(
-            index: 3,
-            child: Column(
-              children: [
-                for (final font in appFonts)
-                  _FontCard(
-                    font: font,
-                    selected: settings.fontKey == font.key,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      notifier.setFont(font.key);
-                    },
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          FadeSlideIn.staggered(
-            index: 3,
-            child: _SectionTitle(
               icon: Icons.palette_rounded,
               title: 'Couleur d\'accent',
               trailing: settings.accent.label,
@@ -233,49 +208,6 @@ class SettingsScreen extends ConsumerWidget {
                     value: settings.reduceMotion,
                     onChanged: (v) => notifier.setReduceMotion(v),
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.format_size_rounded, size: 22),
-                            const SizedBox(width: 14),
-                            const Text(
-                              'Taille du texte',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: SegmentedButton<double>(
-                            showSelectedIcon: false,
-                            style: SegmentedButton.styleFrom(
-                              textStyle: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                            segments: const [
-                              ButtonSegment(value: 0.9, label: Text('Petit')),
-                              ButtonSegment(value: 1.0, label: Text('Normal')),
-                              ButtonSegment(value: 1.1, label: Text('Grand')),
-                            ],
-                            selected: {settings.textScale},
-                            onSelectionChanged: (selection) =>
-                                notifier.setTextScale(selection.first),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -289,6 +221,68 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           FadeSlideIn.staggered(index: 8, child: const _PreviewCard()),
+          const SizedBox(height: 24),
+          FadeSlideIn.staggered(
+            index: 9,
+            child: const _SectionTitle(
+              icon: Icons.format_size_rounded,
+              title: 'Taille du texte',
+            ),
+          ),
+          FadeSlideIn.staggered(
+            index: 9,
+            child: _SettingsCard(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<double>(
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                      textStyle: TextStyle(
+                        fontFamily: context.fontFamily,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    segments: const [
+                      ButtonSegment(value: 0.9, label: Text('Petit')),
+                      ButtonSegment(value: 1.0, label: Text('Normal')),
+                      ButtonSegment(value: 1.1, label: Text('Grand')),
+                    ],
+                    selected: {settings.textScale},
+                    onSelectionChanged: (selection) =>
+                        notifier.setTextScale(selection.first),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          FadeSlideIn.staggered(
+            index: 10,
+            child: _SectionTitle(
+              icon: Icons.text_fields_rounded,
+              title: 'Police',
+              trailing: fontByKey(settings.fontKey).label,
+            ),
+          ),
+          FadeSlideIn.staggered(
+            index: 10,
+            child: Column(
+              children: [
+                for (final font in appFonts)
+                  _FontCard(
+                    font: font,
+                    selected: settings.fontKey == font.key,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      notifier.setFont(font.key);
+                    },
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );

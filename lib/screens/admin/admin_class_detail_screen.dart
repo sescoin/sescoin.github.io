@@ -152,7 +152,8 @@ class AdminClassDetailScreen extends ConsumerWidget {
                           style: FilledButton.styleFrom(
                             backgroundColor: accent.withValues(alpha: 0.14),
                             foregroundColor: accent,
-                            textStyle: const TextStyle(
+                            textStyle: TextStyle(
+                              fontFamily: context.fontFamily,
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
                             ),

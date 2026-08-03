@@ -82,7 +82,11 @@ class AdminAvatarReviewScreen extends ConsumerWidget {
                             Expanded(
                               child: _AvatarPanel(
                                 label: 'Nouvelle photo',
-                                child: Column(
+                                // Pastille d'agrandissement posée dans l'angle
+                                // de la photo, comme sur les demandes de
+                                // compte.
+                                child: Stack(
+                                  clipBehavior: Clip.none,
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(20),
@@ -105,14 +109,40 @@ class AdminAvatarReviewScreen extends ConsumerWidget {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    GestureDetector(
-                                      onTap: () => _showFullPhoto(
-                                          context, pendingAvatarUrl),
-                                      child: const Icon(
-                                        Icons.open_in_full_rounded,
-                                        size: 18,
-                                        color: AppTheme.gold,
+                                    Positioned(
+                                      right: -2,
+                                      bottom: -2,
+                                      child: GestureDetector(
+                                        onTap: () => _showFullPhoto(
+                                          context,
+                                          pendingAvatarUrl,
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(5),
+                                          decoration: BoxDecoration(
+                                            color: context.accent,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .surface,
+                                              width: 2,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.28),
+                                                blurRadius: 6,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Icon(
+                                            Icons.open_in_full_rounded,
+                                            size: 12,
+                                            color: context.onAccent,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -173,27 +203,59 @@ class AdminAvatarReviewScreen extends ConsumerWidget {
     );
   }
 
+  /// Photo en plein cadre, avec fermeture flottante — même présentation que
+  /// l'aperçu des demandes de compte.
   void _showFullPhoto(BuildContext context, String url) {
     showDialog<void>(
       context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (d) => Dialog(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        clipBehavior: Clip.antiAlias,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 44),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+        child: Stack(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+            AspectRatio(
+              aspectRatio: 1,
               child: Image.network(
                 url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox(
-                  height: 200,
-                  child: Center(child: Icon(Icons.broken_image_rounded, size: 40)),
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : Container(
+                        alignment: Alignment.center,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                errorBuilder: (_, __, ___) => Container(
+                  alignment: Alignment.center,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const Icon(Icons.broken_image_rounded, size: 44),
                 ),
               ),
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(d),
-              child: const Text('Fermer'),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Material(
+                color: Colors.black.withValues(alpha: 0.45),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(d),
+                  child: const Padding(
+                    padding: EdgeInsets.all(7),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 19,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),

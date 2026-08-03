@@ -54,24 +54,7 @@ class _AdminAccountsScreenState extends ConsumerState<AdminAccountsScreen> {
     return LoadingOverlay(
       isLoading: state.isLoading,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Tous les comptes'),
-              SizedBox(height: 1),
-              Text(
-                'Réinitialiser le mot de passe',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF9E9E9E),
-                  letterSpacing: 0,
-                ),
-              ),
-            ],
-          ),
-        ),
+        appBar: AppBar(title: const Text('Tous les comptes')),
         body: profilesAsync.when(
           loading: () => const InlineLoader(),
           error: (error, _) => ErrorRetry(

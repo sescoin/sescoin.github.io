@@ -637,6 +637,13 @@ extension ThemeX on BuildContext {
   /// Couleur d'accent choisie par l'utilisateur (primary du thème actif).
   Color get accent => Theme.of(this).colorScheme.primary;
 
+  /// Famille de police active.
+  ///
+  /// À repasser à tout `TextStyle` construit à la main dans un `ButtonStyle`
+  /// ou un `SegmentedButton` : ces styles remplacent la famille au lieu d'en
+  /// hériter, et le texte retomberait sur la police du système.
+  String? get fontFamily => Theme.of(this).textTheme.bodyMedium?.fontFamily;
+
   /// Couleur lisible posée sur l'accent.
   Color get onAccent => Theme.of(this).colorScheme.onPrimary;
 }

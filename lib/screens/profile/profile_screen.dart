@@ -741,7 +741,8 @@ class _ProfileHeader extends StatelessWidget {
                         color: accent.withValues(alpha: 0.4),
                       ),
                       foregroundColor: accent,
-                      textStyle: const TextStyle(
+                      textStyle: TextStyle(
+                        fontFamily: context.fontFamily,
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                       ),

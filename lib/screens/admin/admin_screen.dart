@@ -134,7 +134,8 @@ class AdminScreen extends ConsumerWidget {
               index: 1,
               icon: Icons.people_rounded,
               title: 'Tous les comptes',
-              subtitle: 'Voir, bannir, créditer, débiter ou supprimer',
+              subtitle: 'Voir, bannir, créditer, débiter, supprimer ou '
+                  'réinitialiser le mot de passe',
               onTap: () => context.push(AppRoutes.adminAccounts),
             ),
             _AdminTile(

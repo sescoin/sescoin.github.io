@@ -23,10 +23,23 @@ Future<void> main() async {
   ErrorWidget.builder = (FlutterErrorDetails details) {
     _logError('widget-build', details.exception, details.stack);
     final message = details.exceptionAsString();
+
+    // Couleurs et police du thème actif : l'écran d'erreur reste dans
+    // l'ambiance choisie au lieu de trancher avec le reste de l'app.
+    final theme = _activeTheme;
+    final scheme = theme?.colorScheme;
+    final background = theme?.scaffoldBackgroundColor ?? const Color(0xFF14161F);
+    final accent = scheme?.primary ?? const Color(0xFFF5883C);
+    final onAccent = scheme?.onPrimary ?? Colors.white;
+    final onSurface = scheme?.onSurface ?? Colors.white;
+    final muted = scheme?.onSurfaceVariant ?? const Color(0xFFA8AEC6);
+    final family = theme?.textTheme.bodyMedium?.fontFamily;
+    final isDark = background.computeLuminance() < 0.5;
+
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Material(
-        color: const Color(0xFF14161F),
+        color: background,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -45,46 +58,50 @@ Future<void> main() async {
                         height: 76,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFF7C948), Color(0xFFE1502F)],
+                          gradient: LinearGradient(
+                            colors: [
+                              accent,
+                              Color.lerp(accent, Colors.black, 0.3)!,
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  const Color(0xFFE1502F).withValues(alpha: 0.38),
+                              color: accent.withValues(alpha: 0.35),
                               blurRadius: 26,
                               offset: const Offset(0, 9),
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.warning_amber_rounded,
+                        child: Icon(
+                          Icons.sentiment_dissatisfied_rounded,
                           size: 38,
-                          color: Colors.white,
+                          color: onAccent,
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Une erreur est survenue',
+                    Text(
+                      'Oups, un souci d\'affichage',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 19,
+                        fontFamily: family,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: onSurface,
                         letterSpacing: -0.2,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'Cette partie de l\'application n\'a pas pu s\'afficher. '
-                      'Revenir en arrière, puis relancer l\'application si le '
-                      'problème se répète.',
+                      'Rien n\'est perdu : revenir en arrière suffit le plus '
+                      'souvent, sinon relancer l\'application.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(0xFFA8AEC6),
+                        fontFamily: family,
+                        color: muted,
                         fontSize: 13.5,
                         height: 1.5,
                       ),
@@ -95,10 +112,12 @@ Future<void> main() async {
                     Container(
                       padding: const EdgeInsets.fromLTRB(14, 11, 14, 13),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.28),
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.26)
+                            : onSurface.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.07),
+                          color: onSurface.withValues(alpha: 0.09),
                         ),
                       ),
                       child: Column(
@@ -106,17 +125,18 @@ Future<void> main() async {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.terminal_rounded,
                                 size: 14,
-                                color: Color(0xFF767C99),
+                                color: muted,
                               ),
                               const SizedBox(width: 6),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'Détail technique',
                                   style: TextStyle(
-                                    color: Color(0xFF767C99),
+                                    fontFamily: family,
+                                    color: muted,
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: 0.3,
@@ -130,8 +150,8 @@ Future<void> main() async {
                                     text: '$message\n\n${details.stack}',
                                   ),
                                 ),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 7,
                                     vertical: 4,
                                   ),
@@ -141,13 +161,14 @@ Future<void> main() async {
                                       Icon(
                                         Icons.copy_rounded,
                                         size: 13,
-                                        color: Color(0xFF9AA0BC),
+                                        color: accent,
                                       ),
-                                      SizedBox(width: 5),
+                                      const SizedBox(width: 5),
                                       Text(
                                         'Copier',
                                         style: TextStyle(
-                                          color: Color(0xFF9AA0BC),
+                                          fontFamily: family,
+                                          color: accent,
                                           fontSize: 11.5,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -161,8 +182,8 @@ Future<void> main() async {
                           const SizedBox(height: 9),
                           SelectableText(
                             message,
-                            style: const TextStyle(
-                              color: Color(0xFFE79A86),
+                            style: TextStyle(
+                              color: onSurface.withValues(alpha: 0.72),
                               fontFamily: 'monospace',
                               fontSize: 11.5,
                               height: 1.45,
@@ -262,6 +283,12 @@ Future<void> main() async {
   );
 }
 
+/// Thème actuellement appliqué, mémorisé pour l'écran d'erreur.
+///
+/// `ErrorWidget.builder` est appelé en dehors de l'arbre de l'application :
+/// il ne dispose d'aucun `BuildContext` utilisable pour retrouver le thème.
+ThemeData? _activeTheme;
+
 class SESCoinApp extends ConsumerWidget {
   const SESCoinApp({super.key});
 
@@ -270,19 +297,35 @@ class SESCoinApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     final settings = ref.watch(settingsProvider);
 
+    final lightTheme = AppTheme.light(
+      settings.accent,
+      ambiance: settings.ambiance,
+      fontKey: settings.fontKey,
+    );
+    final darkTheme = AppTheme.dark(
+      settings.accent,
+      ambiance: settings.ambiance,
+      fontKey: settings.fontKey,
+    );
+
+    // L'écran d'erreur est construit hors de l'arbre de l'application : aucun
+    // Theme n'est accessible depuis ErrorWidget.builder. On lui laisse donc
+    // le thème actif, pour qu'il suive l'ambiance, l'accent et la police
+    // choisis plutôt que des couleurs figées.
+    final systemDark = WidgetsBinding.instance.platformDispatcher
+            .platformBrightness ==
+        Brightness.dark;
+    _activeTheme = switch (settings.themeMode) {
+      ThemeMode.dark => darkTheme,
+      ThemeMode.light => lightTheme,
+      ThemeMode.system => systemDark ? darkTheme : lightTheme,
+    };
+
     return MaterialApp.router(
       title: 'SES Coin',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(
-        settings.accent,
-        ambiance: settings.ambiance,
-        fontKey: settings.fontKey,
-      ),
-      darkTheme: AppTheme.dark(
-        settings.accent,
-        ambiance: settings.ambiance,
-        fontKey: settings.fontKey,
-      ),
+      theme: lightTheme,
+      darkTheme: darkTheme,
       themeMode: settings.themeMode,
       // Fondu doux quand on change de thème ou de couleur d'accent.
       themeAnimationDuration: const Duration(milliseconds: 350),

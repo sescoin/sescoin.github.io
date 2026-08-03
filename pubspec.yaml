@@ -82,11 +82,12 @@ flutter_launcher_icons:
     generate: true
     background_color: "#000000"
     theme_color: "#F5883C"
-  image_path: assets/icons/logo.png
-  # Le logo source est transparent autour du disque. iOS refuse les icônes
-  # dotées d'un canal alpha, et sur Android le visuel flotterait sans fond :
-  # on aplatit sur du noir, la couleur du disque lui-même.
+  # Version aplatie sur fond noir. Le logo d'origine est transparent autour du
+  # disque : les lanceurs et l'écran d'accueil web comblaient ce vide en blanc,
+  # et iOS refuse purement et simplement les icônes dotées d'un canal alpha.
+  # logo.png (transparent) reste utilisé dans l'application, où il est détouré.
+  image_path: assets/icons/logo_opaque.png
   remove_alpha_ios: true
   background_color_ios: "#000000"
   adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: assets/icons/logo.png
+  adaptive_icon_foreground: assets/icons/logo_opaque.png

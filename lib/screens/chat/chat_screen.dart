@@ -174,18 +174,9 @@ class _ChatInfoButtonState extends State<_ChatInfoButton>
   @override
   void didUpdateWidget(covariant _ChatInfoButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // À l'arrivée sur le chat de classe, le bouton pulse quelques instants
-    // pour signaler que son contenu a changé.
-    if (widget.classMode && !oldWidget.classMode && !AppMotion.reduce) {
-      _pulseCtrl.repeat(reverse: true);
-      Future.delayed(const Duration(milliseconds: 2600), () {
-        if (mounted) {
-          _pulseCtrl
-            ..stop()
-            ..animateTo(0, duration: const Duration(milliseconds: 200));
-        }
-      });
-    }
+    // Le bouton pulsait à l'arrivée sur le chat de classe pour signaler que
+    // son contenu changeait. L'effet attirait l'œil à chaque bascule
+    // d'onglet sans rien apprendre de neuf : il est désactivé.
   }
 
   @override
@@ -1242,7 +1233,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
               if (!widget.isAdmin) ...[
                 _ChatActionTile(
                   icon: Icons.handshake_rounded,
-                  label: 'Demander un prêt à la classe',
+                  label: 'Demander un prêt',
                   badge: '$loansToday/2',
                   onTap: () {
                     Navigator.pop(sheetCtx);
@@ -2055,7 +2046,8 @@ class _LoanRequestBubble extends StatelessWidget {
                             label: const Text('Accepter le prêt'),
                             style: FilledButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 10),
-                              textStyle: const TextStyle(
+                              textStyle: TextStyle(
+                                fontFamily: context.fontFamily,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                               ),

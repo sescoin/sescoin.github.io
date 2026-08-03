@@ -16,6 +16,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/wallet_provider.dart';
 import '../../services/nfc_hce_service.dart';
 import '../../transaction/transaction_tile.dart';
@@ -339,14 +340,14 @@ class _QuickAction extends StatelessWidget {
 
 // ── Titre de marque animé (« SES Coin ») ──────────────────────────────────────
 
-class _BrandTitle extends StatefulWidget {
+class _BrandTitle extends ConsumerStatefulWidget {
   const _BrandTitle();
 
   @override
-  State<_BrandTitle> createState() => _BrandTitleState();
+  ConsumerState<_BrandTitle> createState() => _BrandTitleState();
 }
 
-class _BrandTitleState extends State<_BrandTitle>
+class _BrandTitleState extends ConsumerState<_BrandTitle>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
@@ -376,6 +377,16 @@ class _BrandTitleState extends State<_BrandTitle>
 
   @override
   Widget build(BuildContext context) {
+    // Le réglage peut basculer alors que l'écran est déjà monté : le lire au
+    // seul initState laissait le balayage tourner jusqu'au prochain
+    // redémarrage de l'application.
+    final reduce = ref.watch(settingsProvider.select((s) => s.reduceMotion));
+    if (reduce) {
+      if (_controller.isAnimating) _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+
     final accent = context.accent;
     final base = Theme.of(context).colorScheme.onSurface;
     return Row(
@@ -414,9 +425,10 @@ class _BrandTitleState extends State<_BrandTitle>
         AnimatedBuilder(
           animation: _controller,
           builder: (context, child) {
-            // Tant que l'animation n'a pas démarré, on rend le texte nu :
-            // aucun shader n'est compilé au premier affichage.
-            if (!_controller.isAnimating) return child!;
+            // Texte nu tant que l'animation n'a pas démarré (aucun shader
+            // compilé au premier affichage) et lorsque les animations sont
+            // réduites.
+            if (reduce || !_controller.isAnimating) return child!;
             // Bande lumineuse d'accent qui balaie le texte.
             final dx = -1.6 + 3.2 * _controller.value;
             return ShaderMask(

@@ -157,7 +157,8 @@ class _PayScreenState extends ConsumerState<PayScreen>
                           foregroundColor: context.accent,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
-                          textStyle: const TextStyle(
+                          textStyle: TextStyle(
+                            fontFamily: context.fontFamily,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
