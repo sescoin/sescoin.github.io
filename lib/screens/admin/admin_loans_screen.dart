@@ -152,13 +152,20 @@ class _AdminLoansScreenState extends ConsumerState<AdminLoansScreen>
                         const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Center(child: Text('Erreur : $e')),
                     data: (loans) {
-                      final filtered = _filter(loans);
+                      // Vue admin : seuls les prêts encore en cours ont un
+                      // intérêt opérationnel. Les prêts remboursés, refusés,
+                      // annulés ou en attente d'acceptation sont écartés.
+                      final filtered = _filter(loans)
+                          .where((l) =>
+                              l.status == LoanStatus.active ||
+                              l.status == LoanStatus.defaulted)
+                          .toList();
                       if (filtered.isEmpty) {
                         return Center(
                           child: Text(
                             _searchQuery.isEmpty
-                                ? 'Aucun prêt enregistré'
-                                : 'Aucun prêt pour "$_searchQuery"',
+                                ? 'Aucun prêt en cours'
+                                : 'Aucun prêt en cours pour "$_searchQuery"',
                             style: TextStyle(
                               color: Theme.of(context)
                                   .colorScheme
@@ -257,17 +264,9 @@ class _AdminLoansScreenState extends ConsumerState<AdminLoansScreen>
   }
 }
 
-// ── Tile prêt (lecture seule, vue admin) ──────────────────────────────────────
+// ── Tile prêt (vue admin) ─────────────────────────────────────────────────────
 
-class _AdminLoanTile extends StatelessWidget {
-  const _AdminLoanTile({required this.loan, required this.dateFmt});
-
-  final Loan loan;
-  final DateFormat dateFmt;
-
-  @override
-  Widget build(BuildContext context) {
-    final (statusLabel, statusColor) = switch (loan.status) {
+(String, Color) _statusOf(Loan loan) => switch (loan.status) {
       LoanStatus.pending => ('En attente', AppTheme.warning),
       LoanStatus.active => ('Actif', AppTheme.positive),
       LoanStatus.repaid => ('Remboursé', Colors.grey),
@@ -276,127 +275,310 @@ class _AdminLoanTile extends StatelessWidget {
       LoanStatus.cancelled => ('Annulé', Colors.grey),
     };
 
+/// Ligne de liste volontairement sobre : statut, montant et les deux parties.
+/// Tout le reste est renvoyé au panneau de détail, ouvert au clic.
+class _AdminLoanTile extends StatelessWidget {
+  const _AdminLoanTile({required this.loan, required this.dateFmt});
+
+  final Loan loan;
+  final DateFormat dateFmt;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final (statusLabel, statusColor) = _statusOf(loan);
+
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _StatusChip(label: statusLabel, color: statusColor),
-                if (loan.isOverdue) ...[
-                  const SizedBox(width: 6),
-                  _StatusChip(label: 'En retard', color: AppTheme.negative),
-                ],
-                const Spacer(),
-                Text(
-                  '${loan.principal.toStringAsFixed(2)} SC',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: context.accent,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Text(
-                  '−',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.negative,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '@${loan.borrowerUsername}',
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    '·',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ),
-                const Text(
-                  '+',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.positive,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '@${loan.lenderUsername}',
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-            if (loan.dueDate != null) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(
-                    Icons.event_rounded,
-                    size: 12,
-                    color: loan.isOverdue
-                        ? AppTheme.negative
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Échéance : ${dateFmt.format(loan.dueDate!)}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: loan.isOverdue
-                          ? AppTheme.negative
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _showLoanDetail(context, loan, dateFmt),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _StatusChip(label: statusLabel, color: statusColor),
+                        const SizedBox(width: 9),
+                        Text(
+                          '${loan.principal.toStringAsFixed(2)} SC',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14.5,
+                            color: context.accent,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  if (loan.interestRate > 0) ...[
-                    const SizedBox(width: 12),
-                    Text(
-                      '${loan.interestRate.toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    const SizedBox(height: 10),
+                    _PartyLine(
+                      label: 'Prêteur',
+                      username: loan.lenderUsername,
+                      color: AppTheme.positive,
+                    ),
+                    const SizedBox(height: 4),
+                    _PartyLine(
+                      label: 'Emprunteur',
+                      username: loan.borrowerUsername,
+                      color: AppTheme.negative,
                     ),
                   ],
-                ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.45),
               ),
             ],
-            if (loan.isActive || loan.status == LoanStatus.repaid) ...[
-              const SizedBox(height: 6),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PartyLine extends StatelessWidget {
+  const _PartyLine({
+    required this.label,
+    required this.username,
+    required this.color,
+  });
+
+  final String label;
+  final String username;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 82,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Flexible(
+          child: Text(
+            '@$username',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Détail d'un prêt ──────────────────────────────────────────────────────────
+
+void _showLoanDetail(BuildContext context, Loan loan, DateFormat dateFmt) {
+  final (statusLabel, statusColor) = _statusOf(loan);
+
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+    ),
+    builder: (ctx) {
+      final theme = Theme.of(ctx);
+      final accent = ctx.accent;
+      final note = loan.note?.trim();
+
+      return SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 26),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Montant en vedette
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      accent.withValues(alpha: 0.18),
+                      accent.withValues(alpha: 0.04),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '${loan.principal.toStringAsFixed(2)} SC',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                        color: accent,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _StatusChip(label: statusLabel, color: statusColor),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              _DetailRow(
+                icon: Icons.arrow_upward_rounded,
+                label: 'Prêteur',
+                value: '@${loan.lenderUsername}',
+                color: AppTheme.positive,
+              ),
+              _DetailRow(
+                icon: Icons.arrow_downward_rounded,
+                label: 'Emprunteur',
+                value: '@${loan.borrowerUsername}',
+                color: AppTheme.negative,
+              ),
+              const Divider(height: 28),
+              _DetailRow(
+                icon: Icons.percent_rounded,
+                label: 'Taux d\'intérêt',
+                value: '${loan.interestRate.toStringAsFixed(1)} %',
+              ),
+              _DetailRow(
+                icon: Icons.savings_rounded,
+                label: 'Intérêts',
+                value: '${loan.interestAmount.toStringAsFixed(2)} SC',
+              ),
+              _DetailRow(
+                icon: Icons.summarize_rounded,
+                label: 'Total dû',
+                value: '${loan.totalDue.toStringAsFixed(2)} SC',
+              ),
+              _DetailRow(
+                icon: Icons.check_circle_outline_rounded,
+                label: 'Déjà remboursé',
+                value: '${loan.amountRepaid.toStringAsFixed(2)} SC',
+              ),
+              _DetailRow(
+                icon: Icons.hourglass_bottom_rounded,
+                label: 'Restant dû',
+                value: '${loan.remainingAmount.toStringAsFixed(2)} SC',
+                color: loan.remainingAmount > 0 ? AppTheme.warning : null,
+              ),
+              const SizedBox(height: 14),
               ClipRRect(
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: loan.repaymentProgress,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   color: AppTheme.positive,
-                  minHeight: 4,
+                  minHeight: 7,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 6),
               Text(
-                'Remboursé : ${loan.amountRepaid.toStringAsFixed(2)} / ${loan.totalDue.toStringAsFixed(2)} SC',
+                '${(loan.repaymentProgress * 100).toStringAsFixed(0)} % remboursé',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              const Divider(height: 28),
+              _DetailRow(
+                icon: Icons.schedule_rounded,
+                label: 'Créé le',
+                value: dateFmt.format(loan.createdAt),
+              ),
+              if (loan.dueDate != null)
+                _DetailRow(
+                  icon: Icons.event_rounded,
+                  label: 'Échéance',
+                  value: dateFmt.format(loan.dueDate!),
+                  color: loan.isOverdue ? AppTheme.negative : null,
+                ),
+              if (note != null && note.isNotEmpty) ...[
+                const Divider(height: 28),
+                Text(
+                  'Motif',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(note, style: const TextStyle(fontSize: 13.5, height: 1.4)),
+              ],
             ],
-          ],
+          ),
         ),
+      );
+    },
+  );
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 17,
+            color: color ?? theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

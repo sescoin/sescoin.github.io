@@ -71,6 +71,11 @@ class GlobalTransactionTile extends StatelessWidget {
                 label: 'Acheteur : @$fromLabel',
                 onTap: onFromTap,
               )
+            else if (transaction.type == TransactionType.initialBalance)
+              // Solde initial : l'administrateur qui l'attribue n'est pas une
+              // contrepartie, la somme est créée. On l'affiche donc comme un
+              // crédit système, au même titre qu'une récompense.
+              _UserChip(label: 'Vers @$toLabel', onTap: onToTap)
             else if (transaction.fromUserId == null)
               // Opération système (crédit, récompense…) : pas de contrepartie.
               _UserChip(label: 'Vers @$toLabel', onTap: onToTap)

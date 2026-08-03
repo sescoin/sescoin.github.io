@@ -131,7 +131,6 @@ class _AdminTaxScreenState extends ConsumerState<AdminTaxScreen> {
                             controller: _reasonCtrl,
                             decoration: const InputDecoration(
                               labelText: 'Raison affichée aux utilisateurs',
-                              hintText: 'Ex : Taxe mensuelle',
                               prefixIcon: Icon(Icons.notes_rounded),
                             ),
                             validator: (v) =>

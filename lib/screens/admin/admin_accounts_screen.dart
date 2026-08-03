@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../common/animations.dart';
+import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
+import '../../common/dispose_scope.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -52,7 +54,24 @@ class _AdminAccountsScreenState extends ConsumerState<AdminAccountsScreen> {
     return LoadingOverlay(
       isLoading: state.isLoading,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Tous les comptes')),
+        appBar: AppBar(
+          title: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Tous les comptes'),
+              SizedBox(height: 1),
+              Text(
+                'Réinitialiser le mot de passe',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF9E9E9E),
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
         body: profilesAsync.when(
           loading: () => const InlineLoader(),
           error: (error, _) => ErrorRetry(
@@ -165,8 +184,86 @@ class _AdminAccountsScreenState extends ConsumerState<AdminAccountsScreen> {
             AppFeedback.error(ctx, error);
           }
         }
+      case 'reset_password':
+        await _resetPassword(ctx, profile);
       case 'delete':
         await _delete(ctx, profile.id, profile.displayName);
+    }
+  }
+
+  /// Redéfinit le mot de passe d'un compte. Le champ reste en clair : c'est
+  /// l'administrateur qui devra transmettre la valeur au titulaire.
+  Future<void> _resetPassword(BuildContext ctx, Profile profile) async {
+    final passwordCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: ctx,
+      builder: (dialogContext) => DisposeScope(
+        disposables: [passwordCtrl],
+        child: AppDialog(
+          icon: Icons.key_rounded,
+          title: 'Réinitialiser le mot de passe',
+          subtitle: '@${profile.username}',
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: passwordCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Nouveau mot de passe',
+                  helperText: '8 caractères minimum',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Le nouveau mot de passe devra être communiqué au titulaire '
+                'du compte : il ne lui sera pas envoyé.',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color:
+                      Theme.of(dialogContext).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Réinitialiser'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final password = passwordCtrl.text;
+    if (confirmed != true) return;
+    if (password.length < 8) {
+      if (ctx.mounted) {
+        AppFeedback.warning(
+          ctx,
+          'Le mot de passe doit contenir au moins 8 caractères.',
+        );
+      }
+      return;
+    }
+    try {
+      await ref
+          .read(adminActionsProvider.notifier)
+          .resetPassword(profile.id, password);
+      if (ctx.mounted) {
+        AppFeedback.success(ctx, 'Mot de passe réinitialisé.');
+      }
+    } catch (error) {
+      if (ctx.mounted) {
+        AppFeedback.error(ctx, error);
+      }
     }
   }
 
@@ -482,6 +579,16 @@ class _AccountCard extends StatelessWidget {
                           title: Text(
                             profile.isBanned ? 'Débannir' : 'Bannir',
                           ),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'reset_password',
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.key_rounded,
+                            color: AppTheme.info,
+                          ),
+                          title: Text('Réinitialiser le mot de passe'),
                         ),
                       ),
                       const PopupMenuItem(

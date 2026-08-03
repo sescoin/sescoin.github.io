@@ -169,6 +169,22 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
     }
   }
 
+  Future<void> resetPassword(String userId, String newPassword) async {
+    state = state.copyWith(isLoading: true, clearMessages: true);
+    try {
+      await _ref
+          .read(profileServiceProvider)
+          .resetPassword(userId, newPassword);
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Mot de passe réinitialisé',
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
   Future<void> deleteUser(String userId) async {
     state = state.copyWith(isLoading: true, clearMessages: true);
     try {

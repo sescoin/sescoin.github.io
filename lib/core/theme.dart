@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -18,6 +20,36 @@ class AppTheme {
   /// Texte lisible par-dessus la couleur d'accent.
   static Color onAccent(Color accent) =>
       accent.computeLuminance() > 0.55 ? Colors.black87 : Colors.white;
+
+  /// Rapport de contraste WCAG entre deux couleurs (1 = identiques, 21 = max).
+  static double _contrast(Color a, Color b) {
+    final la = a.computeLuminance();
+    final lb = b.computeLuminance();
+    return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
+  }
+
+  /// Rend [color] lisible sur [background] en ne touchant qu'à sa luminosité.
+  ///
+  /// L'accent sert aussi bien de fond de bouton que de couleur de texte et
+  /// d'icône. Choisi trop proche de l'ambiance — ou simplement trop sombre
+  /// sur un fond sombre — il rendait ces éléments invisibles. On préserve la
+  /// teinte et la saturation choisies, et on éclaircit ou assombrit par pas
+  /// successifs jusqu'à franchir le seuil de lisibilité.
+  static Color _readableOn(Color color, Color background) {
+    const minRatio = 3.0;
+    if (_contrast(color, background) >= minRatio) return color;
+
+    final lightenIt = background.computeLuminance() < 0.5;
+    var hsl = HSLColor.fromColor(color);
+    for (var i = 0; i < 25; i++) {
+      final next = (lightenIt ? hsl.lightness + 0.04 : hsl.lightness - 0.04)
+          .clamp(0.0, 1.0);
+      if (next == hsl.lightness) break; // butée atteinte
+      hsl = hsl.withLightness(next);
+      if (_contrast(hsl.toColor(), background) >= minRatio) break;
+    }
+    return hsl.toColor();
+  }
 
   // ── Typographie ────────────────────────────────────────────────────────────
   // La famille choisie dans les réglages est appliquée d'abord, puis les
@@ -63,7 +95,7 @@ class AppTheme {
     final amb = ambiance ?? appAmbiances.first;
     final scaffold = amb.lightScaffold;
     final input = amb.lightInput;
-    final primary = accent.color;
+    final primary = _readableOn(accent.color, scaffold);
     final onPrimary = onAccent(primary);
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
@@ -74,13 +106,15 @@ class AppTheme {
       surface: Colors.white,
       error: _negative,
     );
+    // Famille résolue une fois pour toutes. `ThemeData.fontFamily` ne suffit
+    // pas : tout `TextStyle` défini explicitement plus bas (titre de barre,
+    // libellés de boutons, info-bulles) remplace la famille au lieu d'en
+    // hériter, et garderait donc la police du système.
+    final family = appFontFamily(fontKey);
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      // Pose la famille sur tout le thème : les composants qui n'utilisent pas
-      // la TextTheme (menus, info-bulles, champs…) suivraient sinon la police
-      // du système et le changement ne s'appliquerait qu'à moitié.
-      fontFamily: appFontFamily(fontKey),
+      fontFamily: family,
     );
 
     return base.copyWith(
@@ -95,7 +129,8 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: true,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
+          fontFamily: family,
           fontSize: 18,
           fontWeight: FontWeight.w800,
           color: _ink,
@@ -122,7 +157,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: family,
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
@@ -137,7 +173,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: family,
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
@@ -152,7 +189,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: family,
             fontSize: 15,
             fontWeight: FontWeight.w700,
           ),
@@ -161,7 +199,10 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primary,
-          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          textStyle: TextStyle(
+            fontFamily: family,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -208,6 +249,7 @@ class AppTheme {
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
+            fontFamily: family,
             fontSize: 11,
             overflow: TextOverflow.ellipsis,
             fontWeight: states.contains(WidgetState.selected)
@@ -228,7 +270,11 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: _ink,
-        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+        contentTextStyle: TextStyle(
+          fontFamily: family,
+          color: Colors.white,
+          fontSize: 14,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         behavior: SnackBarBehavior.floating,
       ),
@@ -236,7 +282,8 @@ class AppTheme {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
+          fontFamily: family,
           fontSize: 17,
           fontWeight: FontWeight.w800,
           color: _ink,
@@ -269,9 +316,16 @@ class AppTheme {
         indicatorColor: primary,
         unselectedLabelColor: const Color(0xFF8E8E93),
         dividerColor: Colors.transparent,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-        unselectedLabelStyle:
-            const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        labelStyle: TextStyle(
+          fontFamily: family,
+          fontWeight: FontWeight.w700,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: family,
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
@@ -287,7 +341,11 @@ class AppTheme {
           color: _ink.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(10),
         ),
-        textStyle: const TextStyle(color: Colors.white, fontSize: 12),
+        textStyle: TextStyle(
+          fontFamily: family,
+          color: Colors.white,
+          fontSize: 12,
+        ),
       ),
     );
   }
@@ -299,12 +357,12 @@ class AppTheme {
     String fontKey = 'system',
   }) {
     final amb = ambiance ?? appAmbiances.first;
-    final primary = accent.color;
-    final onPrimary = onAccent(primary);
     final scaffold = amb.darkScaffold;
     final surface = amb.darkSurface;
     final card = amb.darkCard;
     final input = amb.darkInput;
+    final primary = _readableOn(accent.color, scaffold);
+    final onPrimary = onAccent(primary);
 
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
@@ -315,13 +373,15 @@ class AppTheme {
       surface: surface,
       error: _negative,
     );
+    // Famille résolue une fois pour toutes. `ThemeData.fontFamily` ne suffit
+    // pas : tout `TextStyle` défini explicitement plus bas (titre de barre,
+    // libellés de boutons, info-bulles) remplace la famille au lieu d'en
+    // hériter, et garderait donc la police du système.
+    final family = appFontFamily(fontKey);
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      // Pose la famille sur tout le thème : les composants qui n'utilisent pas
-      // la TextTheme (menus, info-bulles, champs…) suivraient sinon la police
-      // du système et le changement ne s'appliquerait qu'à moitié.
-      fontFamily: appFontFamily(fontKey),
+      fontFamily: family,
     );
 
     return base.copyWith(
@@ -336,7 +396,8 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: true,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
+          fontFamily: family,
           fontSize: 18,
           fontWeight: FontWeight.w800,
           color: Colors.white,
@@ -363,7 +424,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: family,
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
@@ -378,7 +440,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: family,
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
@@ -393,7 +456,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: family,
             fontSize: 15,
             fontWeight: FontWeight.w700,
           ),
@@ -402,7 +466,10 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primary,
-          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          textStyle: TextStyle(
+            fontFamily: family,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -449,6 +516,7 @@ class AppTheme {
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
+            fontFamily: family,
             fontSize: 11,
             overflow: TextOverflow.ellipsis,
             fontWeight: states.contains(WidgetState.selected)
@@ -469,7 +537,11 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: const Color(0xFF2A2A3E),
-        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+        contentTextStyle: TextStyle(
+          fontFamily: family,
+          color: Colors.white,
+          fontSize: 14,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         behavior: SnackBarBehavior.floating,
       ),
@@ -477,7 +549,8 @@ class AppTheme {
         backgroundColor: card,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
+          fontFamily: family,
           fontSize: 17,
           fontWeight: FontWeight.w800,
           color: Colors.white,
@@ -510,9 +583,16 @@ class AppTheme {
         indicatorColor: primary,
         unselectedLabelColor: const Color(0xFF8E8E93),
         dividerColor: Colors.transparent,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-        unselectedLabelStyle:
-            const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        labelStyle: TextStyle(
+          fontFamily: family,
+          fontWeight: FontWeight.w700,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: family,
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
@@ -528,7 +608,11 @@ class AppTheme {
           color: Colors.white.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(10),
         ),
-        textStyle: const TextStyle(color: _ink, fontSize: 12),
+        textStyle: TextStyle(
+          fontFamily: family,
+          color: _ink,
+          fontSize: 12,
+        ),
       ),
     );
   }

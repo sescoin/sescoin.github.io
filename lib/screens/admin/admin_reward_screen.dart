@@ -106,7 +106,6 @@ class _AdminRewardScreenState extends ConsumerState<AdminRewardScreen> {
                             controller: _reasonCtrl,
                             decoration: const InputDecoration(
                               labelText: 'Raison affichée aux utilisateurs',
-                              hintText: 'Ex : Bravo pour le projet !',
                               prefixIcon: Icon(Icons.notes_rounded),
                             ),
                           ),

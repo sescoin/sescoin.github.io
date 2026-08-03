@@ -73,7 +73,7 @@ class AdminScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Mode Administrateur',
+                            'Mode Admin',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

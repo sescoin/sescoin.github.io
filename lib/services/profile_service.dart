@@ -200,6 +200,14 @@ class ProfileService {
     await _client.rpc('admin_delete_user', params: {'p_user_id': userId});
   }
 
+  /// Redéfinit le mot de passe d'un compte (RPC réservée à l'administrateur).
+  Future<void> resetPassword(String userId, String newPassword) async {
+    await _client.rpc(
+      'admin_reset_password',
+      params: {'p_user_id': userId, 'p_new_password': newPassword},
+    );
+  }
+
   // ─── Realtime ────────────────────────────────────────────────────────────────
 
   /// Stream des demandes en attente (temps réel pour le panel admin)
