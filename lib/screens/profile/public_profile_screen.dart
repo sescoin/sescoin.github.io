@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../common/animations.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
 import '../../common/user_avatar.dart';
+import '../../core/router.dart';
 import '../../core/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/transaction_explorer_provider.dart';
 import '../../transaction/global_transaction_tile.dart';
@@ -145,6 +148,53 @@ class PublicProfileScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              // ── Actions ────────────────────────────────────────────────
+              // Masquées sur son propre profil : ni transfert ni demande de
+              // prêt n'ont de sens vers soi-même.
+              if (profile.id != ref.watch(currentUserIdProvider))
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () =>
+                                context.push(AppRoutes.transferManual),
+                            icon: const Icon(Icons.send_rounded, size: 17),
+                            label: const Text('Transférer'),
+                            style: FilledButton.styleFrom(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 12),
+                              textStyle: TextStyle(
+                                fontFamily: context.fontFamily,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.push(AppRoutes.loanCreate),
+                            icon: const Icon(Icons.handshake_rounded, size: 17),
+                            label: const Text('Prêt'),
+                            style: OutlinedButton.styleFrom(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 12),
+                              textStyle: TextStyle(
+                                fontFamily: context.fontFamily,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),

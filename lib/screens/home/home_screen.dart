@@ -191,6 +191,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onTap: () => context.push(AppRoutes.leaderboard),
                     ),
                     _QuickAction(
+                      icon: Icons.people_alt_rounded,
+                      label: 'Comptes',
+                      onTap: () => context.push(AppRoutes.accounts),
+                    ),
+                    _QuickAction(
                       icon: Icons.handshake_rounded,
                       label: 'Prêts',
                       onTap: () => context.push(AppRoutes.loanCreate),

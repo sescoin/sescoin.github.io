@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -3226,6 +3227,20 @@ class _AnimatedReaderChip extends StatelessWidget {
 
 // ── Barre de saisie ───────────────────────────────────────────────────────────
 
+/// Vrai lorsque la saisie se fait au clavier physique plutôt qu'au clavier
+/// tactile.
+///
+/// `defaultTargetPlatform` reste fiable sur le web : Flutter y déduit la
+/// plateforme de l'agent utilisateur, un téléphone sous navigateur est donc
+/// bien reconnu comme mobile.
+bool get _hasPhysicalKeyboard => switch (defaultTargetPlatform) {
+      TargetPlatform.android ||
+      TargetPlatform.iOS ||
+      TargetPlatform.fuchsia =>
+        false,
+      _ => true,
+    };
+
 class _InputBar extends StatelessWidget {
   const _InputBar({
     required this.controller,
@@ -3322,7 +3337,14 @@ class _InputBar extends StatelessWidget {
                         ),
                       ),
                       child: Focus(
+                        // Avec un clavier physique, Entrée envoie et
+                        // Maj+Entrée passe à la ligne. Sur mobile, Entrée doit
+                        // rester un retour à la ligne : l'envoi passe alors
+                        // uniquement par le bouton.
                         onKeyEvent: (node, event) {
+                          if (!_hasPhysicalKeyboard) {
+                            return KeyEventResult.ignored;
+                          }
                           if (event is KeyDownEvent &&
                               event.logicalKey == LogicalKeyboardKey.enter &&
                               !HardwareKeyboard.instance.isShiftPressed) {
@@ -3336,10 +3358,10 @@ class _InputBar extends StatelessWidget {
                           focusNode: focusNode,
                           enabled: !isMuted,
                           maxLength: 500,
-                          maxLines: 5,
+                          maxLines: 4,
                           minLines: 1,
                           textInputAction: TextInputAction.newline,
-                          style: const TextStyle(fontSize: 14.5),
+                          style: const TextStyle(fontSize: 14),
                           decoration: InputDecoration(
                             hintText: isMuted ? 'Compte muet…' : hintText,
                             counterText: '',
@@ -3353,7 +3375,8 @@ class _InputBar extends StatelessWidget {
                             focusedBorder: InputBorder.none,
                             disabledBorder: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 7),
+                                horizontal: 14, vertical: 5),
+                            isDense: true,
                           ),
                         ),
                       ),
@@ -3393,22 +3416,58 @@ class _SendButton extends StatelessWidget {
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
     final onAccent = theme.colorScheme.onPrimary;
-    return Material(
-      color: isMuted ? Colors.grey[400] : accent,
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: (isSending || isMuted) ? null : onPressed,
-        child: Padding(
-          padding: const EdgeInsets.all(11),
-          child: isSending
-              ? SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: onAccent),
-                )
-              : Icon(Icons.send_rounded, color: onAccent, size: 18),
+    final disabled = isSending || isMuted;
+
+    return AnimatedContainer(
+      duration: AppMotion.duration(const Duration(milliseconds: 200)),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: disabled
+            ? null
+            : LinearGradient(
+                colors: [accent, Color.lerp(accent, Colors.black, 0.24)!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        color: disabled
+            ? theme.colorScheme.onSurface.withValues(alpha: 0.14)
+            : null,
+        boxShadow: disabled
+            ? null
+            : [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.38),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: disabled ? null : onPressed,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: isSending
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: onAccent,
+                    ),
+                  )
+                : Icon(
+                    Icons.send_rounded,
+                    color: isMuted
+                        ? theme.colorScheme.onSurface.withValues(alpha: 0.45)
+                        : onAccent,
+                    size: 18,
+                  ),
+          ),
         ),
       ),
     );

@@ -214,8 +214,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     }
 
     final amount = double.tryParse(controller.text.replaceAll(',', '.'));
-    if (amount == null || amount <= 0) {
-      AppFeedback.warning(context, 'Montant de remboursement invalide.');
+    if (amount == null || amount < 0.01) {
+      AppFeedback.warning(
+        context,
+        'Le remboursement doit valoir au moins 0,01 SC.',
+      );
       return;
     }
 

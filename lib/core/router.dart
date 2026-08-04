@@ -25,6 +25,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/request_sent_screen.dart';
 import '../screens/explorer/transaction_explorer_screen.dart';
+import '../screens/home/accounts_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/home/leaderboard_screen.dart';
 import '../screens/market/auction_detail_screen.dart';
@@ -60,6 +61,7 @@ class AppRoutes {
   static const String loanDetail = '/loan/:id';
   static const String publicProfile = '/user/:username';
   static const String leaderboard = '/leaderboard';
+  static const String accounts = '/accounts';
   static const String transactionExplorer = '/explorer';
 
   static const String adminDashboard = '/admin';
@@ -237,6 +239,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => PublicProfileScreen(
           username: state.pathParameters['username']!,
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.accounts,
+        name: 'accounts',
+        builder: (context, state) => const AccountsScreen(),
       ),
       GoRoute(
         path: AppRoutes.transactionExplorer,

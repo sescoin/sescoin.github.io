@@ -251,8 +251,10 @@ class LoanService {
     required String borrowerId,
     required double amount,
   }) async {
-    if (amount <= 0) {
-      throw Exception('Le montant de remboursement doit être positif.');
+    // Les soldes sont stockés à deux décimales : en deçà de 0,01 SC, le
+    // remboursement serait arrondi et n'aurait aucun effet.
+    if (amount < 0.01) {
+      throw Exception('Le remboursement doit valoir au moins 0,01 SC.');
     }
     try {
       final data = await _client.rpc('repay_loan', params: {

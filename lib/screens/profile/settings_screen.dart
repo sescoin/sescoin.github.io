@@ -176,44 +176,6 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           FadeSlideIn.staggered(
-            index: 5,
-            child: _SectionTitle(
-              icon: Icons.accessibility_new_rounded,
-              title: 'Confort',
-            ),
-          ),
-          FadeSlideIn.staggered(
-            index: 6,
-            child: _SettingsCard(
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 2,
-                    ),
-                    secondary: const Icon(Icons.animation_rounded),
-                    title: const Text(
-                      'Réduire les animations',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                    ),
-                    subtitle: Text(
-                      'Désactive les effets décoratifs',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    value: settings.reduceMotion,
-                    onChanged: (v) => notifier.setReduceMotion(v),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          FadeSlideIn.staggered(
             index: 7,
             child: _SectionTitle(
               icon: Icons.visibility_rounded,
@@ -281,6 +243,39 @@ class SettingsScreen extends ConsumerWidget {
                     },
                   ),
               ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          FadeSlideIn.staggered(
+            index: 11,
+            child: const _SectionTitle(
+              icon: Icons.accessibility_new_rounded,
+              title: 'Confort',
+            ),
+          ),
+          FadeSlideIn.staggered(
+            index: 11,
+            child: _SettingsCard(
+              child: SwitchListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 2,
+                ),
+                secondary: const Icon(Icons.animation_rounded),
+                title: const Text(
+                  'Réduire les animations',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+                subtitle: Text(
+                  'Désactive les effets décoratifs',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                value: settings.reduceMotion,
+                onChanged: (v) => notifier.setReduceMotion(v),
+              ),
             ),
           ),
         ],

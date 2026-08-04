@@ -261,7 +261,7 @@ class _ClassCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             classRoom.memberCount == 1
-                                ? 'un membre'
+                                ? '1 membre'
                                 : '${classRoom.memberCount} membres',
                             style: TextStyle(
                               fontSize: 12,

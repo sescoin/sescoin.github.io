@@ -22,184 +22,7 @@ Future<void> main() async {
   // quel widget a planté.
   ErrorWidget.builder = (FlutterErrorDetails details) {
     _logError('widget-build', details.exception, details.stack);
-    final message = details.exceptionAsString();
-
-    // Couleurs et police du thème actif : l'écran d'erreur reste dans
-    // l'ambiance choisie au lieu de trancher avec le reste de l'app.
-    final theme = _activeTheme;
-    final scheme = theme?.colorScheme;
-    final background = theme?.scaffoldBackgroundColor ?? const Color(0xFF14161F);
-    final accent = scheme?.primary ?? const Color(0xFFF5883C);
-    final onAccent = scheme?.onPrimary ?? Colors.white;
-    final onSurface = scheme?.onSurface ?? Colors.white;
-    final muted = scheme?.onSurfaceVariant ?? const Color(0xFFA8AEC6);
-    final family = theme?.textTheme.bodyMedium?.fontFamily;
-    final isDark = background.computeLuminance() < 0.5;
-
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Material(
-        color: background,
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(26, 32, 26, 32),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Pastille dans les couleurs de l'app plutôt qu'une icône
-                    // de débogage posée à nu.
-                    Center(
-                      child: Container(
-                        width: 76,
-                        height: 76,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              accent,
-                              Color.lerp(accent, Colors.black, 0.3)!,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accent.withValues(alpha: 0.35),
-                              blurRadius: 26,
-                              offset: const Offset(0, 9),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.sentiment_dissatisfied_rounded,
-                          size: 38,
-                          color: onAccent,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Oups, un souci d\'affichage',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: family,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: onSurface,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Cette partie de l\'application n\'a pas pu s\'afficher. '
-                      'Rien n\'est perdu : revenir en arrière suffit le plus '
-                      'souvent, sinon relancer l\'application.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: family,
-                        color: muted,
-                        fontSize: 13.5,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 26),
-                    // Détail technique relégué au second plan : utile pour
-                    // remonter un bug, invisible pour qui ne le cherche pas.
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(14, 11, 14, 13),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.black.withValues(alpha: 0.26)
-                            : onSurface.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: onSurface.withValues(alpha: 0.09),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.terminal_rounded,
-                                size: 14,
-                                color: muted,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  'Détail technique',
-                                  style: TextStyle(
-                                    fontFamily: family,
-                                    color: muted,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ),
-                              InkWell(
-                                borderRadius: BorderRadius.circular(8),
-                                onTap: () => Clipboard.setData(
-                                  ClipboardData(
-                                    text: '$message\n\n${details.stack}',
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 4,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.copy_rounded,
-                                        size: 13,
-                                        color: accent,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'Copier',
-                                        style: TextStyle(
-                                          fontFamily: family,
-                                          color: accent,
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 9),
-                          SelectableText(
-                            message,
-                            style: TextStyle(
-                              color: onSurface.withValues(alpha: 0.72),
-                              fontFamily: 'monospace',
-                              fontSize: 11.5,
-                              height: 1.45,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    return _ErrorFallback(details: details);
   };
 
   // Toutes les erreurs du framework passent ici — y compris celles qui ne
@@ -406,6 +229,234 @@ class _StartupErrorApp extends StatelessWidget {
 
 /// Journalise une erreur au lieu de la faire disparaître silencieusement.
 /// Visible dans la console du navigateur (F12) et dans `flutter run`.
+/// Écran de repli affiché à la place d'un widget dont la construction a
+/// échoué.
+///
+/// `ErrorWidget` remplace *chaque* widget fautif pris isolément : dans une
+/// liste, vingt tuiles en échec produisent vingt écrans empilés. La
+/// présentation s'adapte donc à la place disponible — une simple ligne dans
+/// un espace contraint, l'écran complet sinon.
+class _ErrorFallback extends StatelessWidget {
+  const _ErrorFallback({required this.details});
+
+  final FlutterErrorDetails details;
+
+  @override
+  Widget build(BuildContext context) {
+    // Couleurs et police du thème actif : l'écran reste dans l'ambiance
+    // choisie au lieu de trancher avec le reste de l'application.
+    final theme = _activeTheme;
+    final scheme = theme?.colorScheme;
+    final background =
+        theme?.scaffoldBackgroundColor ?? const Color(0xFF14161F);
+    final accent = scheme?.primary ?? const Color(0xFFF5883C);
+    final onAccent = scheme?.onPrimary ?? Colors.white;
+    final onSurface = scheme?.onSurface ?? Colors.white;
+    final muted = scheme?.onSurfaceVariant ?? const Color(0xFFA8AEC6);
+    final family = theme?.textTheme.bodyMedium?.fontFamily;
+    final isDark = background.computeLuminance() < 0.5;
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxHeight < 260;
+          return Material(
+            color: compact ? Colors.transparent : background,
+            child: compact
+                ? _line(muted, family)
+                : _page(
+                    accent: accent,
+                    onAccent: onAccent,
+                    onSurface: onSurface,
+                    muted: muted,
+                    family: family,
+                    isDark: isDark,
+                  ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Version réduite, pour un élément de liste ou une carte.
+  Widget _line(Color muted, String? family) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, size: 17, color: muted),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                'Élément non affiché',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: family,
+                  fontSize: 13,
+                  color: muted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _page({
+    required Color accent,
+    required Color onAccent,
+    required Color onSurface,
+    required Color muted,
+    required String? family,
+    required bool isDark,
+  }) {
+    final message = details.exceptionAsString();
+
+    return SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(26, 32, 26, 32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
+                      border: Border.all(
+                        color: accent.withValues(alpha: 0.45),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.report_problem_outlined,
+                      size: 32,
+                      color: accent,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Affichage impossible',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: family,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: onSurface,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Cet élément n\'a pas pu être affiché. Revenir à l\'écran '
+                  'précédent, puis relancer l\'application si le problème '
+                  'persiste.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: family,
+                    color: muted,
+                    fontSize: 13.5,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 26),
+                // Détail technique au second plan : utile pour signaler un
+                // problème, discret pour qui ne le cherche pas.
+                Container(
+                  padding: const EdgeInsets.fromLTRB(14, 11, 14, 13),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.26)
+                        : onSurface.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: onSurface.withValues(alpha: 0.09),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.terminal_rounded, size: 14, color: muted),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Détail technique',
+                              style: TextStyle(
+                                fontFamily: family,
+                                color: muted,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () => Clipboard.setData(
+                              ClipboardData(
+                                text: '$message\n\n${details.stack}',
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.copy_rounded,
+                                    size: 13,
+                                    color: accent,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Copier',
+                                    style: TextStyle(
+                                      fontFamily: family,
+                                      color: accent,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 9),
+                      SelectableText(
+                        message,
+                        style: TextStyle(
+                          color: onSurface.withValues(alpha: 0.72),
+                          fontFamily: 'monospace',
+                          fontSize: 11.5,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 void _logError(String origin, Object error, StackTrace? stack) {
   debugPrint('┌─ [SESCoin/$origin] $error');
   if (stack != null) {
