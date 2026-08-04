@@ -16,6 +16,7 @@ class Profile {
     this.pendingAvatarUrl,
     this.fcmToken,
     this.classId,
+    this.quote,
   });
 
   final String id;
@@ -32,6 +33,9 @@ class Profile {
   final String? pendingAvatarUrl;
   final String? fcmToken;
   final String? classId;
+
+  /// Citation personnelle, affichée sur le podium et la fiche publique.
+  final String? quote;
 
   bool get isAdmin => role == 'admin';
   bool get isStudent => role == 'student';
@@ -58,6 +62,7 @@ class Profile {
       pendingAvatarUrl: json['pending_avatar_url'] as String?,
       fcmToken: json['fcm_token'] as String?,
       classId: json['class_id'] as String?,
+      quote: TextSanitizer.nullable(json['quote'] as String?),
     );
   }
 
@@ -87,6 +92,7 @@ class Profile {
     Object? pendingAvatarUrl = _sentinel,
     String? fcmToken,
     Object? classId = _sentinel,
+    Object? quote = _sentinel,
   }) {
     return Profile(
       id: id ?? this.id,
@@ -103,6 +109,7 @@ class Profile {
           : pendingAvatarUrl as String?,
       fcmToken: fcmToken ?? this.fcmToken,
       classId: classId == _sentinel ? this.classId : classId as String?,
+      quote: quote == _sentinel ? this.quote : quote as String?,
     );
   }
 

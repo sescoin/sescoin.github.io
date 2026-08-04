@@ -8,6 +8,21 @@ class ChatService {
 
   final SupabaseClient _client;
 
+  /// Signale un message à l'administration.
+  ///
+  /// La RPC copie le contenu du message dans le signalement : il peut être
+  /// modifié ou supprimé avant que l'administrateur ne le traite.
+  Future<void> reportMessage(String messageId) async {
+    try {
+      await _client.rpc(
+        'report_chat_message',
+        params: {'p_message_id': messageId},
+      );
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
   // ── Streams ────────────────────────────────────────────────────────────────
 
   Stream<List<ChatMessage>> watchGlobalMessages() {

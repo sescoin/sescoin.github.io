@@ -23,6 +23,7 @@ import '../../models/chat_read.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/class_provider.dart';
+import '../../providers/service_providers.dart';
 
 // ── Écran principal ────────────────────────────────────────────────────────────
 
@@ -1383,6 +1384,44 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     }
   }
 
+  /// Transmet un message à l'administration.
+  Future<void> _reportMessage(ChatMessage message) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AppDialog(
+        icon: Icons.flag_rounded,
+        tone: AppDialogTone.danger,
+        title: 'Signaler ce message ?',
+        subtitle: '@${message.username}',
+        content: const Text(
+          'Le message sera transmis à l\'administration, qui décidera de la '
+          'suite à donner. Un même message ne peut être signalé qu\'une fois.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Signaler'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(chatServiceProvider).reportMessage(message.id);
+      if (mounted) {
+        AppFeedback.success(context, 'Signalement transmis.');
+      }
+    } catch (error) {
+      if (mounted) AppFeedback.error(context, error);
+    }
+  }
+
   void _showMessageActions(
       BuildContext context, ChatMessage message, bool isOwn) {
     // Un compte muet ne peut ni modifier ni supprimer ses messages.
@@ -1449,6 +1488,20 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                     },
                   ),
                 if (isOwn) const SizedBox(height: 8),
+                // On ne signale pas ses propres messages : la RPC le refuse
+                // de toute façon.
+                if (!isOwn) ...[
+                  _ChatActionTile(
+                    icon: Icons.flag_outlined,
+                    label: 'Signaler',
+                    color: AppTheme.warning,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _reportMessage(message);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 _ChatActionTile(
                   icon: Icons.delete_outline_rounded,
                   label: 'Supprimer',

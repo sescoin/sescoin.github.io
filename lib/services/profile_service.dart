@@ -200,6 +200,19 @@ class ProfileService {
     await _client.rpc('admin_delete_user', params: {'p_user_id': userId});
   }
 
+  /// Définit sa propre citation, ou l'efface si [quote] est vide.
+  ///
+  /// Passe par une RPC : longueur, caractères invisibles et langage sont
+  /// vérifiés côté serveur, un client pouvant toujours écrire en base.
+  Future<void> setQuote(String? quote) async {
+    await _client.rpc('set_profile_quote', params: {'p_quote': quote});
+  }
+
+  /// Supprime la citation d'un compte (RPC réservée à l'administrateur).
+  Future<void> clearQuote(String userId) async {
+    await _client.rpc('admin_clear_quote', params: {'p_user_id': userId});
+  }
+
   /// Redéfinit le mot de passe d'un compte (RPC réservée à l'administrateur).
   Future<void> resetPassword(String userId, String newPassword) async {
     await _client.rpc(

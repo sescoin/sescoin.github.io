@@ -7,6 +7,7 @@ import '../../common/loading_overlay.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/report_provider.dart';
 import '../../providers/auth_provider.dart';
 
 class AdminScreen extends ConsumerWidget {
@@ -137,6 +138,15 @@ class AdminScreen extends ConsumerWidget {
               subtitle: 'Voir, bannir, créditer, débiter, supprimer ou '
                   'réinitialiser le mot de passe',
               onTap: () => context.push(AppRoutes.adminAccounts),
+            ),
+            _AdminTile(
+              index: 2,
+              icon: Icons.flag_rounded,
+              title: 'Signalements',
+              subtitle: 'Messages remontés par les élèves',
+              badgeCount: ref.watch(pendingReportsCountProvider),
+              onTap: () => context.push(AppRoutes.adminReports),
+              color: AppTheme.warning,
             ),
             _AdminTile(
               index: 2,
