@@ -3358,10 +3358,10 @@ class _InputBar extends StatelessWidget {
                           focusNode: focusNode,
                           enabled: !isMuted,
                           maxLength: 500,
-                          maxLines: 4,
+                          maxLines: 5,
                           minLines: 1,
                           textInputAction: TextInputAction.newline,
-                          style: const TextStyle(fontSize: 14),
+                          style: const TextStyle(fontSize: 14.5),
                           decoration: InputDecoration(
                             hintText: isMuted ? 'Compte muet…' : hintText,
                             counterText: '',
@@ -3375,8 +3375,7 @@ class _InputBar extends StatelessWidget {
                             focusedBorder: InputBorder.none,
                             disabledBorder: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 5),
-                            isDense: true,
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                       ),

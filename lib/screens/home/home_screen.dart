@@ -186,9 +186,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onTap: () => context.push(AppRoutes.transferManual),
                     ),
                     _QuickAction(
-                      icon: Icons.leaderboard_rounded,
-                      label: 'Classement',
-                      onTap: () => context.push(AppRoutes.leaderboard),
+                      icon: Icons.handshake_rounded,
+                      label: 'Prêts',
+                      onTap: () => context.push(AppRoutes.loanCreate),
                     ),
                     _QuickAction(
                       icon: Icons.people_alt_rounded,
@@ -196,9 +196,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onTap: () => context.push(AppRoutes.accounts),
                     ),
                     _QuickAction(
-                      icon: Icons.handshake_rounded,
-                      label: 'Prêts',
-                      onTap: () => context.push(AppRoutes.loanCreate),
+                      icon: Icons.leaderboard_rounded,
+                      label: 'Classement',
+                      onTap: () => context.push(AppRoutes.leaderboard),
                     ),
                     _QuickAction(
                       icon: Icons.hub_rounded,
