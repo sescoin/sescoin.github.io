@@ -652,7 +652,7 @@ class _ExplorerDrawer extends StatelessWidget {
                       controller: searchController,
                       onChanged: onQueryChanged,
                       decoration: InputDecoration(
-                        hintText: 'Utilisateur, raison ou note',
+                        hintText: 'Utilisateur, motif ou note',
                         prefixIcon: const Icon(Icons.search_rounded),
                         isDense: true,
                         suffixIcon: query.isEmpty

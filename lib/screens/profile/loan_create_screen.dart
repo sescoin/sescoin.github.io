@@ -13,6 +13,15 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/loan_provider.dart';
 
+/// Façon de renseigner l'échéance d'un prêt.
+enum _DueMode {
+  /// Date et heure choisies au calendrier.
+  date,
+
+  /// Durée à compter de l'envoi, en jours, heures et minutes.
+  duration,
+}
+
 class LoanCreateScreen extends ConsumerStatefulWidget {
   const LoanCreateScreen({
     super.key,
@@ -38,6 +47,13 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
 
   DateTime? _dueDate;
   TimeOfDay? _dueTime;
+
+  /// Deux façons de fixer l'échéance : une date précise, ou une durée à
+  /// compter de l'envoi. Voir [_DueMode].
+  _DueMode _dueMode = _DueMode.date;
+  final _daysController = TextEditingController();
+  final _hoursController = TextEditingController();
+  final _minutesController = TextEditingController();
   List<Map<String, dynamic>> _allUsers = [];
   final List<Map<String, dynamic>> _selectedLenders = [];
   bool _loadingUsers = false;
@@ -58,6 +74,9 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     _interestController.dispose();
     _noteController.dispose();
     _searchController.dispose();
+    _daysController.dispose();
+    _hoursController.dispose();
+    _minutesController.dispose();
     super.dispose();
   }
 
@@ -106,6 +125,36 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
   void _removeLender(String id) {
     setState(
         () => _selectedLenders.removeWhere((lender) => lender['id'] == id));
+  }
+
+  /// Durée saisie, ou `null` si les trois champs sont vides ou nuls.
+  Duration? _typedDuration() {
+    final d = int.tryParse(_daysController.text.trim()) ?? 0;
+    final h = int.tryParse(_hoursController.text.trim()) ?? 0;
+    final m = int.tryParse(_minutesController.text.trim()) ?? 0;
+    if (d <= 0 && h <= 0 && m <= 0) return null;
+    return Duration(days: d, hours: h, minutes: m);
+  }
+
+  /// Échéance effective selon le mode retenu.
+  ///
+  /// En mode durée, elle est calculée au moment de la validation : saisir
+  /// « 2 jours » doit compter à partir de l'envoi, pas de l'ouverture de
+  /// l'écran.
+  DateTime? _resolveDue() {
+    if (_dueMode == _DueMode.duration) {
+      final duration = _typedDuration();
+      return duration == null ? null : DateTime.now().add(duration);
+    }
+    if (_dueDate == null) return null;
+    final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
+    return DateTime(
+      _dueDate!.year,
+      _dueDate!.month,
+      _dueDate!.day,
+      t.hour,
+      t.minute,
+    );
   }
 
   Future<void> _pickDate() async {
@@ -181,8 +230,30 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
       return;
     }
 
-    if (_dueDate == null) {
-      AppFeedback.warning(context, 'Une date d\'échéance est requise.');
+    final combinedDue = _resolveDue();
+    if (combinedDue == null) {
+      AppFeedback.warning(
+        context,
+        _dueMode == _DueMode.date
+            ? 'Une date d\'échéance est requise.'
+            : 'Une durée est requise.',
+      );
+      return;
+    }
+
+    final now = DateTime.now();
+    if (combinedDue.isBefore(now.add(const Duration(minutes: 1)))) {
+      AppFeedback.warning(context, 'L\'échéance doit être dans le futur.');
+      return;
+    }
+    if (combinedDue.isAfter(
+      now.add(Duration(days: AppConstants.maxLoanDurationDays)),
+    )) {
+      AppFeedback.warning(
+        context,
+        'L\'échéance ne peut pas dépasser '
+        '${AppConstants.maxLoanDurationDays} jours.',
+      );
       return;
     }
 
@@ -208,7 +279,9 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
             ],
             Text('Montant : ${principal.toStringAsFixed(2)} SC'),
             Text('Intérêt : ${interestRate.toStringAsFixed(1)} %'),
-            Text('Échéance : ${_formatDue()}'),
+            // Passe par l'échéance résolue : en mode durée, _formatDue()
+            // déréférencerait _dueDate, qui est nul.
+            Text('Échéance : ${formatLoanDueDateLabel(combinedDue)}'),
           ],
         ),
         actions: [
@@ -226,14 +299,6 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
-    final combinedDue = DateTime(
-      _dueDate!.year,
-      _dueDate!.month,
-      _dueDate!.day,
-      t.hour,
-      t.minute,
-    );
     final note = _noteController.text.trim().isEmpty
         ? null
         : _noteController.text.trim();
@@ -509,52 +574,138 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // ── Date d'échéance ────────────────────────────────────────────
-                _Label('Date d\'échéance *'),
+                // ── Échéance ───────────────────────────────────────────────────
+                _Label('Échéance *'),
                 const SizedBox(height: 8),
-                InkWell(
-                  onTap: _pickDate,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).inputDecorationTheme.fillColor,
-                      borderRadius: BorderRadius.circular(12),
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<_DueMode>(
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                      textStyle: TextStyle(
+                        fontFamily: context.fontFamily,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.calendar_today_rounded, size: 18),
-                        const SizedBox(width: 12),
-                        Text(
-                          _dueDate == null
-                              ? 'Choisir une date et une heure'
-                              : _formatDue(),
-                          style: TextStyle(
-                            color: _dueDate == null
-                                ? Theme.of(context).colorScheme.onSurfaceVariant
-                                : null,
-                          ),
-                        ),
-                        if (_dueDate != null) ...[
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () => setState(() {
-                              _dueDate = null;
-                              _dueTime = null;
-                            }),
-                            child: const Icon(
-                              Icons.close_rounded,
-                              size: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                    segments: const [
+                      ButtonSegment(
+                        value: _DueMode.date,
+                        icon: Icon(Icons.event_rounded, size: 16),
+                        label: Text('Date'),
+                      ),
+                      ButtonSegment(
+                        value: _DueMode.duration,
+                        icon: Icon(Icons.timer_outlined, size: 16),
+                        label: Text('Durée'),
+                      ),
+                    ],
+                    selected: {_dueMode},
+                    onSelectionChanged: (s) =>
+                        setState(() => _dueMode = s.first),
                   ),
                 ),
+                const SizedBox(height: 10),
+                if (_dueMode == _DueMode.date)
+                  InkWell(
+                    onTap: _pickDate,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).inputDecorationTheme.fillColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded, size: 18),
+                          const SizedBox(width: 12),
+                          Text(
+                            _dueDate == null
+                                ? 'Choisir une date et une heure'
+                                : _formatDue(),
+                            style: TextStyle(
+                              color: _dueDate == null
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
+                                  : null,
+                            ),
+                          ),
+                          if (_dueDate != null) ...[
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () => setState(() {
+                                _dueDate = null;
+                                _dueTime = null;
+                              }),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  )
+                else ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DurationField(
+                          controller: _daysController,
+                          label: 'Jours',
+                          onChanged: () => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _DurationField(
+                          controller: _hoursController,
+                          label: 'Heures',
+                          onChanged: () => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _DurationField(
+                          controller: _minutesController,
+                          label: 'Minutes',
+                          onChanged: () => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Échéance résultante, recalculée à chaque frappe : la durée
+                  // seule ne dit pas grand-chose sans sa traduction en date.
+                  if (_typedDuration() != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.event_available_rounded,
+                          size: 15,
+                          color: context.accent,
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            'Échéance : ${formatLoanDueDateLabel(_resolveDue()!)}',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: context.accent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
                 const SizedBox(height: 20),
 
                 // ── Note ───────────────────────────────────────────────────────
@@ -565,7 +716,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   maxLength: 150,
                   maxLines: 2,
                   decoration: const InputDecoration(
-                    hintText: 'Raison du prêt…',
+                    hintText: 'Motif du prêt…',
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -581,6 +732,38 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Champ numérique compact pour une composante de la durée.
+class _DurationField extends StatelessWidget {
+  const _DurationField({
+    required this.controller,
+    required this.label,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      textAlign: TextAlign.center,
+      onChanged: (_) => onChanged(),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: '0',
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 14,
         ),
       ),
     );

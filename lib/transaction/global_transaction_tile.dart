@@ -28,10 +28,10 @@ class GlobalTransactionTile extends StatelessWidget {
     final isBuyerTransaction = transaction.type == TransactionType.purchase ||
         transaction.type == TransactionType.auction;
     final rawDescription = _visibleDescription;
-    // Sur un virement, la description est la raison saisie par l'envoyeur.
+    // Sur un virement, la description est le motif saisi par l'envoyeur.
     final description = (rawDescription != null &&
             transaction.type == TransactionType.transfer)
-        ? 'Raison : $rawDescription'
+        ? 'Motif : $rawDescription'
         : rawDescription;
 
     return Card(

@@ -2280,7 +2280,7 @@ Future<void> _showGiftDialog(
                 controller: noteCtrl,
                 maxLength: 120,
                 decoration: const InputDecoration(
-                  labelText: 'Raison (optionnelle)',
+                  labelText: 'Motif (optionnel)',
                   counterText: '',
                 ),
               ),
@@ -3428,7 +3428,7 @@ class _InputBar extends StatelessWidget {
                             focusedBorder: InputBorder.none,
                             disabledBorder: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
+                                horizontal: 15, vertical: 10),
                           ),
                         ),
                       ),

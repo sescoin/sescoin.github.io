@@ -114,36 +114,6 @@ class PublicProfileScreen extends ConsumerWidget {
                                     color: Colors.white.withValues(alpha: 0.7),
                                   ),
                                 ),
-                                if ((profile.quote ?? '').isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Icon(
-                                        Icons.format_quote_rounded,
-                                        size: 15,
-                                        color: Colors.white
-                                            .withValues(alpha: 0.65),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Expanded(
-                                        child: Text(
-                                          profile.quote!,
-                                          maxLines: 3,
-                                          style: TextStyle(
-                                            fontSize: 12.5,
-                                            height: 1.35,
-                                            fontStyle: FontStyle.italic,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white
-                                                .withValues(alpha: 0.9),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
                                 const SizedBox(height: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(

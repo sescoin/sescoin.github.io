@@ -29,7 +29,6 @@ import '../screens/home/accounts_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/home/leaderboard_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
-import '../screens/profile/quote_screen.dart';
 import '../screens/market/auction_detail_screen.dart';
 import '../screens/market/market_screen.dart';
 import '../screens/pay/pay_screen.dart';
@@ -64,7 +63,6 @@ class AppRoutes {
   static const String publicProfile = '/user/:username';
   static const String leaderboard = '/leaderboard';
   static const String accounts = '/accounts';
-  static const String quote = '/profile/quote';
   static const String transactionExplorer = '/explorer';
 
   static const String adminDashboard = '/admin';
@@ -248,11 +246,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.accounts,
         name: 'accounts',
         builder: (context, state) => const AccountsScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.quote,
-        name: 'quote',
-        builder: (context, state) => const QuoteScreen(),
       ),
       GoRoute(
         path: AppRoutes.adminReports,

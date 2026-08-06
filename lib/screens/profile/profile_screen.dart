@@ -752,27 +752,6 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.push(AppRoutes.quote),
-                    icon: const Icon(Icons.format_quote_rounded, size: 18),
-                    label: const Text('Citation'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(
-                        color: accent.withValues(alpha: 0.4),
-                      ),
-                      foregroundColor: accent,
-                      textStyle: TextStyle(
-                        fontFamily: context.fontFamily,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

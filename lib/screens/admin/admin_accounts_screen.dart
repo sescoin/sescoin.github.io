@@ -16,7 +16,6 @@ import '../../models/profile.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
-import '../../providers/service_providers.dart';
 
 class AdminAccountsScreen extends ConsumerStatefulWidget {
   const AdminAccountsScreen({super.key});
@@ -170,50 +169,8 @@ class _AdminAccountsScreenState extends ConsumerState<AdminAccountsScreen> {
         }
       case 'reset_password':
         await _resetPassword(ctx, profile);
-      case 'clear_quote':
-        await _clearQuote(ctx, profile);
       case 'delete':
         await _delete(ctx, profile.id, profile.displayName);
-    }
-  }
-
-  /// Retire la citation d'un compte jugée inappropriée.
-  Future<void> _clearQuote(BuildContext ctx, Profile profile) async {
-    final quote = profile.quote?.trim() ?? '';
-    if (quote.isEmpty) {
-      AppFeedback.info(ctx, 'Ce compte n\'a pas de citation.');
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: ctx,
-      builder: (dialogContext) => AppDialog(
-        icon: Icons.format_quote_rounded,
-        tone: AppDialogTone.danger,
-        title: 'Supprimer la citation ?',
-        subtitle: '@${profile.username}',
-        content: Text('« $quote »'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
-    try {
-      await ref.read(profileServiceProvider).clearQuote(profile.id);
-      ref.invalidate(allProfilesProvider);
-      if (ctx.mounted) AppFeedback.success(ctx, 'Citation supprimée.');
-    } catch (error) {
-      if (ctx.mounted) AppFeedback.error(ctx, error);
     }
   }
 
@@ -617,17 +574,6 @@ class _AccountCard extends StatelessWidget {
                           title: Text('Réinitialiser le mot de passe'),
                         ),
                       ),
-                      if ((profile.quote ?? '').isNotEmpty)
-                        const PopupMenuItem(
-                          value: 'clear_quote',
-                          child: ListTile(
-                            leading: Icon(
-                              Icons.format_quote_rounded,
-                              color: AppTheme.warning,
-                            ),
-                            title: Text('Supprimer la citation'),
-                          ),
-                        ),
                       const PopupMenuItem(
                         value: 'delete',
                         child: ListTile(

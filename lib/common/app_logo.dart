@@ -16,10 +16,11 @@ class AppLogo extends StatelessWidget {
     Color(0xFFE1502F),
   ];
 
-  /// Dans le fichier source (500 px), le disque noir ne mesure que 337 px, le
-  /// reste étant transparent. On agrandit d'autant pour que le disque remplisse
-  /// le cercle : sans cela, l'anneau cerclerait du vide.
-  static const _crop = 500 / 337;
+  /// Le fichier source est un carré noir plein : le détourage au cercle suffit
+  /// à obtenir la pastille. Un léger agrandissement donne simplement au « S »,
+  /// qui n'occupe qu'environ 30 % du cadre, une présence correcte une fois
+  /// rogné en rond.
+  static const _crop = 1.35;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +54,7 @@ class AppLogo extends StatelessWidget {
           child: Transform.scale(
             scale: _crop,
             child: Image.asset(
-              'assets/icons/logo.png',
+              'assets/icon/logo.png',
               fit: BoxFit.cover,
               filterQuality: FilterQuality.high,
               errorBuilder: (context, _, __) => Center(

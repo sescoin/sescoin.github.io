@@ -143,31 +143,6 @@ class _PodiumSpot extends StatelessWidget {
           const Text('👑', style: TextStyle(fontSize: 22)),
           const SizedBox(height: 4),
         ],
-        // Citation au-dessus de la photo, réservée au podium.
-        if ((profile.quote ?? '').isNotEmpty) ...[
-          Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: color.withValues(alpha: 0.35)),
-            ),
-            child: Text(
-              profile.quote!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10,
-                height: 1.3,
-                fontStyle: FontStyle.italic,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
-              ),
-            ),
-          ),
-        ],
         Container(
           padding: const EdgeInsets.all(2.5),
           decoration: BoxDecoration(

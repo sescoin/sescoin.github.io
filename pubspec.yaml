@@ -1,5 +1,5 @@
 name: ses_coin
-description: SES Coin - Monnaie locale de la classe de SES
+description: SES Coin
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -73,7 +73,7 @@ flutter:
   assets:
     - assets/images/
     - assets/animations/
-    - assets/icons/
+    - assets/icon/
 
 flutter_launcher_icons:
   android: true
@@ -82,12 +82,8 @@ flutter_launcher_icons:
     generate: true
     background_color: "#000000"
     theme_color: "#F5883C"
-  # Version aplatie sur fond noir. Le logo d'origine est transparent autour du
-  # disque : les lanceurs et l'écran d'accueil web comblaient ce vide en blanc,
-  # et iOS refuse purement et simplement les icônes dotées d'un canal alpha.
-  # logo.png (transparent) reste utilisé dans l'application, où il est détouré.
-  image_path: assets/icons/logo_opaque.png
+  image_path: assets/icon/logo.png
   remove_alpha_ios: true
   background_color_ios: "#000000"
   adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: assets/icons/logo_opaque.png
+  adaptive_icon_foreground: assets/icon/logo.png
