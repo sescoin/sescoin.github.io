@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../common/animations.dart';
 import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
+import '../../common/ban_dialog.dart';
 import '../../common/dispose_scope.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
@@ -155,7 +156,7 @@ class _AdminAccountsScreenState extends ConsumerState<AdminAccountsScreen> {
       case 'debit':
         await _adjustBalance(ctx, profile, action == 'debit');
       case 'ban':
-        await _ban(ctx, profile.id);
+        await _ban(ctx, profile);
       case 'unban':
         try {
           await ref.read(adminActionsProvider.notifier).unbanUser(profile.id);
@@ -322,41 +323,23 @@ class _AdminAccountsScreenState extends ConsumerState<AdminAccountsScreen> {
     }
   }
 
-  Future<void> _ban(BuildContext ctx, String userId) async {
-    final reasonCtrl = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: ctx,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Bannir le compte'),
-        content: TextField(
-          controller: reasonCtrl,
-          decoration: const InputDecoration(labelText: 'Raison (optionnelle)'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
-            child: const Text('Bannir'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) {
-      return;
-    }
+  Future<void> _ban(BuildContext ctx, Profile profile) async {
+    final request = await showBanDialog(ctx, profile.username);
+    if (request == null) return;
 
     try {
-      await ref.read(adminActionsProvider.notifier).banUser(
-            userId,
-            reason: reasonCtrl.text.isEmpty ? null : reasonCtrl.text,
+      await ref.read(adminActionsProvider.notifier).banUserTemp(
+            profile.id,
+            reason: request.reason,
+            minutes: request.minutes,
           );
       if (ctx.mounted) {
-        AppFeedback.success(ctx, 'Compte banni.');
+        AppFeedback.success(
+          ctx,
+          request.minutes == null
+              ? 'Compte suspendu sans terme.'
+              : 'Compte suspendu, levée automatique.',
+        );
       }
     } catch (error) {
       if (ctx.mounted) {

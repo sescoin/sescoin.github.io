@@ -2,7 +2,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/grouped_report.dart';
 import '../models/report.dart';
+import '../models/sanction.dart';
 import 'service_providers.dart';
+
+/// Journal des sanctions, les plus récentes d'abord.
+final sanctionsProvider = StreamProvider<List<Sanction>>((ref) {
+  return ref
+      .watch(supabaseClientProvider)
+      .from('sanctions')
+      .stream(primaryKey: ['id'])
+      .order('created_at', ascending: false)
+      .limit(200)
+      .map((rows) => rows.map(Sanction.fromJson).toList());
+});
+
+/// Signalements déjà retenus contre un compte : distingue le premier écart
+/// de la récidive.
+final confirmedReportsProvider =
+    FutureProvider.family<int, String>((ref, userId) {
+  return ref.read(profileServiceProvider).confirmedReportsCount(userId);
+});
 
 /// Signalements regroupés par message, du plus signalé au moins signalé.
 ///

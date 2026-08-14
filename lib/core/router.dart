@@ -29,6 +29,7 @@ import '../screens/home/accounts_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/home/leaderboard_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
+import '../screens/admin/admin_sanctions_screen.dart';
 import '../screens/market/auction_detail_screen.dart';
 import '../screens/market/market_screen.dart';
 import '../screens/pay/pay_screen.dart';
@@ -69,6 +70,7 @@ class AppRoutes {
   static const String adminRequests = '/admin/requests';
   static const String adminAccounts = '/admin/accounts';
   static const String adminReports = '/admin/reports';
+  static const String adminSanctions = '/admin/sanctions';
   static const String adminAvatarReview = '/admin/accounts/avatar/:userId';
   static const String adminMarketEdit = '/admin/market';
   static const String adminMarketHistory = '/admin/market/history';
@@ -251,6 +253,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.adminReports,
         name: 'adminReports',
         builder: (context, state) => const AdminReportsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminSanctions,
+        name: 'adminSanctions',
+        builder: (context, state) => const AdminSanctionsScreen(),
       ),
       GoRoute(
         path: AppRoutes.transactionExplorer,

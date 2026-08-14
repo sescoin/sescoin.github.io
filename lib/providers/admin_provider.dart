@@ -156,6 +156,26 @@ class AdminActionsNotifier extends StateNotifier<AdminActionState> {
     }
   }
 
+  /// Suspend un compte pour une durée donnée, ou sans terme si [minutes]
+  /// est nul.
+  Future<void> banUserTemp(
+    String userId, {
+    String? reason,
+    int? minutes,
+  }) async {
+    state = state.copyWith(isLoading: true, clearMessages: true);
+    try {
+      await _ref
+          .read(profileServiceProvider)
+          .banUserTemp(userId, reason, minutes);
+      state = state.copyWith(isLoading: false, successMessage: 'Compte suspendu');
+      _ref.invalidate(allProfilesProvider);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
   Future<void> unbanUser(String userId) async {
     state = state.copyWith(isLoading: true, clearMessages: true);
     try {

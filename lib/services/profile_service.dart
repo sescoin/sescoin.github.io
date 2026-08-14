@@ -200,6 +200,27 @@ class ProfileService {
     await _client.rpc('admin_delete_user', params: {'p_user_id': userId});
   }
 
+  /// Suspend un compte, définitivement ou pour une durée donnée.
+  ///
+  /// [minutes] nul ou négatif vaut suspension sans terme ; sinon la levée est
+  /// automatique, assurée par une tâche planifiée côté base.
+  Future<void> banUserTemp(String userId, String? reason, int? minutes) async {
+    await _client.rpc('admin_ban_user_temp', params: {
+      'p_user_id': userId,
+      'p_reason': reason,
+      'p_minutes': minutes,
+    });
+  }
+
+  /// Nombre de signalements déjà retenus contre un compte.
+  Future<int> confirmedReportsCount(String userId) async {
+    final result = await _client.rpc(
+      'confirmed_reports_count',
+      params: {'p_user_id': userId},
+    );
+    return (result as num?)?.toInt() ?? 0;
+  }
+
   /// Redéfinit le mot de passe d'un compte (RPC réservée à l'administrateur).
   Future<void> resetPassword(String userId, String newPassword) async {
     await _client.rpc(

@@ -4,9 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../common/animations.dart';
-import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
-import '../../common/dispose_scope.dart';
+import '../../common/ban_dialog.dart';
 import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
@@ -86,6 +85,14 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                   child: _GroupCard(
                     group: visible[i],
                     dateFmt: _dateFmt,
+                    // Récidive : un premier écart et un cinquième n'appellent
+                    // pas la même réponse.
+                    confirmed: ref
+                            .watch(confirmedReportsProvider(
+                              visible[i].reportedId,
+                            ))
+                            .valueOrNull ??
+                        0,
                     onReview: (status) => _review(visible[i], status),
                     onBan: () => _ban(visible[i]),
                     onExport: () => _export(visible[i]),
@@ -117,50 +124,25 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
   }
 
   Future<void> _ban(GroupedReport group) async {
-    final reasonCtrl = TextEditingController(
-      text: 'Message inapproprié signalé',
+    final request = await showBanDialog(
+      context,
+      group.reportedUsername,
+      initialReason: 'Message inapproprié signalé',
     );
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => DisposeScope(
-        disposables: [reasonCtrl],
-        child: AppDialog(
-          icon: Icons.block_rounded,
-          tone: AppDialogTone.danger,
-          title: 'Bannir @${group.reportedUsername} ?',
-          subtitle: '${group.reportCount} signalement'
-              '${group.reportCount > 1 ? 's' : ''}',
-          content: TextField(
-            controller: reasonCtrl,
-            decoration: const InputDecoration(labelText: 'Motif'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Bannir'),
-            ),
-          ],
-        ),
-      ),
-    );
-    final reason = reasonCtrl.text.trim();
-    if (confirmed != true) return;
+    if (request == null) return;
 
     try {
-      await ref.read(adminActionsProvider.notifier).banUser(
+      await ref.read(adminActionsProvider.notifier).banUserTemp(
             group.reportedId,
-            reason: reason.isEmpty ? null : reason,
+            reason: request.reason,
+            minutes: request.minutes,
           );
+      // Suspendre vaut traitement : le signalement quitte la file d'attente.
       await ref
           .read(reportActionsProvider.notifier)
           .setStatusMany(group.reportIds, 'reviewed');
       ref.invalidate(groupedReportsProvider);
-      if (mounted) AppFeedback.success(context, 'Compte banni.');
+      if (mounted) AppFeedback.success(context, 'Compte suspendu.');
     } catch (error) {
       if (mounted) AppFeedback.error(context, error);
     }
@@ -229,6 +211,7 @@ class _GroupCard extends StatelessWidget {
   const _GroupCard({
     required this.group,
     required this.dateFmt,
+    required this.confirmed,
     required this.onReview,
     required this.onBan,
     required this.onExport,
@@ -236,6 +219,9 @@ class _GroupCard extends StatelessWidget {
 
   final GroupedReport group;
   final DateFormat dateFmt;
+
+  /// Signalements déjà retenus contre l'auteur, tous messages confondus.
+  final int confirmed;
   final ValueChanged<String> onReview;
   final VoidCallback onBan;
   final VoidCallback onExport;
@@ -296,6 +282,27 @@ class _GroupCard extends StatelessWidget {
                     size: 14,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
+                  if (confirmed > 0) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.negative.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'récidive ×$confirmed',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.negative,
+                        ),
+                      ),
+                    ),
+                  ],
                   const Spacer(),
                   if (!group.isPending)
                     Text(

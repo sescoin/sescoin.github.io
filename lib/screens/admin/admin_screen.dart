@@ -150,6 +150,14 @@ class AdminScreen extends ConsumerWidget {
             ),
             _AdminTile(
               index: 2,
+              icon: Icons.gavel_rounded,
+              title: 'Journal des sanctions',
+              subtitle: 'Mesures automatiques et décisions prises',
+              onTap: () => context.push(AppRoutes.adminSanctions),
+              color: AppTheme.info,
+            ),
+            _AdminTile(
+              index: 2,
               icon: Icons.mark_email_unread_rounded,
               title: 'Demandes de compte',
               subtitle: 'Approuver ou refuser les demandes',
