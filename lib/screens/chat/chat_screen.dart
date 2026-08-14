@@ -908,6 +908,9 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                         onLongPress: widget.isAdmin
                             ? () => _showAdminAnnouncementActions(msg)
                             : null,
+                        onReport: isOwn
+                            ? null
+                            : () => _confirmAndReport(context, ref, msg),
                       );
                     },
                   );
@@ -1384,44 +1387,6 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     }
   }
 
-  /// Transmet un message à l'administration.
-  Future<void> _reportMessage(ChatMessage message) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AppDialog(
-        icon: Icons.flag_rounded,
-        tone: AppDialogTone.danger,
-        title: 'Signaler ce message ?',
-        subtitle: '@${message.username}',
-        content: const Text(
-          'Le message sera transmis à l\'administration, qui décidera de la '
-          'suite à donner. Un même message ne peut être signalé qu\'une fois.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Signaler'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
-    try {
-      await ref.read(chatServiceProvider).reportMessage(message.id);
-      if (mounted) {
-        AppFeedback.success(context, 'Signalement transmis.');
-      }
-    } catch (error) {
-      if (mounted) AppFeedback.error(context, error);
-    }
-  }
-
   void _showMessageActions(
       BuildContext context, ChatMessage message, bool isOwn) {
     // Un compte muet ne peut ni modifier ni supprimer ses messages.
@@ -1497,7 +1462,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                     color: AppTheme.warning,
                     onTap: () {
                       Navigator.pop(context);
-                      _reportMessage(message);
+                      _confirmAndReport(context, ref, message);
                     },
                   ),
                   const SizedBox(height: 8),
@@ -1508,6 +1473,18 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                   color: Colors.red,
                   onTap: () {
                     Navigator.pop(context);
+                    // La règle est appliquée par la base ; ce contrôle évite
+                    // seulement un aller-retour pour rien.
+                    final age =
+                        DateTime.now().difference(message.createdAt).inSeconds;
+                    if (isOwn && !widget.isAdmin && age < 15) {
+                      AppFeedback.warning(
+                        context,
+                        'Un message ne peut être supprimé que 15 secondes '
+                        'après son envoi (encore ${15 - age} s).',
+                      );
+                      return;
+                    }
                     _deleteMessage(message);
                   },
                 ),
@@ -1636,6 +1613,9 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                         onLongPress: canInteract
                             ? () => _showMessageActions(context, msg, isOwn)
                             : null,
+                        onReport: isOwn
+                            ? null
+                            : () => _confirmAndReport(context, ref, msg),
                       );
                     },
                   );
@@ -2890,6 +2870,7 @@ class _MessageBubble extends StatelessWidget {
     required this.readers,
     required this.onTapUsername,
     this.onLongPress,
+    this.onReport,
     this.showEditedLabel = true,
   });
 
@@ -2899,6 +2880,10 @@ class _MessageBubble extends StatelessWidget {
   final List<ChatRead> readers;
   final VoidCallback onTapUsername;
   final VoidCallback? onLongPress;
+
+  /// Signalement du message. `null` sur ses propres messages, qu'on ne
+  /// signale pas.
+  final VoidCallback? onReport;
 
   /// Affiche « (modifié) » sous le message. Désactivé pour les annonces.
   final bool showEditedLabel;
@@ -3072,8 +3057,86 @@ class _MessageBubble extends StatelessWidget {
               ],
             ),
           ),
+          // Signalement à portée de pouce : l'appui long reste disponible,
+          // mais rien ne l'annonçait.
+          if (!isOwn && onReport != null) ...[
+            const SizedBox(width: 2),
+            _ReportButton(onTap: onReport!),
+          ],
           if (isOwn) const SizedBox(width: 6),
         ],
+      ),
+    );
+  }
+}
+
+/// Demande confirmation puis transmet un message à l'administration.
+///
+/// Fonction libre plutôt que méthode : les deux corps de chat, annonces et
+/// classe, l'appellent à l'identique.
+Future<void> _confirmAndReport(
+  BuildContext context,
+  WidgetRef ref,
+  ChatMessage message,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AppDialog(
+      icon: Icons.flag_rounded,
+      tone: AppDialogTone.danger,
+      title: 'Signaler ce message ?',
+      subtitle: '@${message.username}',
+      content: const Text(
+        'Le message sera transmis à l\'administration, qui décidera de la '
+        'suite à donner. Un même message ne peut être signalé qu\'une fois.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Signaler'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+
+  try {
+    await ref.read(chatServiceProvider).reportMessage(message.id);
+    if (context.mounted) {
+      AppFeedback.success(context, 'Signalement transmis.');
+    }
+  } catch (error) {
+    if (context.mounted) AppFeedback.error(context, error);
+  }
+}
+
+/// Petit drapeau discret accolé aux messages des autres.
+class _ReportButton extends StatelessWidget {
+  const _ReportButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context)
+        .colorScheme
+        .onSurfaceVariant
+        .withValues(alpha: 0.45);
+
+    return Tooltip(
+      message: 'Signaler ce message',
+      child: InkResponse(
+        onTap: onTap,
+        radius: 18,
+        child: Padding(
+          padding: const EdgeInsets.all(5),
+          child: Icon(Icons.outlined_flag_rounded, size: 15, color: color),
+        ),
       ),
     );
   }

@@ -11,39 +11,39 @@ import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
 import '../../core/theme.dart';
-import '../../models/report.dart';
+import '../../models/grouped_report.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/report_provider.dart';
+import '../../services/file_export/file_export.dart';
 
-/// Signalements remontés par les élèves depuis le chat.
+/// Signalements remontés par les élèves, regroupés par message.
 class AdminReportsScreen extends ConsumerStatefulWidget {
   const AdminReportsScreen({super.key});
 
   @override
-  ConsumerState<AdminReportsScreen> createState() =>
-      _AdminReportsScreenState();
+  ConsumerState<AdminReportsScreen> createState() => _AdminReportsScreenState();
 }
 
 class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
   static final _dateFmt = DateFormat('dd/MM/yyyy à HH:mm', 'fr');
+  static final _stampFmt = DateFormat('dd/MM/yyyy HH:mm:ss', 'fr');
 
   bool _pendingOnly = true;
+  bool _exporting = false;
 
   @override
   Widget build(BuildContext context) {
-    final reportsAsync = ref.watch(reportsProvider);
+    final groupsAsync = ref.watch(groupedReportsProvider);
     final actionState = ref.watch(reportActionsProvider);
 
     return LoadingOverlay(
-      isLoading: actionState.isLoading,
+      isLoading: actionState.isLoading || _exporting,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Signalements'),
           actions: [
             IconButton(
-              tooltip: _pendingOnly
-                  ? 'Voir tous les signalements'
-                  : 'Voir les signalements en attente',
+              tooltip: _pendingOnly ? 'Tout afficher' : 'En attente seulement',
               icon: Icon(
                 _pendingOnly
                     ? Icons.filter_alt_rounded
@@ -53,15 +53,15 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
             ),
           ],
         ),
-        body: reportsAsync.when(
+        body: groupsAsync.when(
           loading: () => const InlineLoader(message: 'Chargement...'),
           error: (e, _) => ErrorRetry(
             message: 'Impossible de charger les signalements',
-            onRetry: () => ref.invalidate(reportsProvider),
+            onRetry: () => ref.invalidate(groupedReportsProvider),
           ),
-          data: (reports) {
+          data: (groups) {
             final visible =
-                _pendingOnly ? reports.where((r) => r.isPending).toList() : reports;
+                _pendingOnly ? groups.where((g) => g.isPending).toList() : groups;
 
             if (visible.isEmpty) {
               return EmptyState(
@@ -75,18 +75,21 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
               );
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              itemCount: visible.length,
-              itemBuilder: (context, i) => FadeSlideIn.staggered(
-                key: ValueKey(visible[i].id),
-                index: i,
-                child: _ReportCard(
-                  report: visible[i],
-                  dateFmt: _dateFmt,
-                  onReview: (status) => _setStatus(visible[i], status),
-                  onBan: () => _ban(visible[i]),
-                  onDelete: () => _delete(visible[i]),
+            return RefreshIndicator(
+              onRefresh: () async => ref.invalidate(groupedReportsProvider),
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                itemCount: visible.length,
+                itemBuilder: (context, i) => FadeSlideIn.staggered(
+                  key: ValueKey('${visible[i].messageId}-${visible[i].reportedId}'),
+                  index: i,
+                  child: _GroupCard(
+                    group: visible[i],
+                    dateFmt: _dateFmt,
+                    onReview: (status) => _review(visible[i], status),
+                    onBan: () => _ban(visible[i]),
+                    onExport: () => _export(visible[i]),
+                  ),
                 ),
               ),
             );
@@ -96,9 +99,12 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
     );
   }
 
-  Future<void> _setStatus(Report report, String status) async {
+  Future<void> _review(GroupedReport group, String status) async {
     try {
-      await ref.read(reportActionsProvider.notifier).setStatus(report.id, status);
+      await ref
+          .read(reportActionsProvider.notifier)
+          .setStatusMany(group.reportIds, status);
+      ref.invalidate(groupedReportsProvider);
       if (mounted) {
         AppFeedback.success(
           context,
@@ -110,37 +116,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
     }
   }
 
-  Future<void> _delete(Report report) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AppDialog(
-        icon: Icons.delete_outline_rounded,
-        tone: AppDialogTone.danger,
-        title: 'Supprimer ce signalement ?',
-        content: const Text('Il disparaîtra définitivement de la liste.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppTheme.negative),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      await ref.read(reportActionsProvider.notifier).delete(report.id);
-    } catch (error) {
-      if (mounted) AppFeedback.error(context, error);
-    }
-  }
-
-  /// Bannit l'auteur du message et marque le signalement comme traité.
-  Future<void> _ban(Report report) async {
+  Future<void> _ban(GroupedReport group) async {
     final reasonCtrl = TextEditingController(
       text: 'Message inapproprié signalé',
     );
@@ -151,7 +127,9 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
         child: AppDialog(
           icon: Icons.block_rounded,
           tone: AppDialogTone.danger,
-          title: 'Bannir @${report.reportedUsername} ?',
+          title: 'Bannir @${group.reportedUsername} ?',
+          subtitle: '${group.reportCount} signalement'
+              '${group.reportCount > 1 ? 's' : ''}',
           content: TextField(
             controller: reasonCtrl,
             decoration: const InputDecoration(labelText: 'Motif'),
@@ -175,44 +153,104 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
 
     try {
       await ref.read(adminActionsProvider.notifier).banUser(
-            report.reportedId,
+            group.reportedId,
             reason: reason.isEmpty ? null : reason,
           );
       await ref
           .read(reportActionsProvider.notifier)
-          .setStatus(report.id, 'reviewed');
+          .setStatusMany(group.reportIds, 'reviewed');
+      ref.invalidate(groupedReportsProvider);
       if (mounted) AppFeedback.success(context, 'Compte banni.');
     } catch (error) {
       if (mounted) AppFeedback.error(context, error);
     }
   }
+
+  /// Construit puis enregistre la transcription complète du chat d'origine.
+  Future<void> _export(GroupedReport group) async {
+    setState(() => _exporting = true);
+    try {
+      final lines =
+          await ref.read(chatTranscriptProvider(group.classId).future);
+
+      final buffer = StringBuffer()
+        ..writeln('SES Coin — transcription de discussion')
+        ..writeln(
+          group.isClassChat ? 'Chat de classe' : 'Chat des annonces',
+        )
+        ..writeln('Export du ${_stampFmt.format(DateTime.now())}')
+        ..writeln('Signalement visant @${group.reportedUsername}')
+        ..writeln('${lines.length} message(s)')
+        ..writeln('${'=' * 60}\n');
+
+      for (final line in lines) {
+        final stamp = _stampFmt.format(line.createdAt.toLocal());
+        buffer.writeln('[$stamp] @${line.username} (${line.displayName})');
+
+        if (line.isDeleted) {
+          buffer.writeln('  [SUPPRIMÉ PAR SON AUTEUR]');
+        }
+        if (line.isCensored) {
+          buffer.writeln('  [CENSURÉ AUTOMATIQUEMENT]');
+        }
+
+        // Un message modifié est restitué dans ses deux versions : c'est
+        // souvent l'original qui a motivé le signalement.
+        if (line.originalContent != null) {
+          buffer.writeln('  [MODIFIÉ'
+              '${line.editedAt != null ? ' le ${_stampFmt.format(line.editedAt!.toLocal())}' : ''}]');
+          buffer.writeln('  Version d\'origine : ${line.originalContent}');
+          buffer.writeln('  Version actuelle  : ${line.content}');
+        } else {
+          buffer.writeln('  ${line.content}');
+        }
+        buffer.writeln();
+      }
+
+      final name = 'sescoin-discussion-'
+          '${DateFormat('yyyyMMdd-HHmmss').format(DateTime.now())}.txt';
+      final where = await saveTextFile(name, buffer.toString());
+
+      if (!mounted) return;
+      if (where == null) {
+        AppFeedback.error(context, 'Export impossible sur cet appareil.');
+      } else {
+        AppFeedback.success(context, 'Transcription enregistrée ($where).');
+      }
+    } catch (error) {
+      if (mounted) AppFeedback.error(context, error);
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
 }
 
-class _ReportCard extends StatelessWidget {
-  const _ReportCard({
-    required this.report,
+class _GroupCard extends StatelessWidget {
+  const _GroupCard({
+    required this.group,
     required this.dateFmt,
     required this.onReview,
     required this.onBan,
-    required this.onDelete,
+    required this.onExport,
   });
 
-  final Report report;
+  final GroupedReport group;
   final DateFormat dateFmt;
   final ValueChanged<String> onReview;
   final VoidCallback onBan;
-  final VoidCallback onDelete;
+  final VoidCallback onExport;
 
-  (String, Color) get _statusLabel => switch (report.status) {
-        'reviewed' => ('Traité', AppTheme.positive),
-        'dismissed' => ('Écarté', Colors.grey),
-        _ => ('En attente', AppTheme.warning),
-      };
+  /// Plus un message est signalé, plus la pastille tire vers le rouge.
+  Color _severityColor() {
+    if (group.reportCount >= 5) return AppTheme.negative;
+    if (group.reportCount >= 3) return AppTheme.warning;
+    return AppTheme.info;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final (statusLabel, statusColor) = _statusLabel;
+    final severity = _severityColor();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -226,43 +264,51 @@ class _ReportCard extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                      horizontal: 9,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.16),
+                      color: severity.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: Text(
-                      statusLabel,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        color: statusColor,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.flag_rounded, size: 13, color: severity),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${group.reportCount} signalement'
+                          '${group.reportCount > 1 ? 's' : ''}',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: severity,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
                   Icon(
-                    report.isClassChat
+                    group.isClassChat
                         ? Icons.school_rounded
                         : Icons.campaign_rounded,
                     size: 14,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                   const Spacer(),
-                  Text(
-                    dateFmt.format(report.createdAt.toLocal()),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: theme.colorScheme.onSurfaceVariant,
+                  if (!group.isPending)
+                    Text(
+                      'traité',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
-              // Contenu au moment du signalement : le message d'origine peut
-              // avoir été modifié ou supprimé depuis.
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(11),
@@ -272,25 +318,67 @@ class _ReportCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  report.messageContent,
+                  group.messageContent,
                   style: const TextStyle(fontSize: 13.5, height: 1.4),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               _Line(
                 icon: Icons.person_rounded,
                 label: 'Auteur',
-                value: '@${report.reportedUsername}',
                 color: AppTheme.negative,
-                onTap: () => context.push('/user/${report.reportedUsername}'),
+                child: InkWell(
+                  onTap: () => context.push('/user/${group.reportedUsername}'),
+                  child: Text(
+                    '@${group.reportedUsername}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 6),
               _Line(
                 icon: Icons.flag_outlined,
                 label: 'Signalé par',
-                value: '@${report.reporterUsername}',
                 color: theme.colorScheme.onSurfaceVariant,
-                onTap: () => context.push('/user/${report.reporterUsername}'),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final r in group.reporters)
+                      InkWell(
+                        onTap: () => context.push('/user/$r'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '@$r',
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Premier signalement ${dateFmt.format(group.firstReportedAt.toLocal())}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const Divider(height: 20),
               Wrap(
@@ -298,7 +386,15 @@ class _ReportCard extends StatelessWidget {
                 runSpacing: 6,
                 alignment: WrapAlignment.end,
                 children: [
-                  if (report.isPending) ...[
+                  TextButton.icon(
+                    onPressed: onExport,
+                    icon: const Icon(Icons.download_rounded, size: 16),
+                    label: const Text('Discussion'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (group.isPending) ...[
                     TextButton.icon(
                       onPressed: () => onReview('dismissed'),
                       icon: const Icon(Icons.close_rounded, size: 16),
@@ -311,9 +407,8 @@ class _ReportCard extends StatelessWidget {
                       onPressed: () => onReview('reviewed'),
                       icon: const Icon(Icons.check_rounded, size: 16),
                       label: const Text('Traité'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.positive,
-                      ),
+                      style:
+                          TextButton.styleFrom(foregroundColor: AppTheme.positive),
                     ),
                     FilledButton.icon(
                       onPressed: onBan,
@@ -327,15 +422,7 @@ class _ReportCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ] else
-                    TextButton.icon(
-                      onPressed: onDelete,
-                      icon: const Icon(Icons.delete_outline_rounded, size: 16),
-                      label: const Text('Supprimer'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.negative,
-                      ),
-                    ),
+                  ],
                 ],
               ),
             ],
@@ -350,52 +437,40 @@ class _Line extends StatelessWidget {
   const _Line({
     required this.icon,
     required this.label,
-    required this.value,
     required this.color,
-    required this.onTap,
+    required this.child,
   });
 
   final IconData icon;
   final String label;
-  final String value;
   final Color color;
-  final VoidCallback onTap;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          children: [
-            Icon(icon, size: 15, color: color),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 86,
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            Flexible(
-              child: Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 15, color: color),
         ),
-      ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 82,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+        Expanded(child: child),
+      ],
     );
   }
 }
