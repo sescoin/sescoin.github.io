@@ -19,7 +19,9 @@ import '../../providers/report_provider.dart';
 class AdminSanctionsScreen extends ConsumerWidget {
   const AdminSanctionsScreen({super.key});
 
-  static final _dateFmt = DateFormat('dd/MM/yyyy à HH:mm', 'fr');
+  // Sans locale : le format est purement numérique, et `intl` exige un
+  // initializeDateFormatting() préalable dès qu'on en précise une.
+  static final _dateFmt = DateFormat('dd/MM/yyyy à HH:mm');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -24,8 +24,10 @@ class AdminReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
-  static final _dateFmt = DateFormat('dd/MM/yyyy à HH:mm', 'fr');
-  static final _stampFmt = DateFormat('dd/MM/yyyy HH:mm:ss', 'fr');
+  // Sans locale : ces formats sont purement numériques, et `intl` exige un
+  // initializeDateFormatting() préalable dès qu'on en précise une.
+  static final _dateFmt = DateFormat('dd/MM/yyyy à HH:mm');
+  static final _stampFmt = DateFormat('dd/MM/yyyy HH:mm:ss');
 
   bool _pendingOnly = true;
   bool _exporting = false;
