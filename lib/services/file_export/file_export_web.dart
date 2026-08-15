@@ -9,8 +9,10 @@ import 'package:web/web.dart' as web;
 /// peu fournie.
 Future<String?> saveTextFile(String fileName, String contents) async {
   try {
+    // BOM en tête : sans lui, la plupart des lecteurs de texte mobiles
+    // supposent un encodage local et affichent les accents de travers.
     final blob = web.Blob(
-      [contents.toJS].toJS,
+      ['﻿$contents'.toJS].toJS,
       web.BlobPropertyBag(type: 'text/plain;charset=utf-8'),
     );
     final url = web.URL.createObjectURL(blob);

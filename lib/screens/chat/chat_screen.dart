@@ -908,9 +908,8 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                         onLongPress: widget.isAdmin
                             ? () => _showAdminAnnouncementActions(msg)
                             : null,
-                        onReport: isOwn
-                            ? null
-                            : () => _confirmAndReport(context, ref, msg),
+                        // Les annonces émanent de l'administrateur : rien à
+                        // lui signaler. La règle est aussi appliquée en base.
                       );
                     },
                   );

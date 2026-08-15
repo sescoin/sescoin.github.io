@@ -9,7 +9,9 @@ Future<String?> saveTextFile(String fileName, String contents) async {
     final file = File(
       '${Directory.systemTemp.path}${Platform.pathSeparator}$fileName',
     );
-    await file.writeAsString(contents);
+    // BOM en tête : sans lui, la plupart des lecteurs de texte mobiles
+    // supposent un encodage local et affichent les accents de travers.
+    await file.writeAsString('﻿$contents');
     return file.path;
   } catch (_) {
     return null;

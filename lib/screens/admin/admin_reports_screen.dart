@@ -43,14 +43,15 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
         appBar: AppBar(
           title: const Text('Signalements'),
           actions: [
-            IconButton(
-              tooltip: _pendingOnly ? 'Tout afficher' : 'En attente seulement',
-              icon: Icon(
-                _pendingOnly
-                    ? Icons.filter_alt_rounded
-                    : Icons.filter_alt_off_rounded,
-              ),
+            // Libellé plutôt qu'une icône seule : l'état du filtre n'était
+            // pas lisible, et le bouton passait pour inopérant tant que tous
+            // les signalements étaient en attente.
+            TextButton(
               onPressed: () => setState(() => _pendingOnly = !_pendingOnly),
+              child: Text(
+                _pendingOnly ? 'En attente' : 'Tous',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),
@@ -157,8 +158,10 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
       final lines =
           await ref.read(chatTranscriptProvider(group.classId).future);
 
+      // Tirets simples et non cadratins : ces derniers ressortent souvent en
+      // caractere inconnu dans les lecteurs de texte basiques.
       final buffer = StringBuffer()
-        ..writeln('SES Coin — transcription de discussion')
+        ..writeln('SES Coin - discussion')
         ..writeln(
           group.isClassChat ? 'Chat de classe' : 'Chat des annonces',
         )
@@ -390,50 +393,70 @@ class _GroupCard extends StatelessWidget {
                 ),
               ),
               const Divider(height: 20),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                alignment: WrapAlignment.end,
+              // Grille de deux colonnes plutôt qu'un Wrap : sur mobile, ce
+              // dernier renvoyait les boutons à la ligne sans alignement.
+              Row(
                 children: [
-                  TextButton.icon(
-                    onPressed: onExport,
-                    icon: const Icon(Icons.download_rounded, size: 16),
-                    label: const Text('Discussion'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.onSurfaceVariant,
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onExport,
+                      icon: const Icon(Icons.download_rounded, size: 16),
+                      label: const Text('Discussion'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.onSurfaceVariant,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
                     ),
                   ),
                   if (group.isPending) ...[
-                    TextButton.icon(
-                      onPressed: () => onReview('dismissed'),
-                      icon: const Icon(Icons.close_rounded, size: 16),
-                      label: const Text('Écarter'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: () => onReview('reviewed'),
-                      icon: const Icon(Icons.check_rounded, size: 16),
-                      label: const Text('Traité'),
-                      style:
-                          TextButton.styleFrom(foregroundColor: AppTheme.positive),
-                    ),
-                    FilledButton.icon(
-                      onPressed: onBan,
-                      icon: const Icon(Icons.block_rounded, size: 16),
-                      label: const Text('Bannir'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.negative,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => onReview('dismissed'),
+                        icon: const Icon(Icons.remove_circle_outline, size: 16),
+                        label: const Text('Sans suite'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.colorScheme.onSurfaceVariant,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
                       ),
                     ),
                   ],
                 ],
               ),
+              if (group.isPending) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => onReview('reviewed'),
+                        icon: const Icon(Icons.check_rounded, size: 16),
+                        label: const Text('Retenu'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.positive,
+                          side: BorderSide(
+                            color: AppTheme.positive.withValues(alpha: 0.5),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: onBan,
+                        icon: const Icon(Icons.block_rounded, size: 16),
+                        label: const Text('Suspendre'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.negative,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

@@ -680,21 +680,21 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                       ),
                     ],
                   ),
-                  // Échéance résultante, recalculée à chaque frappe : la durée
-                  // seule ne dit pas grand-chose sans sa traduction en date.
+                  // Pas de date affichée ici : en mode durée, l'échéance ne
+                  // sera fixée qu'à l'acceptation du prêt.
                   if (_typedDuration() != null) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         Icon(
-                          Icons.event_available_rounded,
+                          Icons.info_outline_rounded,
                           size: 15,
                           color: context.accent,
                         ),
                         const SizedBox(width: 7),
                         Expanded(
                           child: Text(
-                            'Échéance : ${formatLoanDueDateLabel(_resolveDue()!)}',
+                            'L\'échéance partira de l\'acceptation du prêt.',
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
