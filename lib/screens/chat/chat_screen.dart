@@ -2012,7 +2012,8 @@ class _LoanRequestBubble extends StatelessWidget {
                       ),
                       if (isAccepted ||
                           message.loanInterestRate != null ||
-                          message.loanDueDate != null) ...[
+                          message.loanDueDate != null ||
+                          message.loanDurationMinutes != null) ...[
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 6,
@@ -2030,10 +2031,20 @@ class _LoanRequestBubble extends StatelessWidget {
                                 label:
                                     '${message.loanInterestRate!.toStringAsFixed(message.loanInterestRate! % 1 == 0 ? 0 : 1)}% d\'intérêt',
                               ),
+                            // Tant que la demande n'est pas acceptée, une
+                            // durée reste une durée : l'échéance n'existe
+                            // pas encore.
                             if (message.loanDueDate != null)
                               _LoanTag(
                                 icon: Icons.event_rounded,
                                 label: _loanDueDateLabel(message.loanDueDate!),
+                              )
+                            else if (message.loanDurationMinutes != null)
+                              _LoanTag(
+                                icon: Icons.timer_outlined,
+                                label: formatLoanDurationLabel(
+                                  message.loanDurationMinutes!,
+                                ),
                               ),
                           ],
                         ),

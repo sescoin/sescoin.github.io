@@ -17,6 +17,7 @@ class ChatMessage {
     this.loanNote,
     this.loanInterestRate,
     this.loanDueDate,
+    this.loanDurationMinutes,
     this.loanStatus,
     this.loanId,
     this.loanAcceptedBy,
@@ -43,6 +44,10 @@ class ChatMessage {
   final String? loanNote;
   final double? loanInterestRate;
   final DateTime? loanDueDate;
+
+  /// Durée demandée, quand l'emprunteur a choisi un délai plutôt qu'une date.
+  /// L'échéance n'est alors connue qu'une fois le prêt accepté.
+  final int? loanDurationMinutes;
   final String? loanStatus;
   final String? loanId;
   final String? loanAcceptedBy;
@@ -86,6 +91,7 @@ class ChatMessage {
       loanDueDate: json['loan_due_date'] != null
           ? DateTime.parse(json['loan_due_date'] as String).toLocal()
           : null,
+      loanDurationMinutes: json['loan_duration_minutes'] as int?,
       loanStatus: json['loan_status'] as String?,
       loanId: json['loan_id'] as String?,
       loanAcceptedBy: json['loan_accepted_by'] as String?,

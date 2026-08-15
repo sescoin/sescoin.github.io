@@ -96,6 +96,7 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
     DateTime? dueDate,
     String? note,
     String? classId,
+    int? durationMinutes,
   }) async {
     state = state.copyWith(isSending: true, clearError: true);
     try {
@@ -105,6 +106,7 @@ class ChatActionNotifier extends StateNotifier<ChatState> {
             dueDate: dueDate,
             note: note,
             classId: classId,
+            durationMinutes: durationMinutes,
           );
       state = state.copyWith(isSending: false);
       return result;

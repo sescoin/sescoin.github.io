@@ -314,6 +314,11 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   dueDate: combinedDue,
                   note: note,
                   classId: widget.chatClassId,
+                  // En mode durée, on transmet la durée et non une date : le
+                  // délai doit courir à partir de l'acceptation.
+                  durationMinutes: _dueMode == _DueMode.duration
+                      ? _typedDuration()?.inMinutes
+                      : null,
                 );
         if (!mounted) return;
         if (result == null) {

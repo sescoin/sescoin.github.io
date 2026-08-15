@@ -90,10 +90,15 @@ class ChatService {
     DateTime? dueDate,
     String? note,
     String? classId,
+    int? durationMinutes,
   }) async {
     final params = <String, dynamic>{'p_amount': amount};
     if (interestRate != null) params['p_interest_rate'] = interestRate;
-    if (dueDate != null) {
+    // Durée et échéance s'excluent : la première fait démarrer le compte à
+    // rebours à l'acceptation, la seconde fixe une date dès l'envoi.
+    if (durationMinutes != null) {
+      params['p_duration_minutes'] = durationMinutes;
+    } else if (dueDate != null) {
       params['p_due_date'] = dueDate.toUtc().toIso8601String();
     }
     if (note != null) params['p_note'] = note;
