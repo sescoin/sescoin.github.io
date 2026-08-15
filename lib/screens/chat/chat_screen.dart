@@ -3087,8 +3087,8 @@ Future<void> _confirmAndReport(
       title: 'Signaler ce message ?',
       subtitle: '@${message.username}',
       content: const Text(
-        'Le message sera transmis à l\'administration, qui décidera de la '
-        'suite à donner. Un même message ne peut être signalé qu\'une fois.',
+        'Le message sera transmis à l\'administrateur. Un même message ne '
+        'peut être signalé qu\'une fois.',
       ),
       actions: [
         TextButton(

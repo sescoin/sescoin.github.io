@@ -275,7 +275,7 @@ begin
 
   insert into public.notifications (user_id, type, title, body)
   values (
-    p_user_id, 'admin', 'Compte suspendu',
+    p_user_id, 'system', 'Compte suspendu',
     case
       when v_until is null then 'Votre compte a été suspendu.'
       else 'Votre compte est suspendu jusqu''au ' ||
@@ -320,7 +320,7 @@ begin
 
     insert into public.notifications (user_id, type, title, body)
     values (
-      v_row.id, 'admin', 'Suspension levée',
+      v_row.id, 'system', 'Suspension levée',
       'Votre compte est de nouveau actif.'
     );
 
@@ -398,7 +398,7 @@ begin
 
     insert into public.notifications (user_id, type, title, body)
     values (
-      new.user_id, 'admin', 'Chat suspendu 24 h',
+      new.user_id, 'system', 'Chat suspendu 24 h',
       'Trop de messages inappropriés : le chat vous est fermé pour 24 heures.'
     );
   elsif coalesce(v_count, 0) >= 3 then
@@ -491,7 +491,7 @@ begin
 
   insert into public.notifications (user_id, type, title, body)
   values (
-    new.reporter_id, 'admin', 'Signalement traité',
+    new.reporter_id, 'system', 'Signalement traité',
     case
       when new.status = 'reviewed'
         then 'Votre signalement a été retenu. Merci de votre vigilance.'

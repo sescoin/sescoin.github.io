@@ -236,7 +236,7 @@ begin
 
   -- L'administrateur est prevenu immediatement.
   insert into public.notifications (user_id, type, title, body)
-  select p.id, 'admin', 'Nouveau signalement',
+  select p.id, 'system', 'Nouveau signalement',
          'Message de @' || v_msg.username || ' signale par @' || v_me.username
   from public.profiles p
   where p.role = 'admin';
