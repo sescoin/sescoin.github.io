@@ -88,14 +88,6 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                   child: _GroupCard(
                     group: visible[i],
                     dateFmt: _dateFmt,
-                    // Récidive : un premier écart et un cinquième n'appellent
-                    // pas la même réponse.
-                    confirmed: ref
-                            .watch(confirmedReportsProvider(
-                              visible[i].reportedId,
-                            ))
-                            .valueOrNull ??
-                        0,
                     onReview: (status) => _review(visible[i], status),
                     onBan: () => _ban(visible[i]),
                     onExport: () => _export(visible[i]),
@@ -202,7 +194,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
       if (where == null) {
         AppFeedback.error(context, 'Export impossible sur cet appareil.');
       } else {
-        AppFeedback.success(context, 'Transcription enregistrée ($where).');
+        AppFeedback.success(context, 'Discussion enregistrée ($where).');
       }
     } catch (error) {
       if (mounted) AppFeedback.error(context, error);
@@ -216,7 +208,6 @@ class _GroupCard extends StatelessWidget {
   const _GroupCard({
     required this.group,
     required this.dateFmt,
-    required this.confirmed,
     required this.onReview,
     required this.onBan,
     required this.onExport,
@@ -224,9 +215,6 @@ class _GroupCard extends StatelessWidget {
 
   final GroupedReport group;
   final DateFormat dateFmt;
-
-  /// Signalements déjà retenus contre l'auteur, tous messages confondus.
-  final int confirmed;
   final ValueChanged<String> onReview;
   final VoidCallback onBan;
   final VoidCallback onExport;
@@ -279,35 +267,6 @@ class _GroupCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    group.isClassChat
-                        ? Icons.school_rounded
-                        : Icons.campaign_rounded,
-                    size: 14,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  if (confirmed > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.negative.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        'récidive ×$confirmed',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.negative,
-                        ),
-                      ),
-                    ),
-                  ],
                   const Spacer(),
                   if (!group.isPending)
                     Text(
@@ -412,27 +371,9 @@ class _GroupCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => onReview('dismissed'),
-                        icon: const Icon(Icons.remove_circle_outline, size: 16),
-                        label: const Text('Sans suite'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: theme.colorScheme.onSurfaceVariant,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              if (group.isPending) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
                         onPressed: () => onReview('reviewed'),
                         icon: const Icon(Icons.check_rounded, size: 16),
-                        label: const Text('Retenu'),
+                        label: const Text('Traité'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.positive,
                           side: BorderSide(
@@ -442,19 +383,22 @@ class _GroupCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: onBan,
-                        icon: const Icon(Icons.block_rounded, size: 16),
-                        label: const Text('Suspendre'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.negative,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                        ),
-                      ),
-                    ),
                   ],
+                ],
+              ),
+              if (group.isPending) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: onBan,
+                    icon: const Icon(Icons.block_rounded, size: 16),
+                    label: const Text('Bannir'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.negative,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
                 ),
               ],
             ],

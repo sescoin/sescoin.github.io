@@ -18,16 +18,21 @@ class FadeSlideIn extends StatefulWidget {
   });
 
   /// Cascade : décale l'apparition selon l'index de l'élément.
+  ///
+  /// Le décalage reste volontairement court et plafonne vite. Dans une liste
+  /// défilante, un élément n'est construit qu'en approchant de l'écran : un
+  /// décalage long le laisserait invisible le temps que son tour vienne,
+  /// d'autant plus visible que l'on fait défiler vite.
   factory FadeSlideIn.staggered({
     Key? key,
     required int index,
     required Widget child,
-    Duration step = const Duration(milliseconds: 45),
-    Duration duration = const Duration(milliseconds: 380),
+    Duration step = const Duration(milliseconds: 22),
+    Duration duration = const Duration(milliseconds: 300),
   }) {
     return FadeSlideIn(
       key: key,
-      delay: step * index.clamp(0, 12),
+      delay: step * index.clamp(0, 6),
       duration: duration,
       child: child,
     );

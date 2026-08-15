@@ -23,6 +23,7 @@ import '../../models/chat_read.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/class_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 
 // ── Écran principal ────────────────────────────────────────────────────────────
@@ -1502,6 +1503,15 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
     final readsMap = ref.watch(chatReadsMapProvider);
     final currentUserId = ref.watch(currentUserIdProvider) ?? '';
 
+    // Comptes administrateurs : leurs messages ne portent pas de drapeau.
+    final adminIds = ref
+            .watch(allProfilesProvider)
+            .valueOrNull
+            ?.where((p) => p.isAdmin)
+            .map((p) => p.id)
+            .toSet() ??
+        const <String>{};
+
     return KeyboardDismissUnfocus(
         child: Stack(
       children: [
@@ -1612,9 +1622,13 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                         onLongPress: canInteract
                             ? () => _showMessageActions(context, msg, isOwn)
                             : null,
-                        onReport: isOwn
+                        // Rien à signaler sur un message de l'administrateur.
+                        // Lui, en revanche, censure directement.
+                        onReport: isOwn || adminIds.contains(msg.userId)
                             ? null
-                            : () => _confirmAndReport(context, ref, msg),
+                            : widget.isAdmin
+                                ? () => _censorAsAdmin(context, ref, msg)
+                                : () => _confirmAndReport(context, ref, msg),
                       );
                     },
                   );
@@ -3066,6 +3080,23 @@ class _MessageBubble extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Censure un message sans confirmation. Réservé à l'administrateur, dont le
+/// signalement vaut décision.
+Future<void> _censorAsAdmin(
+  BuildContext context,
+  WidgetRef ref,
+  ChatMessage message,
+) async {
+  try {
+    await ref.read(chatServiceProvider).censorMessage(message.id);
+    if (context.mounted) {
+      AppFeedback.success(context, 'Message censuré.');
+    }
+  } catch (error) {
+    if (context.mounted) AppFeedback.error(context, error);
   }
 }
 

@@ -16,12 +16,6 @@ final sanctionsProvider = StreamProvider<List<Sanction>>((ref) {
       .map((rows) => rows.map(Sanction.fromJson).toList());
 });
 
-/// Signalements déjà retenus contre un compte : distingue le premier écart
-/// de la récidive.
-final confirmedReportsProvider =
-    FutureProvider.family<int, String>((ref, userId) {
-  return ref.read(profileServiceProvider).confirmedReportsCount(userId);
-});
 
 /// Signalements regroupés par message, du plus signalé au moins signalé.
 ///

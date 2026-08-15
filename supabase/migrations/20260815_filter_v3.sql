@@ -17,7 +17,7 @@ declare
   v_tight text[] := array[
     'connard', 'connasse', 'conard', 'conasse', 'ducon',
     'salope', 'salaud', 'salopard', 'pute', 'putain', 'putin', 'putes',
-    'fdp', 'filsdepute', 'filledepute', 'ntm', 'nikta', 'niktamere',
+    'fdp', 'ntr', 'clc', 'casse les couilles', '', 'nique ta race', 'mongole' , 'filsdepute', 'filledepute', 'ntm', 'nikta', 'niktamere',
     'encule', 'enculer', 'enculee', 'encules', 'niquetamere', 'niquetamer',
     'batard', 'batarde', 'batards',
     'trouduc', 'trouducul', 'tagueule', 'fermetagueule', 'ftg',
@@ -51,7 +51,7 @@ declare
   --   (je |j )?(vais|vai|va) : je vais, j vais, vais, va
   v_phrases text[] := array[
     -- Menaces physiques
-    '(je |j )?(vais|vai|va) te (tuer|frapper|casser|defoncer|exploser|massacrer|eclater|demonter|peter|buter|refaire|cogner|etrangler|saigner|fracasser)',
+    '(je |j )?(vais|vai|va)?(te|t) (foudroyer|tuer|frapper|casser|defoncer|exploser|massacrer|eclater|demonter|peter|buter|refaire|cogner|etrangler|saigner|fracasser)',
     '(je |j )?(vais|vai|va) vous (tuer|frapper|casser|defoncer|massacrer)',
     'on (va|vas) te (tuer|frapper|casser|defoncer|exploser|retrouver|attendre|coincer)',
     'on (va|vas) lui (casser|defoncer|refaire|peter)',

@@ -16,6 +16,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/report_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/wallet_provider.dart';
 import '../../services/nfc_hce_service.dart';
@@ -489,7 +490,13 @@ class _AdminButtonState extends ConsumerState<_AdminButton>
 
   @override
   Widget build(BuildContext context) {
-    final count = ref.watch(pendingRequestsProvider).valueOrNull?.length ?? 0;
+    // Tout ce qui attend l'administrateur derrière ce bouton : demandes de
+    // compte et signalements. La pastille annonce l'ensemble, sinon un
+    // signalement seul passerait inaperçu depuis l'accueil.
+    final pendingRequests =
+        ref.watch(pendingRequestsProvider).valueOrNull?.length ?? 0;
+    final pendingReports = ref.watch(pendingReportsCountProvider);
+    final count = pendingRequests + pendingReports;
 
     return Stack(
       children: [

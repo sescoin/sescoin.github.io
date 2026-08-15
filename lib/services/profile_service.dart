@@ -212,15 +212,6 @@ class ProfileService {
     });
   }
 
-  /// Nombre de signalements déjà retenus contre un compte.
-  Future<int> confirmedReportsCount(String userId) async {
-    final result = await _client.rpc(
-      'confirmed_reports_count',
-      params: {'p_user_id': userId},
-    );
-    return (result as num?)?.toInt() ?? 0;
-  }
-
   /// Redéfinit le mot de passe d'un compte (RPC réservée à l'administrateur).
   Future<void> resetPassword(String userId, String newPassword) async {
     await _client.rpc(

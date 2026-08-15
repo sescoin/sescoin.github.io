@@ -12,6 +12,21 @@ class ChatService {
   ///
   /// La RPC copie le contenu du message dans le signalement : il peut être
   /// modifié ou supprimé avant que l'administrateur ne le traite.
+  /// Censure immédiate d'un message par l'administrateur.
+  ///
+  /// Son signalement ne demande pas d'arbitrage : le message est masqué sur
+  /// le champ et le dossier enregistré comme déjà traité.
+  Future<void> censorMessage(String messageId) async {
+    try {
+      await _client.rpc(
+        'admin_censor_message',
+        params: {'p_message_id': messageId},
+      );
+    } on PostgrestException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
   Future<void> reportMessage(String messageId) async {
     try {
       await _client.rpc(
