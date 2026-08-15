@@ -25,6 +25,9 @@ class MarketItemCard extends StatelessWidget {
 
   void _showFullDescription(BuildContext context) {
     final accent = context.accent;
+    // Le contrôleur est partagé par la barre et la zone défilante : sans lui,
+    // Scrollbar ne sait pas quelle vue elle accompagne.
+    final scrollCtrl = ScrollController();
     showDialog<void>(
       context: context,
       builder: (ctx) {
@@ -96,15 +99,22 @@ class MarketItemCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                // Barre toujours visible : sans elle, rien n'indiquait qu'une
+                // description longue continuait plus bas.
                 Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                    child: Text(
-                      item.description,
-                      style: TextStyle(
-                        height: 1.45,
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurfaceVariant,
+                  child: Scrollbar(
+                    controller: scrollCtrl,
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: scrollCtrl,
+                      padding: const EdgeInsets.fromLTRB(20, 4, 24, 12),
+                      child: Text(
+                        item.description,
+                        style: TextStyle(
+                          height: 1.45,
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
@@ -124,7 +134,7 @@ class MarketItemCard extends StatelessWidget {
           ),
         );
       },
-    );
+    ).whenComplete(scrollCtrl.dispose);
   }
 
   @override

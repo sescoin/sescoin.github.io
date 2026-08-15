@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../common/animations.dart';
+import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
 import '../../common/ban_guard.dart';
 import '../../common/empty_state.dart';
@@ -76,6 +77,46 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
           _AuctionsTab(),
         ],
       ),
+    );
+  }
+}
+
+/// Ligne du récapitulatif d'achat : intitulé à gauche, montant à droite.
+class _PurchaseRow extends StatelessWidget {
+  const _PurchaseRow({
+    required this.label,
+    required this.value,
+    this.emphasis = false,
+    this.color,
+  });
+
+  final String label;
+  final String value;
+  final bool emphasis;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: emphasis ? 15 : 13.5,
+            fontWeight: emphasis ? FontWeight.w800 : FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -244,24 +285,91 @@ class _ShopTab extends ConsumerWidget {
     MarketplaceItem item,
   ) async {
     if (!ensureNotBanned(context, ref)) return;
+
+    final balance = ref.read(currentProfileProvider).valueOrNull?.balance;
+    final remaining = balance == null ? null : balance - item.price;
+    final tooExpensive = remaining != null && remaining < 0;
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Confirmer l\'achat'),
-        content: Text(
-          'Acheter "${item.name}" pour ${item.price.toStringAsFixed(2)} SC ?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuler'),
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        final accent = dialogContext.accent;
+
+        return AppDialog(
+          icon: Icons.shopping_bag_rounded,
+          title: 'Confirmer l\'achat',
+          subtitle: item.name,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Image.network(
+                      item.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.image_not_supported_outlined),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 14),
+              _PurchaseRow(
+                label: 'Prix',
+                value: '${item.price.toStringAsFixed(2)} SC',
+                emphasis: true,
+                color: accent,
+              ),
+              if (balance != null) ...[
+                const SizedBox(height: 6),
+                _PurchaseRow(
+                  label: 'Solde actuel',
+                  value: '${balance.toStringAsFixed(2)} SC',
+                ),
+                const Divider(height: 18),
+                // Ce qu'il restera : c'est l'information qui manque le plus
+                // au moment de trancher.
+                _PurchaseRow(
+                  label: 'Après achat',
+                  value: '${remaining!.toStringAsFixed(2)} SC',
+                  emphasis: true,
+                  color: tooExpensive ? AppTheme.negative : null,
+                ),
+              ],
+              if (tooExpensive) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'Solde insuffisant pour cet achat.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.negative,
+                  ),
+                ),
+              ],
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Acheter'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton.icon(
+              onPressed:
+                  tooExpensive ? null : () => Navigator.pop(dialogContext, true),
+              icon: const Icon(Icons.check_rounded, size: 18),
+              label: const Text('Acheter'),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed != true) {

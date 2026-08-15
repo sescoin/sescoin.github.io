@@ -35,10 +35,13 @@ Future<BanRequest?> showBanDialog(
   final hoursCtrl = TextEditingController();
   final minutesCtrl = TextEditingController();
 
+  // Rang dans [_durations], `-1` pour la durée saisie à la main. Un rang
+  // plutôt que la valeur en minutes : « Sans terme » n'en a pas, et le
+  // comparer à une valeur repère laissait le choix sans surlignage.
+  //
   // Par défaut 24 h : une sanction courte se révise plus facilement qu'une
   // suspension définitive posée dans l'urgence.
-  var selected = 1440;
-  var custom = false;
+  var choice = 1;
 
   /// Durée saisie à la main, `null` si les trois champs sont vides.
   int? typedMinutes() {
@@ -80,23 +83,20 @@ Future<BanRequest?> showBanDialog(
                 spacing: 7,
                 runSpacing: 7,
                 children: [
-                  for (final (label, minutes) in _durations)
+                  for (var i = 0; i < _durations.length; i++)
                     _DurationChip(
-                      label: label,
-                      selected: !custom && selected == (minutes ?? -1),
-                      onTap: () => setLocal(() {
-                        custom = false;
-                        selected = minutes ?? -1;
-                      }),
+                      label: _durations[i].$1,
+                      selected: choice == i,
+                      onTap: () => setLocal(() => choice = i),
                     ),
                   _DurationChip(
                     label: 'Personnalisée',
-                    selected: custom,
-                    onTap: () => setLocal(() => custom = true),
+                    selected: choice == -1,
+                    onTap: () => setLocal(() => choice = -1),
                   ),
                 ],
               ),
-              if (custom) ...[
+              if (choice == -1) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -127,13 +127,12 @@ Future<BanRequest?> showBanDialog(
               ),
               onPressed: () {
                 final reason = reasonCtrl.text.trim();
-                final minutes = custom
-                    ? typedMinutes()
-                    : (selected == -1 ? null : selected);
+                final minutes =
+                    choice == -1 ? typedMinutes() : _durations[choice].$2;
 
                 // Durée personnalisée laissée vide : on ne devine pas, on
                 // laisse l'administrateur la renseigner.
-                if (custom && minutes == null) return;
+                if (choice == -1 && minutes == null) return;
 
                 Navigator.pop(
                   ctx,

@@ -305,13 +305,7 @@ begin
     now() + interval '24 hours', true
   );
 
-  insert into public.notifications (user_id, type, title, body)
-  values (
-    new.reported_id, 'system', 'Chat suspendu 24 h',
-    'Plusieurs de vos messages ont été signalés : le chat vous est fermé '
-    'pour 24 heures.'
-  );
-
+  -- Pas de notification : le bandeau du chat porte deja l'information.
   return new;
 end;
 $$;

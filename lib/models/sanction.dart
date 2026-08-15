@@ -12,13 +12,14 @@ class Sanction {
     this.reason,
     this.until,
     this.issuedByUsername,
+    this.liftedAt,
   });
 
   final String id;
   final String userId;
   final String username;
 
-  /// `mute`, `ban`, `unban` ou `warning`.
+  /// `mute`, `ban` ou `warning`.
   final String kind;
 
   /// Vrai lorsque la mesure découle du filtre ou d'un seuil, sans
@@ -32,12 +33,20 @@ class Sanction {
   final DateTime? until;
   final String? issuedByUsername;
 
-  bool get isActive => until != null && until!.isAfter(DateTime.now());
+  /// Date de levée, portée par la sanction elle-même plutôt que par une
+  /// seconde entrée.
+  final DateTime? liftedAt;
+
+  /// Une mesure sans terme court jusqu'à sa levée ; un avertissement, lui,
+  /// est instantané et n'est jamais « en cours ».
+  bool get isActive {
+    if (liftedAt != null || kind == 'warning') return false;
+    return until == null || until!.isAfter(DateTime.now());
+  }
 
   String get label => switch (kind) {
         'mute' => 'Chat suspendu',
         'ban' => 'Compte suspendu',
-        'unban' => 'Suspension levée',
         _ => 'Avertissement',
       };
 
@@ -54,6 +63,9 @@ class Sanction {
           ? null
           : DateTime.parse(json['until'] as String),
       issuedByUsername: json['issued_by_username'] as String?,
+      liftedAt: json['lifted_at'] == null
+          ? null
+          : DateTime.parse(json['lifted_at'] as String),
     );
   }
 }

@@ -73,7 +73,6 @@ class _SanctionCard extends StatelessWidget {
   (IconData, Color) get _visual => switch (sanction.kind) {
         'ban' => (Icons.block_rounded, AppTheme.negative),
         'mute' => (Icons.volume_off_rounded, AppTheme.warning),
-        'unban' => (Icons.lock_open_rounded, AppTheme.positive),
         _ => (Icons.warning_amber_rounded, AppTheme.info),
       };
 
@@ -82,6 +81,7 @@ class _SanctionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final (icon, color) = _visual;
     final active = sanction.isActive;
+    final lifted = sanction.liftedAt != null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -115,24 +115,14 @@ class _SanctionCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 7),
+                        // La levée se lit sur la sanction elle-même : un
+                        // épisode terminé ne mérite pas une seconde entrée.
                         if (active)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'en cours',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: color,
-                              ),
-                            ),
+                          _StatusChip(label: 'en cours', color: color)
+                        else if (lifted)
+                          const _StatusChip(
+                            label: 'levée',
+                            color: AppTheme.positive,
                           ),
                       ],
                     ),
@@ -168,7 +158,13 @@ class _SanctionCard extends StatelessWidget {
                           icon: Icons.schedule_rounded,
                           text: dateFmt.format(sanction.createdAt.toLocal()),
                         ),
-                        if (sanction.until != null)
+                        if (lifted)
+                          _Meta(
+                            icon: Icons.lock_open_rounded,
+                            text: 'levée le '
+                                '${dateFmt.format(sanction.liftedAt!.toLocal())}',
+                          )
+                        else if (sanction.until != null)
                           _Meta(
                             icon: Icons.event_busy_rounded,
                             text: 'jusqu\'au '
@@ -189,6 +185,32 @@ class _SanctionCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          color: color,
         ),
       ),
     );
