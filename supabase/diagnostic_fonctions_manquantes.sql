@@ -1,5 +1,8 @@
-﻿-- Diagnostic : quelles fonctions attendues par l'application manquent en base ?
--- A coller dans l'editeur SQL de Supabase. Ne modifie rien.
+﻿-- Diagnostic : fonctions attendues par l'application et absentes de la base.
+-- Lecture seule, ne modifie rien. A coller dans l'editeur SQL de Supabase.
+--
+-- Les fonctions supprimees volontairement par une migration (citations de
+-- profil, anciens declencheurs de censure) sont exclues de la liste.
 with attendues(nom) as (
   values
     ('accept_chat_loan_request'),
@@ -10,7 +13,6 @@ with attendues(nom) as (
     ('admin_ban_user_temp'),
     ('admin_censor_message'),
     ('admin_chat_transcript'),
-    ('admin_clear_quote'),
     ('admin_delete_auction'),
     ('admin_delete_auction_bid'),
     ('admin_delete_message'),
@@ -27,12 +29,8 @@ with attendues(nom) as (
     ('calculate_currency_rate'),
     ('cancel_auction'),
     ('cancel_loan'),
-    ('censor_chat_loan_note'),
-    ('censor_loan_note'),
-    ('censor_transaction_description'),
     ('claim_chat_gift'),
     ('confirm_payment_request'),
-    ('confirmed_reports_count'),
     ('contains_forbidden_words'),
     ('create_class'),
     ('create_payment_request'),
@@ -77,10 +75,8 @@ with attendues(nom) as (
     ('send_loan_request_chat'),
     ('set_account_request_class'),
     ('set_auction_winner_emoji'),
-    ('set_profile_quote'),
     ('set_user_class'),
     ('submit_account_request'),
-    ('toggle_save_message'),
     ('transfer_funds'),
     ('update_loan_config'),
     ('update_updated_at')
