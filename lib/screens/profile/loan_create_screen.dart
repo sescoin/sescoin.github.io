@@ -343,46 +343,6 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                 label: 'Échéance',
                 value: formatLoanDueDateLabel(combinedDue!),
               ),
-            if (isDurationMode) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: context.accent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: context.accent.withValues(alpha: 0.28),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 16,
-                      color: context.accent,
-                    ),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        'Aucune date fixée : le décompte démarre au moment '
-                        'où la demande est acceptée.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.35,
-                          color: Theme.of(dialogContext)
-                              .colorScheme
-                              .onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
         actions: [

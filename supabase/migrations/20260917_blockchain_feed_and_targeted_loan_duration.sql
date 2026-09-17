@@ -20,6 +20,14 @@ create policy "transactions_select_authenticated_feed" on public.transactions
 -- figeaient encore une date a l'envoi. On aligne les deux flux.
 -- ============================================================
 
+-- Filet de securite : si la 20260816 n'a pas ete rejouee apres une
+-- reinitialisation, les colonnes de duree manquent et l'insertion echouerait.
+alter table public.loans
+  add column if not exists duration_minutes integer;
+
+alter table public.chat_messages
+  add column if not exists loan_duration_minutes integer;
+
 create or replace function public.request_loan(
   p_borrower_id      uuid,
   p_lender_id        uuid,
