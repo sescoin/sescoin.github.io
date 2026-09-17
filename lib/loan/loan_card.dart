@@ -30,6 +30,19 @@ class LoanCard extends StatelessWidget {
 
   static final _dateFormat = DateFormat('dd/MM/yyyy, HH:mm');
 
+  /// « 2 jours 3 h 15 min », sans les composantes nulles.
+  static String _formatLoanDuration(int minutes) {
+    final d = minutes ~/ 1440;
+    final h = (minutes % 1440) ~/ 60;
+    final m = minutes % 60;
+    final parts = <String>[
+      if (d > 0) d == 1 ? 'un jour' : '$d jours',
+      if (h > 0) '$h h',
+      if (m > 0) '$m min',
+    ];
+    return parts.isEmpty ? '0 min' : parts.join(' ');
+  }
+
   bool get _isBorrower => loan.borrowerId == currentUserId;
   bool get _isLender => loan.lenderId == currentUserId;
 
@@ -182,6 +195,30 @@ class LoanCard extends StatelessWidget {
                       color: loan.isOverdue
                           ? AppTheme.negative
                           : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (loan.durationMinutes != null) ...[
+              // Demande exprimée en durée, pas encore acceptée : aucune date
+              // n'existe tant que le décompte n'a pas démarré.
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Icon(
+                    Icons.timer_outlined,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Durée : ${_formatLoanDuration(loan.durationMinutes!)}'
+                      ' · démarre à l\'acceptation',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],

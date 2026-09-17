@@ -17,6 +17,7 @@ class Loan {
     required this.amountRepaid,
     required this.status,
     this.dueDate,
+    this.durationMinutes,
     required this.createdAt,
     required this.updatedAt,
     this.note,
@@ -35,6 +36,12 @@ class Loan {
   final double amountRepaid;
   final LoanStatus status;
   final DateTime? dueDate;
+
+  /// Durée demandée, quand l'emprunteur a choisi « Durée » plutôt qu'une date.
+  /// L'échéance n'est calculée qu'à l'acceptation : tant que le prêt est en
+  /// attente, [dueDate] est nul.
+  final int? durationMinutes;
+
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? note;
@@ -119,6 +126,7 @@ class Loan {
       dueDate: json['due_date'] != null
           ? DateTime.parse(json['due_date'] as String).toLocal()
           : null,
+      durationMinutes: (json['duration_minutes'] as num?)?.toInt(),
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
       note: TextSanitizer.nullable(json['note'] as String?),

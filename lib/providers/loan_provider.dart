@@ -79,6 +79,7 @@ class LoanActionNotifier extends StateNotifier<LoanActionState> {
     required double interestRate,
     DateTime? dueDate,
     String? note,
+    int? durationMinutes,
   }) async {
     final userId = _ref.read(currentUserIdProvider);
     if (userId == null) {
@@ -94,6 +95,7 @@ class LoanActionNotifier extends StateNotifier<LoanActionState> {
             interestRate: interestRate,
             dueDate: dueDate,
             note: note,
+            durationMinutes: durationMinutes,
           );
       state = state.copyWith(isLoading: false, lastLoan: loan);
       _ref.invalidate(userLoansProvider);

@@ -131,6 +131,7 @@ class LoanService {
     required double interestRate,
     DateTime? dueDate,
     String? note,
+    int? durationMinutes,
   }) async {
     await processOverdueLoans();
 
@@ -143,15 +144,30 @@ class LoanService {
         'Taux entre ${AppConstants.minLoanInterestRate}% et ${AppConstants.maxLoanInterestRate}%',
       );
     }
-    if (dueDate != null && dueDate.isBefore(DateTime.now())) {
-      throw Exception('La date d\'échéance doit être dans le futur.');
-    }
-    if (dueDate != null) {
-      final maxDue = DateTime.now().add(Duration(days: AppConstants.maxLoanDurationDays));
-      if (dueDate.isAfter(maxDue)) {
+    // Une demande porte soit une échéance fixe, soit une durée : dans ce
+    // second cas le décompte ne démarre qu'à l'acceptation, il n'y a donc pas
+    // de date à contrôler.
+    if (durationMinutes != null) {
+      if (durationMinutes < 5) {
+        throw Exception('La durée doit valoir au moins 5 minutes.');
+      }
+      if (durationMinutes > AppConstants.maxLoanDurationDays * 1440) {
         throw Exception(
-          'L\'échéance ne peut pas dépasser ${AppConstants.maxLoanDurationDays} jours.',
+          'La durée ne peut pas dépasser ${AppConstants.maxLoanDurationDays} jours.',
         );
+      }
+    } else {
+      if (dueDate != null && dueDate.isBefore(DateTime.now())) {
+        throw Exception('La date d\'échéance doit être dans le futur.');
+      }
+      if (dueDate != null) {
+        final maxDue =
+            DateTime.now().add(Duration(days: AppConstants.maxLoanDurationDays));
+        if (dueDate.isAfter(maxDue)) {
+          throw Exception(
+            'L\'échéance ne peut pas dépasser ${AppConstants.maxLoanDurationDays} jours.',
+          );
+        }
       }
     }
 
@@ -191,8 +207,10 @@ class LoanService {
         'p_principal': principal,
         'p_interest_rate': interestRate,
         'p_total_due': totalDue,
-        'p_due_date': dueDate?.toUtc().toIso8601String(),
+        'p_due_date':
+            durationMinutes != null ? null : dueDate?.toUtc().toIso8601String(),
         'p_note': note,
+        'p_duration_minutes': durationMinutes,
       });
       return Loan.fromJson(data as Map<String, dynamic>);
     } on PostgrestException catch (e) {

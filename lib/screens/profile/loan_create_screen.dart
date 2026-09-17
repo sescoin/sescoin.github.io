@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../common/app_dialog.dart';
 import '../../common/app_feedback.dart';
 import '../../common/ban_guard.dart';
 import '../../common/date_utils.dart';
@@ -204,6 +205,19 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     });
   }
 
+  /// « 2 jours 3 h 15 min », en n'affichant que les composantes utiles.
+  static String _formatDuration(Duration duration) {
+    final days = duration.inDays;
+    final hours = duration.inHours.remainder(24);
+    final minutes = duration.inMinutes.remainder(60);
+    final parts = <String>[
+      if (days > 0) days == 1 ? 'un jour' : '$days jours',
+      if (hours > 0) '$hours h',
+      if (minutes > 0) '$minutes min',
+    ];
+    return parts.isEmpty ? '0 min' : parts.join(' ');
+  }
+
   String _formatDue() {
     final d = _dueDate!;
     final t = _dueTime ?? const TimeOfDay(hour: 23, minute: 59);
@@ -230,31 +244,52 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
       return;
     }
 
-    final combinedDue = _resolveDue();
-    if (combinedDue == null) {
-      AppFeedback.warning(
-        context,
-        _dueMode == _DueMode.date
-            ? 'Une date d\'échéance est requise.'
-            : 'Une durée est requise.',
-      );
-      return;
-    }
-
+    // En mode durée, aucune échéance n'est fixée : le décompte ne démarre
+    // qu'à l'acceptation de la demande.
+    final isDurationMode = _dueMode == _DueMode.duration;
+    final duration = isDurationMode ? _typedDuration() : null;
+    final combinedDue = isDurationMode ? null : _resolveDue();
     final now = DateTime.now();
-    if (combinedDue.isBefore(now.add(const Duration(minutes: 1)))) {
-      AppFeedback.warning(context, 'L\'échéance doit être dans le futur.');
-      return;
-    }
-    if (combinedDue.isAfter(
-      now.add(Duration(days: AppConstants.maxLoanDurationDays)),
-    )) {
-      AppFeedback.warning(
-        context,
-        'L\'échéance ne peut pas dépasser '
-        '${AppConstants.maxLoanDurationDays} jours.',
-      );
-      return;
+
+    if (isDurationMode) {
+      if (duration == null) {
+        AppFeedback.warning(context, 'Une durée est requise.');
+        return;
+      }
+      if (duration.inMinutes < 5) {
+        AppFeedback.warning(
+          context,
+          'La durée doit valoir au moins 5 minutes.',
+        );
+        return;
+      }
+      if (duration.inMinutes > AppConstants.maxLoanDurationDays * 1440) {
+        AppFeedback.warning(
+          context,
+          'La durée ne peut pas dépasser '
+          '${AppConstants.maxLoanDurationDays} jours.',
+        );
+        return;
+      }
+    } else {
+      if (combinedDue == null) {
+        AppFeedback.warning(context, 'Une date d\'échéance est requise.');
+        return;
+      }
+      if (combinedDue.isBefore(now.add(const Duration(minutes: 1)))) {
+        AppFeedback.warning(context, 'L\'échéance doit être dans le futur.');
+        return;
+      }
+      if (combinedDue.isAfter(
+        now.add(Duration(days: AppConstants.maxLoanDurationDays)),
+      )) {
+        AppFeedback.warning(
+          context,
+          'L\'échéance ne peut pas dépasser '
+          '${AppConstants.maxLoanDurationDays} jours.',
+        );
+        return;
+      }
     }
 
     final principal =
@@ -262,26 +297,92 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
     final interestRate =
         double.parse(_interestController.text.trim().replaceAll(',', '.'));
 
+    final totalDue = principal * (1 + interestRate / 100);
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Confirmer la demande'),
+      builder: (dialogContext) => AppDialog(
+        icon: Icons.handshake_rounded,
+        title: 'Confirmer la demande',
+        subtitle: _isChatMode
+            ? (widget.chatClassId == null
+                ? 'Publiée dans les annonces'
+                : 'Publiée dans le chat de la classe')
+            : '${_selectedLenders.length > 1 ? 'Prêteurs' : 'Prêteur'} : '
+                '${_selectedLenders.map((l) => l['display_name']).join(', ')}',
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (!_isChatMode) ...[
-              Text(
-                '${_selectedLenders.length > 1 ? 'Prêteurs' : 'Prêteur'} : '
-                '${_selectedLenders.map((l) => l['display_name']).join(', ')}',
+            _RecapRow(
+              icon: Icons.account_balance_wallet_rounded,
+              label: 'Montant',
+              value: '${principal.toStringAsFixed(2)} SC',
+              emphasize: true,
+            ),
+            _RecapRow(
+              icon: Icons.percent_rounded,
+              label: 'Intérêt',
+              value: '${interestRate.toStringAsFixed(1)} %',
+            ),
+            _RecapRow(
+              icon: Icons.payments_rounded,
+              label: 'À rembourser',
+              value: '${totalDue.toStringAsFixed(2)} SC',
+              emphasize: true,
+            ),
+            if (isDurationMode)
+              _RecapRow(
+                icon: Icons.timer_outlined,
+                label: 'Durée',
+                value: _formatDuration(duration!),
+              )
+            else
+              _RecapRow(
+                icon: Icons.event_rounded,
+                label: 'Échéance',
+                value: formatLoanDueDateLabel(combinedDue!),
               ),
-              const SizedBox(height: 4),
+            if (isDurationMode) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: context.accent.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: context.accent.withValues(alpha: 0.28),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: context.accent,
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'Aucune date fixée : le décompte démarre au moment '
+                        'où la demande est acceptée.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.35,
+                          color: Theme.of(dialogContext)
+                              .colorScheme
+                              .onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
-            Text('Montant : ${principal.toStringAsFixed(2)} SC'),
-            Text('Intérêt : ${interestRate.toStringAsFixed(1)} %'),
-            // Passe par l'échéance résolue : en mode durée, _formatDue()
-            // déréférencerait _dueDate, qui est nul.
-            Text('Échéance : ${formatLoanDueDateLabel(combinedDue)}'),
           ],
         ),
         actions: [
@@ -289,9 +390,10 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
             onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Annuler'),
           ),
-          ElevatedButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Envoyer'),
+            icon: const Icon(Icons.send_rounded, size: 17),
+            label: const Text('Envoyer'),
           ),
         ],
       ),
@@ -316,9 +418,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                   classId: widget.chatClassId,
                   // En mode durée, on transmet la durée et non une date : le
                   // délai doit courir à partir de l'acceptation.
-                  durationMinutes: _dueMode == _DueMode.duration
-                      ? _typedDuration()?.inMinutes
-                      : null,
+                  durationMinutes: duration?.inMinutes,
                 );
         if (!mounted) return;
         if (result == null) {
@@ -351,6 +451,8 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
               interestRate: interestRate,
               dueDate: combinedDue,
               note: note,
+              // Même règle qu'en mode chat : l'échéance part de l'acceptation.
+              durationMinutes: duration?.inMinutes,
             );
         sent++;
       } catch (error) {
@@ -719,6 +821,53 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
 }
 
 /// Champ numérique compact pour une composante de la durée.
+/// Ligne du récapitulatif de confirmation : icône, libellé, valeur.
+class _RecapRow extends StatelessWidget {
+  const _RecapRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  /// Met la valeur en avant (montants).
+  final bool emphasize;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 17, color: context.accent),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: emphasize ? 15 : 13.5,
+              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
+              color: emphasize ? context.accent : theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DurationField extends StatelessWidget {
   const _DurationField({
     required this.controller,
