@@ -213,8 +213,7 @@ class LoanCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      'Durée : ${_formatLoanDuration(loan.durationMinutes!)}'
-                      ' · démarre à l\'acceptation',
+                      'Durée : ${_formatLoanDuration(loan.durationMinutes!)}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,

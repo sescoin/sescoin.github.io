@@ -642,7 +642,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                 const SizedBox(height: 20),
 
                 // ── Échéance ───────────────────────────────────────────────────
-                _Label('Échéance *'),
+                _Label(_dueMode == _DueMode.duration ? 'Durée *' : 'Échéance *'),
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
