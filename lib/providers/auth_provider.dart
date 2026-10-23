@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/profile.dart';
 import '../models/account_request.dart';
+import 'maintenance_provider.dart';
 import 'service_providers.dart';
 import 'wallet_provider.dart';
 
@@ -95,6 +96,9 @@ class CurrentProfileNotifier extends StateNotifier<AsyncValue<Profile?>> {
             username: username,
             password: password,
           );
+      // Pendant une maintenance, l'écran de maintenance doit être en place
+      // avant que l'accueil ne s'affiche.
+      await _ref.read(maintenanceProvider.notifier).refresh();
       state = AsyncValue.data(profile);
       _bindProfileStream(profile.id);
       // Recharger l'historique portefeuille pour le nouvel utilisateur

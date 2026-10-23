@@ -890,7 +890,9 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                                   ? _adminDeleteMessage(msg)
                                   : _deleteOwnLoanRequest(msg)
                               : null,
-                          onAccept: !isOwn && !isAccepted
+                          // L'administrateur ne prête pas (règle aussi
+                          // appliquée en base).
+                          onAccept: !widget.isAdmin && !isOwn && !isAccepted
                               ? () => _acceptLoanRequest(msg)
                               : null,
                           onTapUsername: () =>
@@ -1602,7 +1604,9 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                                   ? _deleteMessage(msg)
                                   : _deleteOwnLoanRequest(msg)
                               : null,
-                          onAccept: !isOwn && !isAccepted
+                          // L'administrateur ne prête pas (règle aussi
+                          // appliquée en base).
+                          onAccept: !widget.isAdmin && !isOwn && !isAccepted
                               ? () => _acceptLoanRequest(msg)
                               : null,
                           onTapUsername: () =>

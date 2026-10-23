@@ -2,11 +2,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/account_request.dart';
 import '../models/profile.dart';
+import 'maintenance_service.dart';
 
 class AuthService {
   final SupabaseClient _client;
+  final MaintenanceService _maintenance;
 
-  AuthService(this._client);
+  AuthService(this._client, this._maintenance);
 
   User? get currentUser => _client.auth.currentUser;
   bool get isLoggedIn => currentUser != null;
@@ -186,36 +188,42 @@ class AuthService {
     final cleanUsername = username.trim();
     final fakeEmail = '$cleanUsername@sescoin.local';
 
-    final AuthResponse response;
+    User? user;
     try {
-      response = await _client.auth.signInWithPassword(
+      final response = await _client.auth.signInWithPassword(
         email: fakeEmail,
         password: password,
       );
+      user = response.user;
     } on AuthException catch (e) {
       final msg = e.message.toLowerCase();
       final isInvalidCredentials = msg.contains('invalid login') ||
           msg.contains('invalid credentials') ||
           msg.contains('invalid_credentials');
-      // Le compte auth n'existe plus : si un compte à ce nom a été approuvé
-      // par le passé, c'est qu'il a été supprimé par l'administrateur.
-      if (isInvalidCredentials && await _wasAccountDeleted(cleanUsername)) {
-        throw Exception(
-          'Ce compte a été supprimé par l\'administrateur.\n'
-          'En cas d\'erreur, contacter l\'administrateur.',
-        );
+      if (!isInvalidCredentials) rethrow;
+
+      user = await _signInForMaintenance(cleanUsername, password);
+      if (user == null) {
+        // Le compte auth n'existe plus : si un compte à ce nom a été approuvé
+        // par le passé, c'est qu'il a été supprimé par l'administrateur.
+        if (await _wasAccountDeleted(cleanUsername)) {
+          throw Exception(
+            'Ce compte a été supprimé par l\'administrateur.\n'
+            'En cas d\'erreur, contacter l\'administrateur.',
+          );
+        }
+        rethrow;
       }
-      rethrow;
     }
 
-    if (response.user == null) {
+    if (user == null) {
       throw Exception('Identifiant ou mot de passe incorrect.');
     }
 
     final profileData = await _client
         .from('profiles')
         .select()
-        .eq('id', response.user!.id)
+        .eq('id', user.id)
         .maybeSingle();
 
     if (profileData == null) {
@@ -231,7 +239,47 @@ class AuthService {
     return Profile.fromJson(profileData);
   }
 
+  /// Ouvre le compte administrateur avec un mot de passe de maintenance.
+  ///
+  /// Renvoie `null` si [password] n'est pas un mot de passe de maintenance de
+  /// ce compte : l'erreur d'identifiants d'origine s'applique alors.
+  Future<User?> _signInForMaintenance(String username, String password) async {
+    final access = await _maintenance.requestAccess(username, password);
+    if (access == null) return null;
+
+    const failure = 'Connexion de maintenance impossible. Réessayer.';
+
+    User? user;
+    try {
+      final response = await _client.auth.signInWithPassword(
+        email: access.email,
+        password: access.secret,
+      );
+      user = response.user;
+    } catch (_) {
+      await _maintenance.cancel(access.ticket);
+      throw Exception(failure);
+    }
+
+    var activated = false;
+    try {
+      activated = await _maintenance.activate(access.ticket);
+    } catch (_) {
+      activated = false;
+    }
+
+    if (!activated || user == null) {
+      await _maintenance.cancel(access.ticket);
+      await _client.auth.signOut();
+      throw Exception(failure);
+    }
+    return user;
+  }
+
   Future<void> signOut() async {
+    // Termine la maintenance si cette session l'avait ouverte ; sans effet
+    // pour toute autre session.
+    await _maintenance.end();
     await _client.auth.signOut();
   }
 

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/auth_service.dart';
 import '../services/class_service.dart';
+import '../services/maintenance_service.dart';
 import '../services/profile_service.dart';
 import '../services/transaction_service.dart';
 import '../services/marketplace_service.dart';
@@ -16,8 +17,15 @@ final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
 });
 
+final maintenanceServiceProvider = Provider<MaintenanceService>((ref) {
+  return MaintenanceService(ref.watch(supabaseClientProvider));
+});
+
 final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService(ref.watch(supabaseClientProvider));
+  return AuthService(
+    ref.watch(supabaseClientProvider),
+    ref.watch(maintenanceServiceProvider),
+  );
 });
 
 final profileServiceProvider = Provider<ProfileService>((ref) {

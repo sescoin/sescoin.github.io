@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'common/maintenance_gate.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'providers/settings_provider.dart';
@@ -162,7 +163,8 @@ class SESCoinApp extends ConsumerWidget {
           data: mq.copyWith(
             textScaler: TextScaler.linear(clamped * settings.textScale),
           ),
-          child: child!,
+          // Écran de maintenance par-dessus toutes les pages, si besoin.
+          child: MaintenanceGate(child: child!),
         );
       },
     );

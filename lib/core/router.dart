@@ -21,6 +21,7 @@ import '../screens/admin/admin_rate_screen.dart';
 import '../screens/admin/admin_requests_screen.dart';
 import '../screens/admin/admin_screen.dart';
 import '../screens/admin/admin_tax_screen.dart';
+import '../screens/admin/tutorial/admin_tutorial_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/request_sent_screen.dart';
@@ -81,6 +82,7 @@ class AppRoutes {
   static const String adminTax = '/admin/tax';
   static const String adminReward = '/admin/reward';
   static const String adminRate = '/admin/rate';
+  static const String adminTutorial = '/admin/tutorial';
   static const String adminClasses = '/admin/classes';
   static const String adminClassDetailPath = '/admin/classes/:classId';
   static const String classChatPath = '/chat/class/:classId';
@@ -366,6 +368,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'rate',
             name: 'adminRate',
             builder: (context, state) => const AdminRateScreen(),
+          ),
+          GoRoute(
+            path: 'tutorial',
+            name: 'adminTutorial',
+            builder: (context, state) => const AdminTutorialScreen(),
           ),
         ],
       ),

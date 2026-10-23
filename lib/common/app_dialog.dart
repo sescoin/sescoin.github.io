@@ -121,14 +121,14 @@ class AppDialog extends StatelessWidget {
           if (actions.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  for (var i = 0; i < actions.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    actions[i],
-                  ],
-                ],
+              // Sur un écran étroit, les boutons passent les uns sous les
+              // autres au lieu de déborder.
+              child: OverflowBar(
+                alignment: MainAxisAlignment.end,
+                spacing: 8,
+                overflowSpacing: 8,
+                overflowAlignment: OverflowBarAlignment.end,
+                children: actions,
               ),
             )
           else
