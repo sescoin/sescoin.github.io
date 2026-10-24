@@ -51,7 +51,7 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
     final theme = Theme.of(context);
     final accent = context.accent;
 
-    // Volontairement sans texte : le médaillon et les deux boutons suffisent.
+    // Volontairement sobre : un titre, le médaillon et les deux boutons.
     return Material(
       color: theme.scaffoldBackgroundColor,
       child: Stack(
@@ -75,6 +75,14 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Text(
+                        'Maintenance',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 26),
                       _Emblem(accent: accent, animate: !widget.preview),
                       const SizedBox(height: 36),
                       SizedBox(

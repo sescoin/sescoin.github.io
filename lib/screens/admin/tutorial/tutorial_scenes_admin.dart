@@ -119,7 +119,7 @@ class DemoHomePage extends StatelessWidget {
           'adminButton',
           const MockIcon(
             Icons.admin_panel_settings_rounded,
-            badge: 3,
+            badge: 4,
             badgeColor: AppTheme.warning,
           ),
         ),
@@ -472,7 +472,7 @@ class _DemoAdminPanel extends StatelessWidget {
 
   final DemoController c;
 
-  static const _badges = {'reports': 1, 'requests': 2};
+  static const _badges = {'accounts': 1, 'reports': 1, 'requests': 2};
 
   @override
   Widget build(BuildContext context) {
@@ -546,14 +546,15 @@ Future<void> playHomeTour(DemoPlayer p) async {
   await p.reveal('quick', alignment: 0.6);
   await p.moveTo('quick');
   await p.wait(1400);
-  p.say('La cloche : les notifications (pastille rouge = non lues)');
+  p.say('La cloche : notifications en rouge = non lues');
   await p.reveal('balance', alignment: 0);
   await p.moveTo('bell');
   await p.wait(1100);
 }
 
 Future<void> playAdminPanel(DemoPlayer p) async {
-  p.say('La pastille orange : 2 demandes de compte + 1 signalement');
+  p.say(
+      'Notifications en orange : 2 demandes de compte, 1 signalement, 1 photo');
   await p.moveTo('adminButton');
   await p.wait(1100);
   await p.tap('adminButton');
@@ -773,8 +774,8 @@ Widget accountsScene(BuildContext context, DemoController c) {
               ),
               const SizedBox(height: 12),
               Text(
-                'Le nouveau mot de passe devra être communiqué au titulaire '
-                'du compte : il ne lui sera pas envoyé.',
+                'Le nouveau mot de passe est à communiquer à l\'utilisateur : '
+                'aucun envoi automatique.',
                 style: TextStyle(
                   fontSize: 12,
                   height: 1.35,
@@ -1445,9 +1446,9 @@ Future<void> playResetPassword(DemoPlayer p) async {
   p.say('Taper le nouveau mot de passe (8 caractères minimum)');
   await p.tap('f_password');
   p.set('focus', 'password');
-  await p.type('password', 'Soleil2026', perChar: 90);
+  await p.type('password', 'motdepasse', perChar: 90);
   await p.wait(400);
-  p.say('« Réinitialiser », puis communiquer ce mot de passe au titulaire');
+  p.say('« Réinitialiser », puis communiquer ce mot de passe à l\'utilisateur');
   await p.tap('doReset');
   p
     ..set('focus', null)
@@ -1503,7 +1504,7 @@ Future<void> playPhotoReview(DemoPlayer p) async {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const _demoT = DemoPerson('Utilisateur T', 'utilisateur.t', 0);
-const _demoClasses = ['Terminale B', 'Première A', 'Terminale C'];
+const _demoClasses = ['TG1', 'TG2', 'TG3', '1G1', '1G2', '1G3'];
 
 Widget requestsScene(BuildContext context, DemoController c) {
   return Stack(
@@ -1530,7 +1531,7 @@ Widget requestsScene(BuildContext context, DemoController c) {
               c: c,
               person: _demoT,
               id: 'jade',
-              className: 'Première A',
+              className: '1G1',
             ),
           ],
         ),
@@ -1754,10 +1755,10 @@ Future<void> playApproveRequest(DemoPlayer p) async {
     ..set('balance', '');
   await p.type('balance', '150', perChar: 140);
   p.say('La classe de l\'utilisateur');
-  await p.tap('cls_Terminale B');
+  await p.tap('cls_TG1');
   p
     ..set('focus', null)
-    ..set('dlgClass', 'Terminale B');
+    ..set('dlgClass', 'TG1');
   await p.wait(500);
   p.say('« Approuver » : le compte est créé tout de suite');
   await p.tap('doApprove');
@@ -2085,7 +2086,7 @@ Widget sanctionsScene(BuildContext context, DemoController c) {
             id: 'lifted',
             kind: 'ban',
             username: demoU.username,
-            reason: 'Messages répétés hors sujet',
+            reason: 'Menace dans le chat',
             createdAt: now.subtract(const Duration(days: 3)),
             liftedAt: now.subtract(const Duration(days: 2)),
             issuedBy: userHandle(me.username),
@@ -3065,7 +3066,6 @@ Future<void> playManageItem(DemoPlayer p) async {
     ..set('f_price', '80')
     ..set('f_stock', '3')
     ..set('f_limit', '1')
-    ..set('f_desc', 'Demande de retrait d\'une absence du dossier.')
     ..set('page', 'itemForm');
   await p.wait(800);
   p.say('Exemple : baisser le prix à 60 SC');
@@ -3229,11 +3229,13 @@ class _DemoClassList extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
-          _DemoClassCard(c: c, name: 'Terminale B', members: 3),
-          _DemoClassCard(c: c, name: 'Première A', members: 2),
+          _DemoClassCard(c: c, name: 'TG1', members: 3),
+          _DemoClassCard(c: c, name: 'TG2', members: 4),
+          _DemoClassCard(c: c, name: '1G1', members: 2),
+          _DemoClassCard(c: c, name: '1G2', members: 5),
           _Collapse(
             visible: c.flag('created'),
-            child: _DemoClassCard(c: c, name: 'Terminale C', members: 0),
+            child: _DemoClassCard(c: c, name: 'TG3', members: 0),
           ),
         ],
       ),
@@ -3344,7 +3346,7 @@ class _DemoClassDetail extends StatelessWidget {
     ];
 
     return MockScreen(
-      title: 'Terminale B',
+      title: 'TG1',
       body: ListView(
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -3380,7 +3382,7 @@ class _DemoClassDetail extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Terminale B',
+                        'TG1',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -3597,7 +3599,7 @@ Future<void> playClasses(DemoPlayer p) async {
   p.say('Le nom de la classe');
   await p.tap('f_class');
   p.set('focus', 'class');
-  await p.type('className', 'Terminale C', perChar: 140);
+  await p.type('className', 'TG3', perChar: 140);
   p.say('« Créer »');
   await p.tap('doCreate');
   p
@@ -3606,8 +3608,8 @@ Future<void> playClasses(DemoPlayer p) async {
     ..set('created', true);
   await p.wait(1000);
   p.say('⋮ : « Renommer » ou « Supprimer » une classe');
-  await p.tap('dots_Terminale B');
-  p.set('menuRect', p.rectOf('dots_Terminale B'));
+  await p.tap('dots_TG1');
+  p.set('menuRect', p.rectOf('dots_TG1'));
   await p.wait(1700);
   p.set('menuRect', null);
   await p.wait(300);
@@ -3615,7 +3617,7 @@ Future<void> playClasses(DemoPlayer p) async {
 
 Future<void> playClassMembers(DemoPlayer p) async {
   p.say('Toucher une classe pour ouvrir sa fiche');
-  await p.tap('class_Terminale B', at: const Alignment(-0.4, 0));
+  await p.tap('class_TG1', at: const Alignment(-0.4, 0));
   p.set('page', 'detail');
   await p.wait(900);
   p.say('« Ajouter » : choisir parmi les utilisateurs sans classe');
@@ -4571,6 +4573,17 @@ Future<void> playRate(DemoPlayer p) async {
           ..set('dragIndex', i);
       },
     );
+    p.set('dragIndex', null);
+    await p.wait(400);
+
+    // Sans glisser : un toucher place la colonne à la hauteur touchée.
+    p.say('Un simple toucher sur une colonne rectifie aussi sa valeur');
+    final column = demoColumnPath(inner, List.filled(10, 0.3 * 0.94))[6];
+    p.set('dragIndex', 6);
+    await p.tapAt(column);
+    values[6] = 3.0;
+    p.set('price', List<double>.of(values));
+    await p.wait(700);
     p.set('dragIndex', null);
     await p.wait(400);
 

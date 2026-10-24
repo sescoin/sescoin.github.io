@@ -7,6 +7,7 @@ import '../../common/loading_overlay.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../providers/report_provider.dart';
 import '../../providers/auth_provider.dart';
 
@@ -175,6 +176,7 @@ class AdminScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(adminActionsProvider);
     final badges = {
+      'accounts': ref.watch(pendingAvatarCountProvider),
       'reports': ref.watch(pendingReportsCountProvider),
       'requests': ref.watch(pendingRequestsProvider).valueOrNull?.length ?? 0,
     };
@@ -190,8 +192,8 @@ class AdminScreen extends ConsumerWidget {
             FadeSlideIn.staggered(
               index: 0,
               child: AdminHeaderCard(
-                name: ref.watch(currentProfileProvider).value?.displayName ??
-                    '',
+                name:
+                    ref.watch(currentProfileProvider).value?.displayName ?? '',
               ),
             ),
             for (final section in adminMenu) ...[

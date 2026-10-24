@@ -36,32 +36,32 @@ const demoX = DemoPerson(
   'Utilisateur X',
   'utilisateur.x',
   152.40,
-  className: 'Terminale B',
+  className: 'TG1',
 );
 const demoY = DemoPerson(
   'Utilisateur Y',
   'utilisateur.y',
   87.00,
-  className: 'Terminale B',
+  className: 'TG1',
 );
 const demoZ = DemoPerson(
   'Utilisateur Z',
   'utilisateur.z',
   240.10,
-  className: 'Première A',
+  className: '1G1',
 );
 const demoW = DemoPerson('Utilisateur W', 'utilisateur.w', 35.75);
 const demoV = DemoPerson(
   'Utilisateur V',
   'utilisateur.v',
   118.20,
-  className: 'Première A',
+  className: '1G1',
 );
 const demoU = DemoPerson(
   'Utilisateur U',
   'utilisateur.u',
   64.00,
-  className: 'Terminale B',
+  className: 'TG1',
 );
 
 /// Identifiant fictif du compte qui suit le tutoriel, pour les tuiles de

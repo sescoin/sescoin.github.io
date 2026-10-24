@@ -62,6 +62,10 @@ Future<void> main() async {
         defaultValue: 'sb_publishable_9OGOA6drdIbJPRwtKq0Z6g_bLaQAUA8',
       ),
       debug: false, // Passe à true pour voir les logs réseau
+      // Identifie cette version auprès du serveur : pendant une maintenance,
+      // les anciennes versions (sans écran de maintenance) sont refusées
+      // (voir 20261025_read_receipts_and_maintenance_guard.sql).
+      headers: const {'X-Client-Info': 'supabase-flutter sescoin-app/2'},
     );
   } catch (error, stack) {
     _logError('supabase-init', error, stack);
@@ -74,10 +78,8 @@ Future<void> main() async {
   // On profite aussi de cet listener pour traiter les prêts en retard.
   Timer? overdueTimer;
   Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-    if (data.event == AuthChangeEvent.tokenRefreshed &&
-        data.session != null) {
-      Supabase.instance.client.realtime
-          .setAuth(data.session!.accessToken);
+    if (data.event == AuthChangeEvent.tokenRefreshed && data.session != null) {
+      Supabase.instance.client.realtime.setAuth(data.session!.accessToken);
     }
     if (data.event == AuthChangeEvent.signedIn) {
       _processOverdueLoans();
@@ -136,9 +138,9 @@ class SESCoinApp extends ConsumerWidget {
     // Theme n'est accessible depuis ErrorWidget.builder. On lui laisse donc
     // le thème actif, pour qu'il suive l'ambiance, l'accent et la police
     // choisis plutôt que des couleurs figées.
-    final systemDark = WidgetsBinding.instance.platformDispatcher
-            .platformBrightness ==
-        Brightness.dark;
+    final systemDark =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark;
     _activeTheme = switch (settings.themeMode) {
       ThemeMode.dark => darkTheme,
       ThemeMode.light => lightTheme,

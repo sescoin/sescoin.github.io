@@ -16,6 +16,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../providers/report_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/wallet_provider.dart';
@@ -134,8 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               children: [
                                 const Text(
                                   'Paiement NFC',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.w700),
+                                  style: TextStyle(fontWeight: FontWeight.w700),
                                 ),
                                 Text(
                                   'Mode principal · téléphones à rapprocher',
@@ -491,12 +491,13 @@ class _AdminButtonState extends ConsumerState<_AdminButton>
   @override
   Widget build(BuildContext context) {
     // Tout ce qui attend l'administrateur derrière ce bouton : demandes de
-    // compte et signalements. La pastille annonce l'ensemble, sinon un
-    // signalement seul passerait inaperçu depuis l'accueil.
+    // compte, signalements et photos de profil à valider. La pastille
+    // annonce l'ensemble, sinon un signalement seul passerait inaperçu.
     final pendingRequests =
         ref.watch(pendingRequestsProvider).valueOrNull?.length ?? 0;
     final pendingReports = ref.watch(pendingReportsCountProvider);
-    final count = pendingRequests + pendingReports;
+    final pendingPhotos = ref.watch(pendingAvatarCountProvider);
+    final count = pendingRequests + pendingReports + pendingPhotos;
 
     return Stack(
       children: [

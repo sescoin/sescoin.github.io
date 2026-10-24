@@ -298,8 +298,7 @@ class _ChatInfoButtonState extends State<_ChatInfoButton>
                 const SizedBox(height: 10),
                 const _ChatInfoRow(
                   icon: Icons.card_giftcard_rounded,
-                  text:
-                      'Un cadeau revient au premier membre qui le récupère.',
+                  text: 'Un cadeau revient au premier membre qui le récupère.',
                 ),
               ] else ...[
                 const _ChatInfoRow(
@@ -515,6 +514,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   bool _isNearBottom = true;
   final Set<String> _locallyDeletedIds = {};
   final Set<String> _locallyAcceptedLoanRequestIds = {};
+  String? _lastMarkedRead;
 
   @override
   void initState() {
@@ -530,6 +530,23 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
       ..removeListener(_onScroll)
       ..dispose();
     super.dispose();
+  }
+
+  /// Accusé de lecture : le dernier message, une fois le bas du fil atteint.
+  void _markLatestRead(List<ChatMessage> visible) {
+    if (!_isNearBottom || visible.isEmpty) return;
+    final latest = visible.last.id;
+    if (latest == _lastMarkedRead) return;
+    _lastMarkedRead = latest;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      try {
+        await ref.read(chatActionProvider.notifier).markRead(latest);
+      } catch (_) {
+        // Nouvel essai au prochain affichage.
+        _lastMarkedRead = null;
+      }
+    });
   }
 
   void _onScroll() {
@@ -688,9 +705,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
       ),
     );
     if (!mounted) return;
-    if (newContent == null ||
-        newContent.isEmpty ||
-        newContent == msg.content) {
+    if (newContent == null || newContent.isEmpty || newContent == msg.content) {
       return;
     }
     try {
@@ -792,6 +807,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(globalMessagesProvider);
     final chatState = ref.watch(chatActionProvider);
+    final readsMap = ref.watch(chatReadsMapProvider);
     final currentUserId = ref.watch(currentUserIdProvider) ?? '';
 
     // Compteurs quotidiens (annonces) pour afficher les limites.
@@ -827,6 +843,8 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                       message: 'Aucune annonce pour l\'instant.',
                     );
                   }
+
+                  _markLatestRead(visible);
 
                   // Auto-scroll si en bas
                   if (_isNearBottom) {
@@ -905,7 +923,9 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
                         message: msg,
                         isOwn: isOwn,
                         showHeader: item.showHeader,
-                        readers: const [],
+                        readers: (readsMap[msg.id] ?? const <ChatRead>[])
+                            .where((r) => r.userId != currentUserId)
+                            .toList(),
                         showEditedLabel: false,
                         onTapUsername: () =>
                             context.push('/user/${msg.username}'),
@@ -1004,6 +1024,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
   bool _isNearBottom = true;
   final Set<String> _locallyDeletedIds = {};
   final Set<String> _locallyAcceptedLoanRequestIds = {};
+  String? _lastMarkedRead;
 
   @override
   void initState() {
@@ -1020,6 +1041,24 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
       ..removeListener(_onScroll)
       ..dispose();
     super.dispose();
+  }
+
+  /// Accusé de lecture : le dernier message, une fois le bas du fil atteint.
+  /// Chaque membre voit ainsi qui a lu ses messages.
+  void _markLatestRead(List<ChatMessage> visible) {
+    if (!_isNearBottom || visible.isEmpty) return;
+    final latest = visible.last.id;
+    if (latest == _lastMarkedRead) return;
+    _lastMarkedRead = latest;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      try {
+        await ref.read(chatActionProvider.notifier).markRead(latest);
+      } catch (_) {
+        // Nouvel essai au prochain affichage.
+        _lastMarkedRead = null;
+      }
+    });
   }
 
   void _onScroll() {
@@ -1194,12 +1233,11 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
         ref.read(classMessagesProvider(widget.classId)).valueOrNull ??
             const <ChatMessage>[];
     final giftsToday = classMsgs
-        .where(
-            (m) => m.isGift && m.userId == myId && _isToday(m.createdAt))
+        .where((m) => m.isGift && m.userId == myId && _isToday(m.createdAt))
         .length;
     final loansToday = classMsgs
-        .where((m) =>
-            m.isLoanRequest && m.userId == myId && _isToday(m.createdAt))
+        .where(
+            (m) => m.isLoanRequest && m.userId == myId && _isToday(m.createdAt))
         .length;
     showModalBottomSheet(
       context: context,
@@ -1536,6 +1574,8 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                     );
                   }
 
+                  _markLatestRead(visible);
+
                   if (_isNearBottom) {
                     WidgetsBinding.instance.addPostFrameCallback(
                       (_) => _scrollToBottom(),
@@ -1593,8 +1633,8 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
                       if (msg.isLoanRequest) {
                         final isAccepted = msg.isLoanRequestAccepted ||
                             _locallyAcceptedLoanRequestIds.contains(msg.id);
-                        final canDelete = widget.isAdmin ||
-                            (isOwn && !isAccepted);
+                        final canDelete =
+                            widget.isAdmin || (isOwn && !isAccepted);
                         return _LoanRequestBubble(
                           message: msg,
                           isOwn: isOwn,
@@ -1731,8 +1771,8 @@ class _LoanRequestBar extends StatelessWidget {
                         ),
                         child: Icon(
                           Icons.card_giftcard_rounded,
-                          color: accent
-                              .withValues(alpha: giftReached ? 0.4 : 1),
+                          color:
+                              accent.withValues(alpha: giftReached ? 0.4 : 1),
                           size: 22,
                         ),
                       ),
@@ -2529,8 +2569,7 @@ class _GiftBubble extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.35,
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.8),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -2697,7 +2736,6 @@ class _ClaimGiftButtonState extends State<_ClaimGiftButton>
   }
 }
 
-
 // ── Action tile (bottom sheet) ────────────────────────────────────────────────
 
 class _ChatActionTile extends StatelessWidget {
@@ -2752,8 +2790,8 @@ class _ChatActionTile extends StatelessWidget {
                 if (badge != null)
                   Container(
                     margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: actionColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(999),
@@ -3169,10 +3207,8 @@ class _ReportButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context)
-        .colorScheme
-        .onSurfaceVariant
-        .withValues(alpha: 0.45);
+    final color =
+        Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.45);
 
     return Tooltip(
       message: 'Signaler ce message',

@@ -60,14 +60,16 @@ class ChatService {
         .limit(100)
         .map((rows) => rows
             .map(ChatMessage.fromJson)
-            .where((m) =>
-                m.classId == classId && !m.isDeleted && !m.isExpired)
+            .where((m) => m.classId == classId && !m.isDeleted && !m.isExpired)
             .toList());
   }
 
+  /// Positions de lecture : une par compte et par conversation.
   Stream<List<ChatRead>> watchReads() {
-    return _client.from('chat_reads').stream(primaryKey: ['user_id']).map(
-        (rows) => rows.map(ChatRead.fromJson).toList());
+    return _client.from('chat_reads').stream(primaryKey: [
+      'user_id',
+      'chat_key'
+    ]).map((rows) => rows.map(ChatRead.fromJson).toList());
   }
 
   // ── Global chat ────────────────────────────────────────────────────────────

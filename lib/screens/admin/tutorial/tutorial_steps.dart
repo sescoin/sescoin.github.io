@@ -113,7 +113,8 @@ const tutorialSteps = <TutorialStep>[
       'Le graphique : toucher une colonne affiche son prix exact.',
       'Les actions rapides : Payer, Transférer, Prêts, Comptes, Classement, '
           'Blockchain.',
-      'La cloche : les notifications. La barre du bas : les grandes '
+      'La cloche : les notifications (en rouge : non lues). La barre du '
+          'bas : les grandes '
           'rubriques de l\'application.',
     ],
     scene: navScene,
@@ -126,8 +127,8 @@ const tutorialSteps = <TutorialStep>[
     text: 'Le bouclier en haut à droite de l\'accueil n\'apparaît que sur le '
         'compte administrateur : accès à toutes les fonctions de gestion.',
     points: [
-      'Pastille orange : le nombre de décisions en attente (demandes de '
-          'compte et signalements).',
+      'Notifications en orange : le nombre de décisions en attente '
+          '(demandes de compte, signalements et photos à valider).',
       'Fonctions rangées par thème : Comptes, Marché, Classes, Prêts, '
           'Économie et Aide.',
       'Les étapes suivantes les présentent toutes, dans cet ordre.',
@@ -195,8 +196,8 @@ const tutorialSteps = <TutorialStep>[
     points: [
       '⋮ → « Réinitialiser le mot de passe ».',
       'Taper le nouveau mot de passe : 8 caractères minimum.',
-      'Communiquer ce mot de passe au titulaire du compte, avec possibilité '
-          'de changement ensuite depuis le profil.',
+      'Communiquer ce mot de passe à l\'utilisateur, avec possibilité de '
+          'changement ensuite depuis le profil.',
     ],
     scene: accountsScene,
     script: playResetPassword,
@@ -210,8 +211,6 @@ const tutorialSteps = <TutorialStep>[
       '⋮ → « Supprimer », puis confirmer.',
       'Compte retiré de la liste, connexion impossible.',
     ],
-    tip: 'Suppression définitive. En cas de doute, un bannissement est '
-        'préférable : levée possible à tout moment.',
     scene: accountsScene,
     script: playDeleteAccount,
     focus: 'dots_utilisateur.u',
@@ -347,8 +346,8 @@ const tutorialSteps = <TutorialStep>[
       'Le drapeau à côté d\'un message : censure immédiate.',
       'Appui long sur un message → « Supprimer » : suppression pour tout le '
           'monde.',
-      'Sous chaque message de l\'administration : la liste des lecteurs '
-          '(toucher pour voir les noms).',
+      'Sous les messages : la liste des lecteurs, visible par tous les '
+          'membres (toucher pour voir les noms).',
       'Le bouton + : envoyer un cadeau à la classe.',
     ],
     scene: chatScene,
@@ -377,8 +376,7 @@ const tutorialSteps = <TutorialStep>[
   TutorialStep(
     chapter: _market,
     title: 'Gérer une offre',
-    text: 'Suivre les ventes d\'une offre, la modifier ou la retirer. '
-        'Exemple : le retrait d\'une absence, à demander contre des SC.',
+    text: 'Suivi des ventes d\'une offre, modification ou retrait.',
     points: [
       'Les pastilles : catégorie, stock restant (rouge à 3 ou moins), '
           'limite par utilisateur.',
@@ -429,7 +427,7 @@ const tutorialSteps = <TutorialStep>[
   TutorialStep(
     chapter: _classes,
     title: 'Créer et organiser les classes',
-    text: 'Les classes regroupent les utilisateurs (Première, Terminale…). '
+    text: 'Les classes regroupent les utilisateurs (TG1, 1G1…). '
         'Chaque classe a son chat.',
     points: [
       'Administration → « Gérer les classes ».',
@@ -452,7 +450,7 @@ const tutorialSteps = <TutorialStep>[
     ],
     scene: classesScene,
     script: playClassMembers,
-    focus: 'class_Terminale B',
+    focus: 'class_TG1',
   ),
 
   // ── Prêts ─────────────────────────────────────────────────────────────────
@@ -467,8 +465,8 @@ const tutorialSteps = <TutorialStep>[
       'Un prêt non remboursé à l\'échéance est prélevé automatiquement sur '
           'le compte de l\'emprunteur.',
     ],
-    tip: 'L\'administrateur ne prête pas d\'argent : les prêts se font '
-        'uniquement entre utilisateurs.',
+    tip: 'Les utilisateurs ne peuvent pas demander un prêt à '
+        'l\'administrateur.',
     scene: loansAdminScene,
     initial: loanSettingsInitial,
     script: playLoansList,
@@ -529,6 +527,8 @@ const tutorialSteps = <TutorialStep>[
       'Choisir la série à dessiner : « Demande », « Offre » ou « Prix ».',
       'Glisser sur le graphique : les colonnes ou la courbe suivent le '
           'mouvement.',
+      'Un simple toucher sur une colonne rectifie aussi sa valeur, sans '
+          'glisser.',
       'Appui long sur une colonne : saisir sa valeur exacte.',
       'La flèche ↓ reprend le dernier prix comme cours ; écrire la raison, '
           'puis « Appliquer le nouveau cours ».',
@@ -590,7 +590,7 @@ const tutorialSteps = <TutorialStep>[
     title: 'Acheter en boutique',
     text: 'Le marché tel que les utilisateurs le voient.',
     points: [
-      'Les offres sont rangées par catégorie ; certaines ont une photo.',
+      'Les offres sont rangées par catégorie.',
       '« Limite atteinte » : le maximum d\'achats autorisé est atteint.',
       '« Épuisé » : tout le stock de l\'offre est vendu.',
       '« Acheter » montre le prix, le solde actuel et le solde après achat, '
@@ -610,8 +610,7 @@ const tutorialSteps = <TutorialStep>[
       'Une offre doit dépasser le prix actuel d\'au moins 1 SC.',
       'Le meilleur enchérisseur choisit l\'émoji affiché à côté de son nom.',
     ],
-    tip: 'Enchères réservées aux utilisateurs : le compte administrateur '
-        'peut seulement les consulter.',
+    tip: 'L\'administrateur ne peut pas enchérir.',
     scene: shopScene,
     script: playBid,
     focus: 'shopTabs',
@@ -672,7 +671,7 @@ const tutorialSteps = <TutorialStep>[
     chapter: _profile,
     title: 'Les notifications',
     text: 'Tout ce qui attend une action : demandes de compte, photos à '
-        'valider, paiements reçus…',
+        'valider…',
     points: [
       'Non lue : titre en gras et point doré.',
       'Toucher une notification : marquée comme lue.',
@@ -726,6 +725,8 @@ const tutorialSteps = <TutorialStep>[
         'jusqu\'à la fin de l\'intervention.',
     points: [
       'Maintenance générale : tous les comptes voient cet écran.',
+      'Anciennes versions de l\'application : connexion et actions refusées '
+          'pendant la maintenance (« Maintenance en cours. »).',
       'Maintenance de l\'administration : seul le compte administrateur est '
           'bloqué ; les utilisateurs continuent normalement.',
       '« Vérifier la fin de la maintenance » relance la vérification ; '

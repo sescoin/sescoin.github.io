@@ -236,7 +236,7 @@ class _DemoClassChat extends StatelessWidget {
   Widget build(BuildContext context) {
     final me = DemoIdentity.of(context);
     return MockScreen(
-      title: 'Terminale B',
+      title: 'TG1',
       body: Column(
         children: [
           Expanded(
@@ -1078,7 +1078,7 @@ Future<void> playModerateClass(DemoPlayer p) async {
     ..set('dialog', null)
     ..set('msgDeleted', true);
   await p.wait(1000);
-  p.say('Sous chaque message de l\'administration : qui l\'a lu');
+  p.say('Sous les messages : la liste des lecteurs, visible par tous');
   await p.tap('reads');
   p.set('readsOpen', true);
   await p.wait(1500);
@@ -1928,8 +1928,6 @@ class _DemoShopTab extends StatelessWidget {
                           80,
                           stock: 0,
                           maxPerUser: 1,
-                          description:
-                              'Demande de retrait d\'une absence du dossier.',
                         ),
                         fillHeight: true,
                         onBuy: null,
@@ -3107,9 +3105,9 @@ class _DemoNotifications extends StatelessWidget {
       AppNotification(
         id: 'n2',
         userId: demoMeId,
-        type: NotificationType.transactionReceived,
-        title: 'Paiement reçu',
-        body: '15 SC reçus. Raison : Merci pour le coup de main',
+        type: NotificationType.system,
+        title: 'Nouvelle demande de compte',
+        body: '${demoW.name} demande un compte.',
         isRead: true,
         createdAt: now.subtract(const Duration(hours: 3)),
       ),

@@ -23,13 +23,20 @@ final publicProfileProvider =
   return ref.watch(profileServiceProvider).getProfileByUsername(username);
 });
 
-final profileByIdProvider = FutureProvider.family<Profile, String>((ref, userId) {
+final profileByIdProvider =
+    FutureProvider.family<Profile, String>((ref, userId) {
   return ref.watch(profileServiceProvider).getProfile(userId);
 });
 
 // ── Tous les profils (admin) ──────────────────────────────────────────────────
 final allProfilesProvider = StreamProvider<List<Profile>>((ref) {
   return ref.watch(profileServiceProvider).watchAllProfiles();
+});
+
+/// Photos de profil en attente de validation par l'administration.
+final pendingAvatarCountProvider = Provider<int>((ref) {
+  final profiles = ref.watch(allProfilesProvider).valueOrNull ?? const [];
+  return profiles.where((p) => (p.pendingAvatarUrl ?? '').isNotEmpty).length;
 });
 
 // ── Actions profil ────────────────────────────────────────────────────────────

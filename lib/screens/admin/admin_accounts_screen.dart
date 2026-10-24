@@ -202,8 +202,8 @@ class _AdminAccountsScreenState extends ConsumerState<AdminAccountsScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Le nouveau mot de passe est à communiquer au titulaire du '
-                'compte : aucun envoi automatique.',
+                'Le nouveau mot de passe est à communiquer à l\'utilisateur : '
+                'aucun envoi automatique.',
                 style: TextStyle(
                   fontSize: 12,
                   height: 1.35,
