@@ -8,6 +8,7 @@ import '../../common/user_avatar.dart';
 import '../../core/theme.dart';
 import '../../models/profile.dart';
 import '../../providers/profile_provider.dart';
+import '../../core/user_handle.dart';
 
 class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
@@ -275,7 +276,7 @@ class _RankingTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '@${profile.username}',
+                  userHandle(profile.username),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

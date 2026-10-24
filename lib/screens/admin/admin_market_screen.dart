@@ -17,6 +17,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/auction_provider.dart';
 import '../../providers/marketplace_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../core/user_handle.dart';
 
 class AdminMarketScreen extends ConsumerStatefulWidget {
   const AdminMarketScreen({
@@ -110,7 +111,7 @@ class _AdminShopTab extends ConsumerWidget {
                 ? const EmptyState(
                     icon: Icons.storefront_rounded,
                     title: 'Aucune offre boutique',
-                    subtitle: 'Ajoutez la première offre du marché',
+                    subtitle: 'Bouton + pour ajouter une première offre',
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -378,7 +379,7 @@ class _AdminAuctionsTab extends ConsumerWidget {
                 ? const EmptyState(
                     icon: Icons.gavel_rounded,
                     title: 'Aucune enchère',
-                    subtitle: 'Créez la première enchère',
+                    subtitle: 'Bouton + pour créer une première enchère',
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -522,7 +523,7 @@ class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
             if (auction.currentWinnerUsername != null) ...[
               const SizedBox(height: 8),
               Text(
-                'En tête : @${auction.currentWinnerUsername}${auction.currentWinnerEmoji != null ? ' ${auction.currentWinnerEmoji}' : ''}',
+                'En tête : ${userHandle(auction.currentWinnerUsername)}${auction.currentWinnerEmoji != null ? ' ${auction.currentWinnerEmoji}' : ''}',
                 style: const TextStyle(fontSize: 12),
               ),
             ],
@@ -640,7 +641,7 @@ class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            '${auction.status == AuctionStatus.ended ? 'Gagnant' : 'Gagnant actuel'} : @${topBidder['username'] ?? topBid['bidder_username']} - ${((topBid['amount'] as num).toDouble()).toStringAsFixed(2)} SC',
+                            '${auction.status == AuctionStatus.ended ? 'Gagnant' : 'Gagnant actuel'} : ${userHandle(topBidder['username'] ?? topBid['bidder_username'])} - ${((topBid['amount'] as num).toDouble()).toStringAsFixed(2)} SC',
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         )
@@ -679,7 +680,7 @@ class _AuctionAdminCardState extends ConsumerState<_AuctionAdminCard> {
                                           'Utilisateur inconnu',
                                     ),
                                     subtitle: Text(
-                                      '@${bid['bidder_username']}',
+                                      userHandle(bid['bidder_username']),
                                     ),
                                     trailing: Column(
                                       mainAxisAlignment:

@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../models/transaction.dart';
 import '../../providers/auth_provider.dart';
 import '../common/amount_display.dart';
+import '../core/user_handle.dart';
 
 class TransactionTile extends ConsumerWidget {
   const TransactionTile({
@@ -88,7 +89,7 @@ class TransactionTile extends ConsumerWidget {
   String _subtitle(String otherParty, bool isCredit) {
     switch (transaction.type) {
       case TransactionType.transfer:
-        return isCredit ? 'De @$otherParty' : 'À @$otherParty';
+        return isCredit ? 'De ${userHandle(otherParty)}' : 'À ${userHandle(otherParty)}';
       case TransactionType.purchase:
         return transaction.marketplaceItemName == null
             ? 'Achat boutique'
@@ -114,8 +115,8 @@ class TransactionTile extends ConsumerWidget {
         return 'Solde initial';
       case TransactionType.gift:
         return isCredit
-            ? 'Cadeau récupéré de @$otherParty'
-            : 'Cadeau récupéré par @$otherParty';
+            ? 'Cadeau récupéré de ${userHandle(otherParty)}'
+            : 'Cadeau récupéré par ${userHandle(otherParty)}';
     }
   }
 }

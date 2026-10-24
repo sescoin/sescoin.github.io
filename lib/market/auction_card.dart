@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../models/auction.dart';
 import '../common/amount_display.dart';
 import '../common/user_avatar.dart';
+import '../core/user_handle.dart';
 
 class AuctionCard extends StatefulWidget {
   const AuctionCard({
@@ -13,11 +14,15 @@ class AuctionCard extends StatefulWidget {
     required this.auction,
     required this.onBid,
     this.isLoading = false,
+    this.actionLabel,
   });
 
   final Auction auction;
   final VoidCallback onBid;
   final bool isLoading;
+
+  /// Remplace « Enchérir » (l'administrateur ne fait que consulter).
+  final String? actionLabel;
 
   @override
   State<AuctionCard> createState() => _AuctionCardState();
@@ -175,7 +180,7 @@ class _AuctionCardState extends State<AuctionCard> {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                '@${auction.currentWinnerUsername}',
+                                userHandle(auction.currentWinnerUsername),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -221,9 +226,15 @@ class _AuctionCardState extends State<AuctionCard> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.gavel_rounded, size: 18),
+                          : Icon(
+                              widget.actionLabel == null
+                                  ? Icons.gavel_rounded
+                                  : Icons.visibility_rounded,
+                              size: 18,
+                            ),
                       label: Text(
-                        'Enchérir (min. ${auction.minimumNextBid.toStringAsFixed(2)} SC)',
+                        widget.actionLabel ??
+                            'Enchérir (min. ${auction.minimumNextBid.toStringAsFixed(2)} SC)',
                       ),
                     ),
                   ),

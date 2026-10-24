@@ -27,13 +27,14 @@ import '../../maintenance/maintenance_screen.dart';
 import 'tutorial_engine.dart';
 import 'tutorial_mock.dart';
 import 'tutorial_scenes_admin.dart';
+import '../../../core/user_handle.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scènes du tutoriel : fonctions communes à tous les comptes (chat, argent,
 // marché, prêts, profil, réglages, maintenance).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _demoJade = DemoPerson('Jade Morel', 'jade.morel', 0);
+const _demoT = DemoPerson('Utilisateur T', 'utilisateur.t', 0);
 
 String _id(DemoPerson person) => 'demo-${person.username}';
 
@@ -96,7 +97,7 @@ Widget chatScene(BuildContext context, DemoController c) {
         child: AppDialog(
           icon: Icons.edit_rounded,
           title: 'Modifier l\'annonce',
-          subtitle: 'Visible par toute la classe',
+          subtitle: 'Visible par tous',
           content: c.mark(
             'f_edit',
             MockField(
@@ -188,10 +189,9 @@ class _DemoAnnouncements extends StatelessWidget {
                   name: me.name,
                   username: me.username,
                   own: true,
-                  text: 'Bonjour à tous ! Le marché ouvre à 10 h.',
+                  text: 'Bonjour à tous ! Bonne semaine.',
                   time: '08:15',
                 ),
-                _DemoLoanRequestBubble(c: c),
                 if (c.flag('sent'))
                   _DemoBubble(
                     c: c,
@@ -202,11 +202,14 @@ class _DemoAnnouncements extends StatelessWidget {
                     text: c.text('sentText'),
                     time: 'à l\'instant',
                   ),
+                // La demande de prêt arrive après l'annonce de l'enchère.
+                if (c.flag('loanPosted'))
+                  c.mark('loanRow', _DemoLoanRequestBubble(c: c)),
                 if (c.flag('giftSent'))
                   c.mark(
                     'giftBubble',
                     _DemoGiftBubble(
-                      claimedBy: c.flag('giftClaimed') ? demoLea : null,
+                      claimedBy: c.flag('giftClaimed') ? demoX : null,
                     ),
                   ),
               ],
@@ -233,7 +236,7 @@ class _DemoClassChat extends StatelessWidget {
   Widget build(BuildContext context) {
     final me = DemoIdentity.of(context);
     return MockScreen(
-      title: '5e B',
+      title: 'Terminale B',
       body: Column(
         children: [
           Expanded(
@@ -245,8 +248,8 @@ class _DemoClassChat extends StatelessWidget {
                 _DemoBubble(
                   c: c,
                   id: 'msg_lea',
-                  name: demoLea.name,
-                  username: demoLea.username,
+                  name: demoX.name,
+                  username: demoX.username,
                   text: 'Quelqu\'un a fini l\'exercice 3 ?',
                   time: '13:02',
                   flagId: 'flag_lea',
@@ -256,10 +259,9 @@ class _DemoClassChat extends StatelessWidget {
                   child: _DemoBubble(
                     c: c,
                     id: 'msg_hugo',
-                    name: demoHugo.name,
-                    username: demoHugo.username,
-                    text: 'Léa elle copie toujours sur les autres, quelle '
-                        'tricheuse',
+                    name: demoY.name,
+                    username: demoY.username,
+                    text: 'fais gaffe en rentrant chez toi',
                     time: '13:03',
                     censored: c.flag('censored'),
                     flagId: 'flag_hugo',
@@ -268,9 +270,9 @@ class _DemoClassChat extends StatelessWidget {
                 _DemoBubble(
                   c: c,
                   id: 'msg_adam',
-                  name: demoAdam.name,
-                  username: demoAdam.username,
-                  text: 'Je peux t\'aider Léa, on regarde ensemble ?',
+                  name: demoU.name,
+                  username: demoU.username,
+                  text: 'Exercice 3 terminé, on regarde ensemble ?',
                   time: '13:04',
                   flagId: 'flag_adam',
                 ),
@@ -280,9 +282,9 @@ class _DemoClassChat extends StatelessWidget {
                   name: me.name,
                   username: me.username,
                   own: true,
-                  text: 'Pensez à réviser pour jeudi.',
+                  text: 'Contrôle jeudi : révisions conseillées.',
                   time: '13:06',
-                  readers: const [demoLea, demoHugo, demoAdam],
+                  readers: const [demoX, demoY, demoU],
                   readersOpen: c.flag('readsOpen'),
                 ),
               ],
@@ -584,98 +586,110 @@ class _DemoLoanRequestBubble extends StatelessWidget {
     final accepted = c.flag('loanAccepted');
     final neutral = theme.colorScheme.onSurfaceVariant;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          UserAvatar(username: demoHugo.username, radius: 14),
-          const SizedBox(width: 8),
-          Expanded(
-            child: c.mark(
-              'loanBubble',
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: accent.withValues(alpha: 0.35)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.handshake_rounded, size: 15, color: accent),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Demande de prêt',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: accent,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (accepted)
-                          const MockPill('Acceptée', color: AppTheme.positive)
-                        else
-                          c.mark(
-                            'trashLoan',
-                            const Icon(
-                              Icons.delete_outline_rounded,
-                              color: AppTheme.negative,
-                              size: 20,
+    // La demande glisse dans le fil à son arrivée.
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child:
+            Transform.translate(offset: Offset(0, 16 * (1 - t)), child: child),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            UserAvatar(username: demoY.username, radius: 14),
+            const SizedBox(width: 8),
+            Expanded(
+              child: c.mark(
+                'loanBubble',
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: accent.withValues(alpha: 0.35)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.handshake_rounded,
+                              size: 15, color: accent),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Demande de prêt',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: accent,
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '@${demoHugo.username}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '30.00 SC',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: accent,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    c.mark(
-                      'loanDetails',
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          MockPill('Taux 5 %', color: neutral),
-                          MockPill('Durée : 3 jours', color: neutral),
+                          const Spacer(),
+                          if (accepted)
+                            const MockPill('Acceptée', color: AppTheme.positive)
+                          else
+                            c.mark(
+                              'trashLoan',
+                              const Icon(
+                                Icons.delete_outline_rounded,
+                                color: AppTheme.negative,
+                                size: 20,
+                              ),
+                            ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '« Pour la sortie scolaire »',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontStyle: FontStyle.italic,
-                        color: neutral,
+                      const SizedBox(height: 6),
+                      Text(
+                        userHandle(demoY.username),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    // Pas de bouton « Accepter le prêt » : l'administrateur
-                    // ne prête pas.
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        '30.00 SC',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: accent,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      c.mark(
+                        'loanDetails',
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            MockPill('Taux 5 %', color: neutral),
+                            MockPill('Durée : 3 jours', color: neutral),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '« Aidez-moi svp à acheter la copie du contrôle »',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontStyle: FontStyle.italic,
+                          color: neutral,
+                        ),
+                      ),
+                      // Pas de bouton « Accepter le prêt » : l'administrateur
+                      // ne prête pas.
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -731,7 +745,7 @@ class _DemoGiftBubble extends StatelessWidget {
                 ),
               ),
               const Text(
-                'Premier à répondre !',
+                'Bon courage à tous !',
                 style: TextStyle(color: Colors.white70, fontSize: 12.5),
               ),
               const SizedBox(height: 10),
@@ -748,7 +762,7 @@ class _DemoGiftBubble extends StatelessWidget {
                   child: Text(
                     claimedBy == null
                         ? 'En attente d\'un preneur'
-                        : 'Récupéré par @${claimedBy!.username}',
+                        : 'Récupéré par ${userHandle(claimedBy!.username)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -941,12 +955,30 @@ class _DemoGiftDialog extends StatelessWidget {
   }
 }
 
+/// Annonce publiée et corrigée, telle que l'exemple des étapes suivantes la
+/// reprend.
+const demoAuctionAnnouncement =
+    'La copie du contrôle de demain des Terminale est mise aux enchères '
+    'dans le marché ! Fin à 10 h.';
+
+/// Scène du chat telle que la laisse l'exemple « Publier une annonce ».
+const chatAfterAnnouncement = <String, Object?>{
+  'sent': true,
+  'sentText': demoAuctionAnnouncement,
+  'loanPosted': true,
+};
+
 Future<void> playAnnouncement(DemoPlayer p) async {
   p.say('Écrire l\'annonce dans le champ du bas');
   await p.tap('input');
   p.set('inputFocus', true);
-  await p.type('input', 'Marché ouvert vendredi à 10 h !');
-  p.say('Toucher la flèche pour la publier');
+  await p.type(
+    'input',
+    'La copie du contrôle de demain des Terminale est mise aux enchères '
+        'dans le marché !',
+    perChar: 35,
+  );
+  p.say('Toucher la flèche pour publier');
   await p.tap('send');
   p
     ..set('sentText', p.c.text('input'))
@@ -954,7 +986,7 @@ Future<void> playAnnouncement(DemoPlayer p) async {
     ..set('input', '')
     ..set('inputFocus', false);
   await p.wait(900);
-  p.say('Appui long sur une de vos annonces : « Modifier » ou « Supprimer »');
+  p.say('Appui long sur l\'annonce : « Modifier » ou « Supprimer »');
   await p.longPress('ann_new');
   p.set('sheet', 'annOptions');
   await p.wait(1300);
@@ -964,16 +996,21 @@ Future<void> playAnnouncement(DemoPlayer p) async {
     ..set('editText', p.c.text('sentText'))
     ..set('dialog', 'edit');
   await p.wait(500);
-  p.say('Corriger le texte, puis « Enregistrer »');
+  p.say('Compléter le texte, puis « Enregistrer »');
   await p.tap('f_edit');
   p.set('focus', 'edit');
-  await p.type('editText', ' Salle B12.', append: true);
+  await p.type('editText', ' Fin à 10 h.', append: true);
   await p.tap('saveEdit');
   p
     ..set('focus', null)
     ..set('dialog', null)
     ..set('sentText', p.c.text('editText'));
   await p.wait(1200);
+  p.say('Peu après, un utilisateur publie une demande de prêt');
+  p.hideCursor();
+  p.set('loanPosted', true);
+  await p.reveal('loanRow', alignment: 0.9);
+  await p.wait(2000);
 }
 
 Future<void> playGift(DemoPlayer p) async {
@@ -988,7 +1025,7 @@ Future<void> playGift(DemoPlayer p) async {
   p.say('Un motif, facultatif');
   await p.tap('f_giftNote');
   p.set('focus', 'giftNote');
-  await p.type('giftNote', 'Premier à répondre !');
+  await p.type('giftNote', 'Bon courage à tous !');
   p.set('focus', null);
   p.say('« Envoyer » : le cadeau apparaît dans le chat');
   await p.tap('sendGift');
@@ -996,7 +1033,7 @@ Future<void> playGift(DemoPlayer p) async {
     ..set('dialog', null)
     ..set('giftSent', true);
   await p.toast('Cadeau envoyé.', ms: 1600);
-  p.say('Le premier élève qui touche « Récupérer » reçoit les 5 SC');
+  p.say('Le premier utilisateur qui touche « Récupérer » reçoit les 5 SC');
   await p.reveal('giftBubble', alignment: 0.8);
   await p.moveTo('giftBubble');
   await p.wait(1000);
@@ -1005,21 +1042,16 @@ Future<void> playGift(DemoPlayer p) async {
 }
 
 Future<void> playChatLoan(DemoPlayer p) async {
-  p.say('Une demande de prêt publiée par un élève');
+  p.say('Une demande de prêt publiée par un utilisateur');
   await p.moveTo('loanBubble', at: const Alignment(-0.3, -0.4));
   await p.wait(1100);
   p.say('Montant, taux, durée et motif de la demande');
   await p.moveTo('loanDetails');
   await p.wait(1200);
-  p.say(
-      'Pas de bouton « Accepter » pour vous : l\'administrateur ne prête pas');
+  p.say('Aucun bouton « Accepter » côté administration : pas de prêt');
   await p.moveTo('loanBubble', at: const Alignment(0, 0.75));
   await p.wait(1600);
-  p.say(
-      'La corbeille la supprime (réservé à l\'administrateur et à l\'auteur)');
-  await p.moveTo('trashLoan');
-  await p.wait(1200);
-  p.say('Quand un élève accepte, la demande passe à « Acceptée »');
+  p.say('Quand un utilisateur accepte, la demande passe à « Acceptée »');
   p.hideCursor();
   await p.wait(500);
   p.set('loanAccepted', true);
@@ -1046,7 +1078,7 @@ Future<void> playModerateClass(DemoPlayer p) async {
     ..set('dialog', null)
     ..set('msgDeleted', true);
   await p.wait(1000);
-  p.say('Sous vos messages : qui les a lus (toucher pour voir les noms)');
+  p.say('Sous chaque message de l\'administration : qui l\'a lu');
   await p.tap('reads');
   p.set('readsOpen', true);
   await p.wait(1500);
@@ -1069,7 +1101,7 @@ Widget walletScene(BuildContext context, DemoController c) {
       type: TransactionType.transfer,
       amount: 15,
       incoming: true,
-      other: demoLea,
+      other: demoX,
       ago: const Duration(minutes: 20),
     ),
     demoTx(
@@ -1077,7 +1109,7 @@ Widget walletScene(BuildContext context, DemoController c) {
       type: TransactionType.transfer,
       amount: 10,
       incoming: false,
-      other: demoNoah,
+      other: demoW,
       description: 'Aide au projet',
       ago: const Duration(hours: 3),
     ),
@@ -1093,7 +1125,7 @@ Widget walletScene(BuildContext context, DemoController c) {
       type: TransactionType.transfer,
       amount: 8,
       incoming: true,
-      other: demoHugo,
+      other: demoY,
       ago: const Duration(days: 1),
     ),
     demoTx(
@@ -1101,7 +1133,7 @@ Widget walletScene(BuildContext context, DemoController c) {
       type: TransactionType.transfer,
       amount: 12,
       incoming: false,
-      other: demoChloe,
+      other: demoV,
       ago: const Duration(days: 2),
     ),
     demoTx(
@@ -1135,155 +1167,217 @@ Future<void> playWallet(DemoPlayer p) async {
   p.say('Le montant : en vert ce qui arrive, en rouge ce qui part');
   await p.moveTo('tx_1', at: const Alignment(0.8, 0));
   await p.wait(1200);
-  p.say('Virements, cadeaux, solde initial… tout y figure');
+  p.say('Virements, cadeaux, solde initial : tout figure ici');
   await p.moveTo('tx_2', at: const Alignment(-0.4, 0));
   await p.wait(900);
   await p.moveTo('tx_5', at: const Alignment(-0.4, 0));
   await p.wait(900);
-  p.say('Chez les élèves s\'ajoutent récompenses, taxes, achats et prêts');
+  p.say('Côté utilisateurs s\'ajoutent récompenses, taxes, achats et prêts');
   await p.wait(1500);
   p.say('Descendre charge la suite ; ↻ en haut à droite actualise');
   await p.tap('walletRefresh');
   await p.wait(900);
 }
 
+const _transferPeople = [demoZ, demoW, demoV];
+
 Widget transferScene(BuildContext context, DemoController c) {
   final theme = Theme.of(context);
   final focus = c.get<String>('focus');
-  final picked = c.flag('picked');
-  final query = c.text('recipient');
+  final picked = c.get<List<String>>('picked') ?? const <String>[];
+  final query = c.text('recipient').toLowerCase();
+  final matches = query.isEmpty
+      ? const <DemoPerson>[]
+      : _transferPeople
+          .where((p) =>
+              !picked.contains(p.username) &&
+              p.name.toLowerCase().contains(query))
+          .toList();
   final label =
       theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600);
 
-  return MockScreen(
-    title: 'Transférer',
-    body: ListView(
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text('Destinataire', style: label),
-        const SizedBox(height: 8),
-        if (picked) ...[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Chip(
-              avatar: CircleAvatar(
-                backgroundColor: AppTheme.gold.withValues(alpha: 0.2),
-                child: const Text(
-                  'I',
-                  style: TextStyle(fontSize: 12, color: AppTheme.gold),
+  Widget initial(DemoPerson person, double radius, double size) => CircleAvatar(
+        radius: radius,
+        backgroundColor: AppTheme.gold.withValues(alpha: 0.18),
+        child: Text(
+          person.name.characters.last,
+          style: TextStyle(
+            fontSize: size,
+            color: AppTheme.gold,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+
+  final count = picked.length;
+  final amount = double.tryParse(c.text('amount')) ?? 0;
+
+  return Stack(
+    fit: StackFit.expand,
+    children: [
+      MockScreen(
+        title: 'Transférer',
+        body: ListView(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24),
+          children: [
+            Text('Destinataire(s)', style: label),
+            const SizedBox(height: 8),
+            if (picked.isNotEmpty) ...[
+              c.mark(
+                'pickedChips',
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final person in _transferPeople)
+                      if (picked.contains(person.username))
+                        Chip(
+                          avatar: initial(person, 12, 12),
+                          label: Text(person.name),
+                          onDeleted: demoNoop,
+                        ),
+                  ],
                 ),
               ),
-              label: Text(demoInes.name),
-              onDeleted: demoNoop,
+              const SizedBox(height: 8),
+            ],
+            c.mark(
+              'recipient',
+              MockField(
+                hint: 'Rechercher un utilisateur…',
+                prefixIcon: Icons.search_rounded,
+                value: c.text('recipient'),
+                focused: focus == 'recipient',
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-        ],
-        c.mark(
-          'recipient',
-          MockField(
-            hint: 'Rechercher un utilisateur…',
-            prefixIcon: Icons.search_rounded,
-            value: picked ? demoInes.name : query,
-            focused: focus == 'recipient',
-          ),
-        ),
-        if (query.isNotEmpty && !picked) ...[
-          const SizedBox(height: 4),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: theme.dividerColor),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: c.mark(
-              'pickInes',
-              ListTile(
-                dense: true,
-                leading: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppTheme.gold.withValues(alpha: 0.15),
-                  child: const Text(
-                    'I',
-                    style: TextStyle(
-                      color: AppTheme.gold,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+            if (matches.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.dividerColor),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                title: Text(demoInes.name),
-                subtitle: Text(
-                  '@${demoInes.username}',
-                  style: const TextStyle(fontSize: 12),
+                child: Column(
+                  children: [
+                    for (final person in matches)
+                      c.mark(
+                        'pick_${person.username}',
+                        ListTile(
+                          dense: true,
+                          leading: initial(person, 18, 14),
+                          title: Text(person.name),
+                          subtitle: Text(
+                            userHandle(person.username),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            Text('Montant', style: label),
+            const SizedBox(height: 8),
+            c.mark(
+              'f_amount',
+              MockField(
+                hint: '0.00',
+                suffix: 'SC',
+                value: c.text('amount'),
+                focused: focus == 'amount',
+                helper: count > 1 ? 'Envoyé à chaque destinataire' : null,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('Description (optionnelle)', style: label),
+            const SizedBox(height: 8),
+            c.mark(
+              'f_desc',
+              MockField(
+                hint: 'Motif du transfert…',
+                prefixIcon: Icons.notes_rounded,
+                value: c.text('desc'),
+                focused: focus == 'desc',
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: c.mark(
+                'sendTransfer',
+                ElevatedButton.icon(
+                  onPressed: demoNoop,
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text('Envoyer'),
                 ),
               ),
             ),
-          ),
-        ],
-        const SizedBox(height: 20),
-        Text('Montant', style: label),
-        const SizedBox(height: 8),
-        c.mark(
-          'f_amount',
-          MockField(
-            hint: '0.00',
-            suffix: 'SC',
-            value: c.text('amount'),
-            focused: focus == 'amount',
-          ),
+          ],
         ),
-        const SizedBox(height: 20),
-        Text('Description (optionnelle)', style: label),
-        const SizedBox(height: 8),
-        c.mark(
-          'f_desc',
-          MockField(
-            hint: 'Motif du transfert…',
-            prefixIcon: Icons.notes_rounded,
-            value: c.text('desc'),
-            focused: focus == 'desc',
+      ),
+      DemoModal(
+        open: c.get('dialog') == 'confirmMany',
+        child: AlertDialog(
+          title: const Text('Confirmer l\'envoi'),
+          content: Text(
+            '${amount.toStringAsFixed(2)} SC à chaque destinataire ($count), '
+            'soit ${(amount * count).toStringAsFixed(2)} SC au total.',
           ),
-        ),
-        const SizedBox(height: 32),
-        SizedBox(
-          width: double.infinity,
-          child: c.mark(
-            'sendTransfer',
-            ElevatedButton.icon(
-              onPressed: demoNoop,
-              icon: const Icon(Icons.send_rounded),
-              label: const Text('Envoyer'),
+          actions: [
+            const TextButton(onPressed: demoNoop, child: Text('Annuler')),
+            c.mark(
+              'confirmMany',
+              const FilledButton(onPressed: demoNoop, child: Text('Envoyer')),
             ),
-          ),
+          ],
         ),
-      ],
-    ),
+      ),
+    ],
   );
 }
 
-Future<void> playTransfer(DemoPlayer p) async {
-  p.say('Chercher le destinataire');
+Future<void> _pickRecipient(DemoPlayer p, DemoPerson person) async {
   await p.tap('recipient');
   p.set('focus', 'recipient');
-  await p.type('recipient', 'inès', perChar: 140);
-  p.say('Le toucher dans la liste');
-  await p.tap('pickInes', at: const Alignment(-0.4, 0));
+  await p.type('recipient', person.name.characters.last.toLowerCase(),
+      perChar: 140);
+  await p.wait(300);
+  await p.tap('pick_${person.username}', at: const Alignment(-0.4, 0));
   p
-    ..set('picked', true)
+    ..set('picked', [
+      ...p.c.get<List<String>>('picked') ?? const <String>[],
+      person.username,
+    ])
+    ..set('recipient', '')
     ..set('focus', null);
   await p.wait(500);
-  p.say('Le montant');
+}
+
+Future<void> playTransfer(DemoPlayer p) async {
+  p.say('Chercher un destinataire, puis toucher son nom dans la liste');
+  await _pickRecipient(p, demoZ);
+  p.say('Plusieurs destinataires possibles : en ajouter un autre');
+  await _pickRecipient(p, demoW);
+  await p.moveTo('pickedChips');
+  await p.wait(800);
+  p.say('Le montant, envoyé à chaque destinataire');
   await p.tap('f_amount');
   p.set('focus', 'amount');
   await p.type('amount', '15', perChar: 150);
-  p.say('Une description si besoin : elle figure dans les notifications');
+  p.say('Une description si besoin, visible dans les notifications');
   await p.tap('f_desc');
   p.set('focus', 'desc');
   await p.type('desc', 'Aide au projet');
   p.set('focus', null);
-  p.say('« Envoyer » : les deux comptes sont prévenus');
+  p.say('« Envoyer », puis confirmer le total');
   await p.tap('sendTransfer');
-  await p.toast('15.00 SC envoyés à @${demoInes.username} !');
+  p.set('dialog', 'confirmMany');
+  await p.wait(1500);
+  await p.tap('confirmMany');
+  p.set('dialog', null);
+  await p.toast('15.00 SC envoyés à 2 destinataires !');
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1353,7 +1447,7 @@ Widget payScene(BuildContext context, DemoController c) {
                   ),
                 ),
                 Text(
-                  'envoyés à ${demoInes.name}',
+                  'envoyés à ${demoZ.name}',
                   style: TextStyle(
                     fontSize: 13.5,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1601,10 +1695,10 @@ class _DemoPayScan extends StatelessWidget {
 }
 
 Future<void> playPay(DemoPlayer p) async {
-  p.say('« Recevoir » : votre QR code, à montrer à celui qui paie');
+  p.say('« Recevoir » : le QR code du compte, à montrer à qui paie');
   await p.moveTo('qr');
   await p.wait(1300);
-  p.say('« Envoyer » : pour payer quelqu\'un à côté de vous');
+  p.say('« Envoyer » : pour payer quelqu\'un à proximité');
   await p.tap('payTabs', at: const Alignment(0.5, 0));
   p.set('page', 'send');
   await p.wait(800);
@@ -1613,7 +1707,7 @@ Future<void> playPay(DemoPlayer p) async {
   p.set('focus', 'payAmount');
   await p.type('payAmount', '3.50', perChar: 140);
   p.set('focus', null);
-  p.say('« Payer via NFC » : il suffit d\'approcher les deux téléphones…');
+  p.say('« Payer via NFC » : rapprocher simplement les deux téléphones…');
   await p.moveTo('payNfc');
   await p.wait(1200);
   p.say('… ou « Payer via QR Code » : scanner le QR de l\'autre personne');
@@ -1654,6 +1748,7 @@ MarketplaceItem _demoItem(
   int stock = -1,
   int maxPerUser = -1,
   String description = '',
+  String category = 'Privilèges',
 }) {
   final now = DateTime.now();
   return MarketplaceItem(
@@ -1661,7 +1756,7 @@ MarketplaceItem _demoItem(
     name: name,
     description: description,
     price: price,
-    category: 'Privilèges',
+    category: category,
     stock: stock,
     maxPerUser: maxPerUser,
     isActive: true,
@@ -1759,10 +1854,10 @@ class _DemoShopTab extends StatelessWidget {
       child: MockScreen(
         title: 'Marché',
         back: false,
-        actions: const [MockIcon(Icons.edit_rounded)],
         bottom: _shopTabs(c),
         navIndex: 3,
         body: ListView(
+          controller: c.scroller('shop'),
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           children: [
@@ -1818,8 +1913,94 @@ class _DemoShopTab extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: c.mark(
+                      'item_absence',
+                      MarketItemCard(
+                        item: _demoItem(
+                          'absence',
+                          'Retrait d\'une absence',
+                          80,
+                          stock: 0,
+                          maxPerUser: 1,
+                          description:
+                              'Demande de retrait d\'une absence du dossier.',
+                        ),
+                        fillHeight: true,
+                        onBuy: null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: c.mark(
+                      'item_sweat',
+                      MarketItemCard(
+                        item: _demoItem(
+                          'sweat',
+                          'Sweat SES Coin',
+                          120,
+                          stock: 6,
+                          category: 'Objets',
+                          description: 'Sweat brodé aux couleurs du lycée.',
+                        ),
+                        image: const _DemoProductPhoto(),
+                        fillHeight: true,
+                        onBuy: demoNoop,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Photo d'offre factice (pas de réseau dans le tutoriel).
+class _DemoProductPhoto extends StatelessWidget {
+  const _DemoProductPhoto();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF0F3460), Color(0xFF16A085)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -18,
+            right: -18,
+            child: Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.12),
+              ),
+            ),
+          ),
+          Center(
+            child: Icon(
+              Icons.checkroom_rounded,
+              size: 58,
+              color: Colors.white.withValues(alpha: 0.92),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1846,12 +2027,12 @@ class _DemoAuctionClockState extends State<_DemoAuctionClock> {
     return widget.builder(
       Auction(
         id: 'demo-auction',
-        itemName: 'Déjeuner avec le prof',
-        itemDescription: 'Un déjeuner à la cantine avec votre professeur.',
+        itemName: '+1 point sur la dernière évaluation',
+        itemDescription: 'Un point bonus ajouté à la dernière évaluation.',
         startingPrice: 10,
         currentPrice: 24,
-        currentWinnerId: _id(demoLea),
-        currentWinnerUsername: demoLea.username,
+        currentWinnerId: _id(demoX),
+        currentWinnerUsername: demoX.username,
         currentWinnerEmoji: '🔥',
         status: AuctionStatus.active,
         startsAt: now.subtract(const Duration(hours: 1)),
@@ -1936,10 +2117,10 @@ class _DemoAuctionDetailState extends State<_DemoAuctionDetail> {
     final remaining =
         '${left.inMinutes.toString().padLeft(2, '0')}:${(left.inSeconds % 60).toString().padLeft(2, '0')}';
     final bids = [
-      if (placed) (demoMeUsername(context), 26.0),
-      (demoLea.username, 24.0),
-      (demoHugo.username, 22.0),
-      (demoInes.username, 15.0),
+      if (placed) (demoW.username, 26.0),
+      (demoX.username, 24.0),
+      (demoY.username, 22.0),
+      (demoZ.username, 15.0),
     ];
 
     Widget stat(String label, String value, {Color? color}) => Column(
@@ -1963,14 +2144,14 @@ class _DemoAuctionDetailState extends State<_DemoAuctionDetail> {
         );
 
     return MockScreen(
-      title: 'Déjeuner avec le prof',
+      title: '+1 point sur la dernière évaluation',
       body: ListView(
         controller: c.scroller('auction'),
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Un déjeuner à la cantine avec votre professeur.',
+            'Un point bonus ajouté à la dernière évaluation.',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -1995,15 +2176,14 @@ class _DemoAuctionDetailState extends State<_DemoAuctionDetail> {
                   Row(
                     children: [
                       UserAvatar(
-                        username:
-                            placed ? demoMeUsername(context) : demoLea.username,
+                        username: placed ? demoW.username : demoX.username,
                         radius: 18,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Dernier enchérisseur : @'
-                          '${placed ? demoMeUsername(context) : demoLea.username}',
+                          'Dernier enchérisseur : '
+                          '${userHandle(placed ? demoW.username : demoX.username)}',
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -2099,7 +2279,7 @@ class _DemoAuctionDetailState extends State<_DemoAuctionDetail> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: UserAvatar(username: username, radius: 18),
-              title: Text('@$username'),
+              title: Text(userHandle(username)),
               trailing: Text(
                 '${amount.toStringAsFixed(2)} SC',
                 style: TextStyle(
@@ -2114,17 +2294,21 @@ class _DemoAuctionDetailState extends State<_DemoAuctionDetail> {
   }
 }
 
-/// Identifiant de l'administrateur qui suit le tutoriel.
-String demoMeUsername(BuildContext context) =>
-    DemoIdentity.of(context).username;
-
 Future<void> playBuy(DemoPlayer p) async {
   p.say('Les offres de la boutique, rangées par catégorie');
   await p.moveTo('item_joker', at: const Alignment(0, -0.4));
   await p.wait(1100);
-  p.say('« Limite atteinte » : le maximum d\'achats par élève est atteint');
+  p.say('« Limite atteinte » : maximum d\'achats par utilisateur atteint');
   await p.moveTo('item_place', at: const Alignment(0, 0.86));
   await p.wait(1200);
+  p.say('« Épuisé » : tout le stock de l\'offre est vendu');
+  await p.reveal('item_absence', alignment: 0.9);
+  await p.moveTo('item_absence', at: const Alignment(0, 0.86));
+  await p.wait(1300);
+  p.say('Une offre peut aussi avoir une photo');
+  await p.moveTo('item_sweat', at: const Alignment(0, -0.6));
+  await p.wait(1300);
+  await p.reveal('item_joker', alignment: 0.2);
   p.say('« Acheter » ouvre un récapitulatif avant de payer');
   await p.tap('item_joker', at: const Alignment(0, 0.86));
   p.set('dialog', 'buy');
@@ -2208,11 +2392,11 @@ Widget loanCreateScene(BuildContext context, DemoController c) {
                   avatar: CircleAvatar(
                     backgroundColor: context.accent.withValues(alpha: 0.2),
                     child: Text(
-                      'L',
+                      'X',
                       style: TextStyle(fontSize: 12, color: context.accent),
                     ),
                   ),
-                  label: Text(demoLea.name),
+                  label: Text(demoX.name),
                   onDeleted: demoNoop,
                 ),
               ),
@@ -2242,16 +2426,16 @@ Widget loanCreateScene(BuildContext context, DemoController c) {
                       radius: 18,
                       backgroundColor: context.accent.withValues(alpha: 0.15),
                       child: Text(
-                        'L',
+                        'X',
                         style: TextStyle(
                           color: context.accent,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                    title: Text(demoLea.name),
+                    title: Text(demoX.name),
                     subtitle: Text(
-                      '@${demoLea.username}',
+                      userHandle(demoX.username),
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),
@@ -2364,7 +2548,7 @@ Widget loanCreateScene(BuildContext context, DemoController c) {
         child: AppDialog(
           icon: Icons.handshake_rounded,
           title: 'Confirmer la demande',
-          subtitle: 'Prêteur : ${demoLea.name}',
+          subtitle: 'Prêteur : ${demoX.name}',
           content: const _DemoLoanRecap(),
           actions: [
             const TextButton(onPressed: demoNoop, child: Text('Annuler')),
@@ -2434,7 +2618,7 @@ Future<void> playLoanCreate(DemoPlayer p) async {
   p.say('Chercher puis toucher un prêteur (plusieurs possibles)');
   await p.tap('lenderSearch');
   p.set('focus', 'lender');
-  await p.type('lenderQuery', 'léa', perChar: 140);
+  await p.type('lenderQuery', 'x', perChar: 140);
   await p.tap('pickLender', at: const Alignment(-0.4, 0));
   p
     ..set('lenderPicked', true)
@@ -2515,6 +2699,7 @@ Widget profileScene(BuildContext context, DemoController c) {
         builder: (page) => switch (page) {
           'student' => _DemoStudentLoans(c: c),
           'notifs' => _DemoProfile(c: c, tab: 1),
+          'avatar' => DemoAvatarReview(c: c),
           'password' => _DemoPassword(c: c),
           _ => _DemoProfile(c: c, tab: 0),
         },
@@ -2523,7 +2708,7 @@ Widget profileScene(BuildContext context, DemoController c) {
         open: c.get('dialog') == 'accept',
         child: AlertDialog(
           title: const Text('Accepter ce prêt ?'),
-          content: Text('Le montant sera envoyé à ${demoHugo.username}.'),
+          content: Text('Le montant sera envoyé à ${demoY.username}.'),
           actions: [
             const TextButton(onPressed: demoNoop, child: Text('Annuler')),
             c.mark(
@@ -2639,7 +2824,7 @@ class _DemoProfileHeader extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '@$username',
+                        userHandle(username),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -2789,7 +2974,7 @@ class _DemoProfile extends StatelessWidget {
             c: c,
             name: me.name,
             username: me.username,
-            balance: 1250,
+            balance: 999999,
           ),
           _DemoProfileTabs(c: c, selected: tab),
           Expanded(
@@ -2818,19 +3003,18 @@ class _DemoStudentLoans extends StatelessWidget {
     final repaid = c.flag('repaid');
     final asLender = _demoLoan(
       id: 'l-lender',
-      lender: demoLea,
-      borrower: demoHugo,
+      lender: demoX,
+      borrower: demoY,
       principal: 20,
       rate: 0,
       status: accepted ? LoanStatus.active : LoanStatus.pending,
       durationMinutes: accepted ? null : 2 * 1440,
       dueDate: accepted ? DateTime.now().add(const Duration(days: 2)) : null,
-      note: 'Pour le cinéma',
     );
     final asBorrower = _demoLoan(
       id: 'l-borrower',
-      lender: demoInes,
-      borrower: demoLea,
+      lender: demoZ,
+      borrower: demoX,
       principal: 30,
       rate: 5,
       repaid: repaid ? 31.5 : 10.5,
@@ -2847,9 +3031,9 @@ class _DemoStudentLoans extends StatelessWidget {
         children: [
           _DemoProfileHeader(
             c: c,
-            name: demoLea.name,
-            username: demoLea.username,
-            balance: demoLea.balance,
+            name: demoX.name,
+            username: demoX.username,
+            balance: demoX.balance,
           ),
           _DemoProfileTabs(c: c, selected: 0),
           Expanded(
@@ -2868,7 +3052,7 @@ class _DemoStudentLoans extends StatelessWidget {
                   'loanLender',
                   LoanCard(
                     loan: asLender,
-                    currentUserId: _id(demoLea),
+                    currentUserId: _id(demoX),
                     onAccept: demoNoop,
                     onReject: demoNoop,
                   ),
@@ -2878,7 +3062,7 @@ class _DemoStudentLoans extends StatelessWidget {
                   'loanBorrower',
                   LoanCard(
                     loan: asBorrower,
-                    currentUserId: _id(demoLea),
+                    currentUserId: _id(demoX),
                     onRepay: repaid ? null : demoNoop,
                     onDelete: repaid ? demoNoop : null,
                   ),
@@ -2907,7 +3091,7 @@ class _DemoNotifications extends StatelessWidget {
         userId: demoMeId,
         type: NotificationType.system,
         title: 'Nouvelle demande de compte',
-        body: '${_demoJade.name} demande un compte.',
+        body: '${_demoT.name} demande un compte.',
         isRead: allRead,
         createdAt: now.subtract(const Duration(minutes: 8)),
       ),
@@ -2916,7 +3100,7 @@ class _DemoNotifications extends StatelessWidget {
         userId: demoMeId,
         type: NotificationType.system,
         title: 'Changement de photo demandé',
-        body: '${demoChloe.name} a envoyé une nouvelle photo de profil.',
+        body: '${demoV.name} a envoyé une nouvelle photo de profil.',
         isRead: allRead || c.flag('read1'),
         createdAt: now.subtract(const Duration(minutes: 40)),
       ),
@@ -2925,7 +3109,7 @@ class _DemoNotifications extends StatelessWidget {
         userId: demoMeId,
         type: NotificationType.transactionReceived,
         title: 'Paiement reçu',
-        body: 'Tu as reçu 15 SC. Raison : Merci pour le prêt',
+        body: '15 SC reçus. Raison : Merci pour le coup de main',
         isRead: true,
         createdAt: now.subtract(const Duration(hours: 3)),
       ),
@@ -3126,7 +3310,7 @@ class _DemoPassword extends StatelessWidget {
 }
 
 Future<void> playStudentLoans(DemoPlayer p) async {
-  p.say('Léa est sollicitée comme prêteuse : « Accepter » ou « Refuser »');
+  p.say('Utilisateur X, sollicité comme prêteur : « Accepter » ou « Refuser »');
   await p.moveTo('loanLender', at: const Alignment(0.5, 0.86));
   await p.wait(1100);
   await p.tap('loanLender', at: const Alignment(0.5, 0.86));
@@ -3137,7 +3321,7 @@ Future<void> playStudentLoans(DemoPlayer p) async {
     ..set('dialog', null)
     ..set('accepted', true);
   await p.toast('Prêt accepté', ms: 1500);
-  p.say('Léa a emprunté à Inès : « Rembourser », en une ou plusieurs fois');
+  p.say('Emprunt auprès de Z : « Rembourser », en une ou plusieurs fois');
   await p.reveal('loanBorrower', alignment: 0.6);
   await p.tap('loanBorrower', at: const Alignment(0, 0.86));
   p.set('dialog', 'repay');
@@ -3149,13 +3333,14 @@ Future<void> playStudentLoans(DemoPlayer p) async {
     ..set('dialog', null)
     ..set('repaid', true);
   await p.toast('Remboursement enregistré !', ms: 1600);
-  p.say('Un prêt terminé se retire avec la corbeille');
+  p.say('Prêt terminé : retrait avec la corbeille');
   await p.moveTo('loanBorrower', at: const Alignment(0.88, -0.8));
   await p.wait(1200);
 }
 
 Future<void> playProfile(DemoPlayer p) async {
-  p.say('Toucher la photo pour la changer (immédiat pour l\'administrateur)');
+  p.say(
+      'Toucher la photo pour changer d\'image (immédiat pour l\'administrateur)');
   await p.moveTo('photo');
   await p.wait(1200);
   p.say('En haut : Paramètres, Blockchain, Classement et Déconnexion');
@@ -3192,10 +3377,20 @@ Future<void> playNotifications(DemoPlayer p) async {
   p.say('Non lue : titre en gras et point doré');
   await p.moveTo('notif_0', at: const Alignment(0.7, -0.4));
   await p.wait(1100);
-  p.say('La toucher la marque comme lue ; certaines ouvrent l\'écran utile');
+  p.say('Toucher une notification : marquée comme lue');
+  await p.moveTo('notif_1', at: const Alignment(-0.3, 0));
+  await p.wait(700);
+  p.say('« Changement de photo demandé » ouvre directement la validation');
   await p.tap('notif_1', at: const Alignment(-0.3, 0));
-  p.set('read1', true);
+  p
+    ..set('read1', true)
+    ..set('page', 'avatar');
   await p.wait(1000);
+  p.say('« Approuver » : photo publiée. « Refuser » : photo rejetée');
+  await p.tap('approvePhoto');
+  await p.toast('Photo approuvée.', ms: 1500);
+  p.set('page', 'notifs');
+  await p.wait(800);
   p.say('Glisser vers la gauche (ou toucher la corbeille) : supprimer');
   final row = p.rectOf('notif_2');
   if (row != null) {
@@ -3646,7 +3841,7 @@ Widget explorerScene(BuildContext context, DemoController c) {
   );
 }
 
-const _ranking = [demoInes, demoLea, demoChloe, demoHugo, demoAdam, demoNoah];
+const _ranking = [demoZ, demoX, demoV, demoY, demoU, demoW];
 
 class _DemoLeaderboard extends StatelessWidget {
   const _DemoLeaderboard({required this.c});
@@ -3852,7 +4047,7 @@ class _DemoDirectory extends StatelessWidget {
                                       ),
                                     ),
                                     Text(
-                                      '@${person.username}',
+                                      userHandle(person.username),
                                       style: TextStyle(
                                         fontSize: 12,
                                         color:
@@ -3904,8 +4099,8 @@ class _DemoExplorer extends StatelessWidget {
         id: 'e1',
         type: TransactionType.transfer,
         amount: 12,
-        from: demoHugo,
-        to: demoLea,
+        from: demoY,
+        to: demoX,
         description: 'Cantine',
         method: 'nfc',
         ago: const Duration(minutes: 4),
@@ -3914,7 +4109,7 @@ class _DemoExplorer extends StatelessWidget {
         id: 'e2',
         type: TransactionType.purchase,
         amount: 50,
-        from: demoInes,
+        from: demoZ,
         description: 'Achat boutique : Joker devoir',
         ago: const Duration(minutes: 30),
       ),
@@ -3922,7 +4117,7 @@ class _DemoExplorer extends StatelessWidget {
         id: 'e3',
         type: TransactionType.reward,
         amount: 25,
-        to: demoAdam,
+        to: demoU,
         description: 'Bravo pour le projet',
         ago: const Duration(hours: 2),
       ),
@@ -4272,7 +4467,7 @@ Widget maintenanceScene(BuildContext context, DemoController c) {
 }
 
 Future<void> playMaintenance(DemoPlayer p) async {
-  p.say('Une maintenance générale commence : cet écran s\'affiche pour tous');
+  p.say('Début d\'une maintenance générale : cet écran apparaît pour tous');
   await p.wait(800);
   p
     ..set('since', DateTime.now())
@@ -4284,7 +4479,7 @@ Future<void> playMaintenance(DemoPlayer p) async {
       'Maintenance de l\'administration : seuls les accès admin sont suspendus');
   p.set('mode', MaintenanceMode.admin);
   await p.wait(2600);
-  p.say('Fin de la maintenance : l\'application revient d\'elle-même');
+  p.say('Fin de la maintenance : retour automatique de l\'application');
   p.set('mode', null);
   await p.wait(600);
   await p.toast('Maintenance terminée : bon retour !');

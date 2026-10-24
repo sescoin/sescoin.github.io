@@ -10,6 +10,7 @@ import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/wallet_provider.dart';
+import '../../core/user_handle.dart';
 
 class TransferScreen extends ConsumerStatefulWidget {
   const TransferScreen({super.key});
@@ -26,8 +27,26 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
 
   List<Map<String, dynamic>> _allUsers = [];
   bool _loadingUsers = true;
-  Map<String, dynamic>? _selectedUser;
+
+  /// Destinataires choisis : le même montant part vers chacun.
+  final List<Map<String, dynamic>> _selected = [];
   String _searchQuery = '';
+
+  bool _isSelected(Map<String, dynamic> user) =>
+      _selected.any((u) => u['id'] == user['id']);
+
+  void _toggle(Map<String, dynamic> user) {
+    setState(() {
+      if (_isSelected(user)) {
+        _selected.removeWhere((u) => u['id'] == user['id']);
+      } else {
+        _selected.add(user);
+      }
+      // Recherche vidée : un autre destinataire peut s'ajouter aussitôt.
+      _searchCtrl.clear();
+      _searchQuery = '';
+    });
+  }
 
   @override
   void initState() {
@@ -77,29 +96,71 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
   Future<void> _submit() async {
     if (!ensureNotBanned(context, ref)) return;
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedUser == null) {
+    if (_selected.isEmpty) {
       AppFeedback.warning(context, 'Aucun destinataire sélectionné.');
       return;
     }
 
     final amount = double.parse(_amountCtrl.text.replaceAll(',', '.'));
-    final username = _selectedUser!['username'] as String;
+    final recipients = List<Map<String, dynamic>>.of(_selected);
 
+    if (recipients.length > 1) {
+      final total = amount * recipients.length;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (d) => AlertDialog(
+          title: const Text('Confirmer l\'envoi'),
+          content: Text(
+            '${amount.toStringAsFixed(2)} SC à chaque destinataire '
+            '(${recipients.length}), soit ${total.toStringAsFixed(2)} SC '
+            'au total.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(d, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(d, true),
+              child: const Text('Envoyer'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
+    var sent = 0;
     try {
-      await ref.read(transferProvider.notifier).transferByUsername(
-            toUsername: username,
-            amount: amount,
-            description: _descCtrl.text.isEmpty ? null : _descCtrl.text,
-          );
+      for (final recipient in recipients) {
+        await ref.read(transferProvider.notifier).transferByUsername(
+              toUsername: recipient['username'] as String,
+              amount: amount,
+              description: _descCtrl.text.isEmpty ? null : _descCtrl.text,
+            );
+        sent++;
+      }
       if (mounted) {
         AppFeedback.success(
           context,
-          '${amount.toStringAsFixed(2)} SC envoyés à @$username !',
+          recipients.length == 1
+              ? '${amount.toStringAsFixed(2)} SC envoyés à '
+                  '${userHandle(recipients.first['username'] as String)} !'
+              : '${amount.toStringAsFixed(2)} SC envoyés à '
+                  '${recipients.length} destinataires !',
         );
         context.pop();
       }
     } catch (e) {
-      if (mounted) {
+      if (!mounted) return;
+      // Les envois déjà faits sont conservés : on retire leurs destinataires.
+      if (sent > 0) {
+        setState(() => _selected.removeRange(0, sent));
+        AppFeedback.warning(
+          context,
+          '$sent envoi(s) réussi(s), puis échec : ${prettifyError(e)}',
+        );
+      } else {
         AppFeedback.error(context, e);
       }
     }
@@ -128,28 +189,35 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Destinataire',
+                  'Destinataire(s)',
                   style: Theme.of(context)
                       .textTheme
                       .labelLarge
                       ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
-                if (_selectedUser != null) ...[
-                  Chip(
-                    avatar: CircleAvatar(
-                      backgroundColor: AppTheme.gold.withValues(alpha: 0.2),
-                      child: Text(
-                        (_selectedUser!['display_name'] as String)[0]
-                            .toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.gold,
+                if (_selected.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      for (final user in _selected)
+                        Chip(
+                          avatar: CircleAvatar(
+                            backgroundColor:
+                                AppTheme.gold.withValues(alpha: 0.2),
+                            child: Text(
+                              (user['display_name'] as String)[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.gold,
+                              ),
+                            ),
+                          ),
+                          label: Text(user['display_name'] as String),
+                          onDeleted: () => _toggle(user),
                         ),
-                      ),
-                    ),
-                    label: Text(_selectedUser!['display_name'] as String),
-                    onDeleted: () => setState(() => _selectedUser = null),
+                    ],
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -185,8 +253,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                           : Container(
                               constraints: const BoxConstraints(maxHeight: 220),
                               decoration: BoxDecoration(
-                                border:
-                                    Border.all(color: Theme.of(context).dividerColor),
+                                border: Border.all(
+                                    color: Theme.of(context).dividerColor),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: ClipRRect(
@@ -199,8 +267,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                       const Divider(height: 1),
                                   itemBuilder: (context, i) {
                                     final u = _filteredUsers[i];
-                                    final selected =
-                                        _selectedUser?['id'] == u['id'];
+                                    final selected = _isSelected(u);
                                     return ListTile(
                                       dense: true,
                                       leading: CircleAvatar(
@@ -218,7 +285,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                       ),
                                       title: Text(u['display_name'] as String),
                                       subtitle: Text(
-                                        '@${u['username']}',
+                                        userHandle(u['username']),
                                         style: const TextStyle(fontSize: 12),
                                       ),
                                       trailing: selected
@@ -228,12 +295,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                               size: 18,
                                             )
                                           : null,
-                                      onTap: () => setState(() {
-                                        _selectedUser = u;
-                                        _searchCtrl.text =
-                                            u['display_name'] as String;
-                                        _searchQuery = '';
-                                      }),
+                                      onTap: () => _toggle(u),
                                     );
                                   },
                                 ),
@@ -254,9 +316,12 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: '0.00',
                     suffixText: 'SC',
+                    helperText: _selected.length > 1
+                        ? 'Envoyé à chaque destinataire'
+                        : null,
                   ),
                   validator: (v) {
                     final n = double.tryParse(v?.replaceAll(',', '.') ?? '');

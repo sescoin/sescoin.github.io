@@ -12,12 +12,16 @@ class MarketItemCard extends StatelessWidget {
     this.isLoading = false,
     this.actionLabel,
     this.fillHeight = false,
+    this.image,
   });
 
   final MarketplaceItem item;
   final VoidCallback? onBuy;
   final bool isLoading;
   final String? actionLabel;
+
+  /// Visuel fourni à la place de l'image en ligne (tutoriel, sans réseau).
+  final Widget? image;
 
   /// Occupe toute la hauteur disponible (bouton d'achat aligné en bas) pour
   /// que les cartes d'une même ligne aient la même taille.
@@ -150,7 +154,16 @@ class MarketItemCard extends StatelessWidget {
           mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (item.imageUrl != null)
+            if (image != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  height: 116,
+                  width: double.infinity,
+                  child: image,
+                ),
+              )
+            else if (item.imageUrl != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(

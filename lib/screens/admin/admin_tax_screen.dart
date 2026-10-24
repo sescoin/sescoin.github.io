@@ -94,7 +94,7 @@ class _AdminTaxScreenState extends ConsumerState<AdminTaxScreen> {
                     title: 'Prélèvement global',
                     message:
                         'Cette action prélève un pourcentage sur tous les '
-                        'comptes actifs. Elle est irréversible.',
+                        'comptes actifs. Opération irréversible.',
                     color: AppTheme.negative,
                   ),
                 ),
@@ -130,11 +130,10 @@ class _AdminTaxScreenState extends ConsumerState<AdminTaxScreen> {
                           TextFormField(
                             controller: _reasonCtrl,
                             decoration: const InputDecoration(
-                              labelText: 'Raison affichée aux utilisateurs',
+                              labelText: 'Raison (facultative)',
+                              helperText: 'Affichée aux utilisateurs',
                               prefixIcon: Icon(Icons.notes_rounded),
                             ),
-                            validator: (v) =>
-                                v == null || v.isEmpty ? 'Raison requise' : null,
                           ),
                         ],
                       ),

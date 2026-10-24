@@ -275,9 +275,19 @@ begin
     return null;
   end if;
 
-  select id into v_admin_id
-  from public.profiles
-  where lower(username) = lower(trim(p_username)) and role = 'admin';
+  -- L'identifiant saisi a la connexion est la partie avant @sescoin.local de
+  -- l'adresse du compte, qui peut differer du nom affiche dans l'application
+  -- (compte admin d'origine : « admin », profil « prof.ses »). Les deux sont
+  -- acceptes.
+  select p.id into v_admin_id
+  from public.profiles p
+  join auth.users u on u.id = p.id
+  where p.role = 'admin'
+    and (
+      lower(p.username) = lower(trim(p_username))
+      or lower(u.email) = lower(trim(p_username)) || '@sescoin.local'
+    )
+  limit 1;
 
   if v_admin_id is null then
     return null;

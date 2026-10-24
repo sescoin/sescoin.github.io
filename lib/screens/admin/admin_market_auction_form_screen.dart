@@ -190,7 +190,7 @@ class _AdminMarketAuctionFormScreenState
                       textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Entrez un nom';
+                          return 'Nom requis';
                         }
                         return null;
                       },
@@ -236,7 +236,7 @@ class _AdminMarketAuctionFormScreenState
                         final amount =
                             double.tryParse(value?.replaceAll(',', '.') ?? '');
                         if (amount == null || amount <= 0) {
-                          return 'Entrez un prix valide';
+                          return 'Prix invalide';
                         }
                         return null;
                       },

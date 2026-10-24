@@ -354,7 +354,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           const SizedBox(height: 14),
                           Text(
                             _pickedImage != null
-                                ? 'Retirez la photo pour choisir un émoji ou les initiales.'
+                                ? 'Retirer la photo pour choisir un émoji ou les initiales.'
                                 : 'Ou sélectionner un émoji ou les initiales :',
                             style: TextStyle(
                               fontSize: 12,

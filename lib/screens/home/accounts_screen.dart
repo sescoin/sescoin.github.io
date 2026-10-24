@@ -11,6 +11,7 @@ import '../../core/theme.dart';
 import '../../models/profile.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../core/user_handle.dart';
 
 /// Annuaire des comptes, classés du plus riche au plus modeste.
 ///
@@ -35,8 +36,9 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
 
   /// Tri par solde décroissant, puis filtre de recherche. Le rang affiché
   /// reste celui du classement complet : filtrer ne renumérote pas.
+  /// L'administrateur n'est pas classé.
   List<(int, Profile)> _ranked(List<Profile> profiles) {
-    final sorted = [...profiles]
+    final sorted = profiles.where((p) => !p.isAdmin).toList()
       ..sort((a, b) => b.balance.compareTo(a.balance));
 
     final ranked = <(int, Profile)>[];
@@ -215,7 +217,7 @@ class _AccountCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                'moi',
+                                'compte actuel',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
@@ -228,7 +230,7 @@ class _AccountCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 1),
                       Text(
-                        '@${profile.username}',
+                        userHandle(profile.username),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

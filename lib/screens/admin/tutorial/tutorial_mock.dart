@@ -32,36 +32,36 @@ class DemoPerson {
   final String? className;
 }
 
-const demoLea = DemoPerson(
-  'Léa Fontaine',
-  'lea.fontaine',
+const demoX = DemoPerson(
+  'Utilisateur X',
+  'utilisateur.x',
   152.40,
-  className: '5e B',
+  className: 'Terminale B',
 );
-const demoHugo = DemoPerson(
-  'Hugo Mercier',
-  'hugo.mercier',
+const demoY = DemoPerson(
+  'Utilisateur Y',
+  'utilisateur.y',
   87.00,
-  className: '5e B',
+  className: 'Terminale B',
 );
-const demoInes = DemoPerson(
-  'Inès Garnier',
-  'ines.garnier',
+const demoZ = DemoPerson(
+  'Utilisateur Z',
+  'utilisateur.z',
   240.10,
-  className: '4e A',
+  className: 'Première A',
 );
-const demoNoah = DemoPerson('Noah Lambert', 'noah.lambert', 35.75);
-const demoChloe = DemoPerson(
-  'Chloé Rousseau',
-  'chloe.rousseau',
+const demoW = DemoPerson('Utilisateur W', 'utilisateur.w', 35.75);
+const demoV = DemoPerson(
+  'Utilisateur V',
+  'utilisateur.v',
   118.20,
-  className: '4e A',
+  className: 'Première A',
 );
-const demoAdam = DemoPerson(
-  'Adam Girard',
-  'adam.girard',
+const demoU = DemoPerson(
+  'Utilisateur U',
+  'utilisateur.u',
   64.00,
-  className: '5e B',
+  className: 'Terminale B',
 );
 
 /// Identifiant fictif du compte qui suit le tutoriel, pour les tuiles de

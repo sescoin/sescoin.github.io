@@ -5,6 +5,7 @@ import '../common/animations.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/currency_provider.dart';
+import '../core/user_handle.dart';
 
 class BalanceCard extends ConsumerWidget {
   const BalanceCard({super.key});
@@ -51,7 +52,7 @@ class BalanceCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Mon solde',
+                'Solde',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -116,7 +117,7 @@ class BalanceCard extends ConsumerWidget {
             data: (profile) => profile == null
                 ? const SizedBox.shrink()
                 : Text(
-                    '@${profile.username}',
+                    userHandle(profile.username),
                     style: TextStyle(
                       color: accent,
                       fontSize: 13,

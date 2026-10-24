@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../common/animations.dart';
 import '../../core/theme.dart';
@@ -35,9 +34,6 @@ class MaintenanceScreen extends ConsumerStatefulWidget {
 class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
   bool _checking = false;
 
-  // Sans locale : format purement numérique (voir admin_reports_screen.dart).
-  static final _timeFmt = DateFormat('HH:mm');
-
   Future<void> _check() async {
     if (widget.preview || _checking) return;
     setState(() => _checking = true);
@@ -54,9 +50,8 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = context.accent;
-    final adminOnly = widget.mode == MaintenanceMode.admin;
-    final startedAt = widget.startedAt;
 
+    // Volontairement sans texte : le médaillon et les deux boutons suffisent.
     return Material(
       color: theme.scaffoldBackgroundColor,
       child: Stack(
@@ -81,54 +76,7 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _Emblem(accent: accent, animate: !widget.preview),
-                      const SizedBox(height: 26),
-                      Text(
-                        adminOnly
-                            ? 'Maintenance de l\'administration'
-                            : 'Maintenance en cours',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        adminOnly
-                            ? 'L\'espace administrateur est momentanément '
-                                'indisponible pendant une intervention '
-                                'technique. Il rouvrira de lui-même dès la fin '
-                                'de la maintenance.'
-                            : 'SES Coin est momentanément fermé pendant une '
-                                'intervention technique. L\'application '
-                                'rouvrira d\'elle-même dès la fin de la '
-                                'maintenance.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          height: 1.5,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      _StatusPill(
-                        accent: accent,
-                        label: startedAt == null
-                            ? 'Réouverture automatique'
-                            : 'Réouverture automatique · depuis '
-                                '${_timeFmt.format(startedAt)}',
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Inutile de se reconnecter : cet écran disparaîtra '
-                        'tout seul.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.8),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 36),
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
@@ -143,7 +91,8 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                                   ),
                                 )
                               : const Icon(Icons.refresh_rounded, size: 19),
-                          label: const Text('Vérifier maintenant'),
+                          label:
+                              const Text('Vérifier la fin de la maintenance'),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -168,7 +117,8 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
 }
 
 class _Halo extends StatelessWidget {
-  const _Halo({required this.color, required this.size, required this.strength});
+  const _Halo(
+      {required this.color, required this.size, required this.strength});
 
   final Color color;
   final double size;
@@ -184,7 +134,8 @@ class _Halo extends StatelessWidget {
           shape: BoxShape.circle,
           gradient: RadialGradient(
             colors: [
-              color.withValues(alpha: context.isDark ? strength : strength * 0.7),
+              color.withValues(
+                  alpha: context.isDark ? strength : strength * 0.7),
               color.withValues(alpha: 0),
             ],
           ),
@@ -294,74 +245,4 @@ class _DashedRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DashedRingPainter oldDelegate) =>
       oldDelegate.color != color;
-}
-
-/// Pastille d'état, avec un point qui pulse : la vérification continue.
-class _StatusPill extends StatefulWidget {
-  const _StatusPill({required this.accent, required this.label});
-
-  final Color accent;
-  final String label;
-
-  @override
-  State<_StatusPill> createState() => _StatusPillState();
-}
-
-class _StatusPillState extends State<_StatusPill>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1300),
-    );
-    if (!AppMotion.reduce) _pulse.repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = widget.accent;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.30)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FadeTransition(
-            opacity: Tween<double>(begin: 0.35, end: 1).animate(_pulse),
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              widget.label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: accent,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

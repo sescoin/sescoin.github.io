@@ -158,7 +158,7 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
       throw Exception('Non connecté');
     }
     if (userId == recipientId) {
-      throw Exception('Impossible de se payer soi-même');
+      throw Exception('Expéditeur et destinataire identiques');
     }
 
     state = state.copyWith(

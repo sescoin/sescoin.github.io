@@ -63,7 +63,7 @@ const adminMenu = <AdminMenuSection>[
         id: 'reports',
         icon: Icons.flag_rounded,
         title: 'Signalements',
-        subtitle: 'Messages remontés par les élèves',
+        subtitle: 'Messages remontés par les utilisateurs',
         route: AppRoutes.adminReports,
         color: AppTheme.warning,
       ),

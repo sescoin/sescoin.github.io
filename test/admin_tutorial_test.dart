@@ -126,6 +126,25 @@ void main() {
     });
   }
 
+  testWidgets('La pause fige l\'exemple', (tester) async {
+    final controller = DemoController();
+    final player = DemoPlayer(controller, GlobalKey());
+    var done = false;
+    () async {
+      await player.wait(1000);
+      done = true;
+    }();
+
+    player.pause();
+    await tester.pump(const Duration(seconds: 3));
+    expect(done, isFalse, reason: 'le temps en pause ne compte pas');
+
+    player.resume();
+    await tester.pump(const Duration(milliseconds: 1100));
+    expect(done, isTrue);
+    controller.dispose();
+  });
+
   for (final size in const [Size(390, 844), Size(360, 740)]) {
     testWidgets('Écran du tutoriel (${size.width.toInt()} de large)',
         (tester) async {
@@ -164,9 +183,16 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('L\'écran d\'accueil'), findsOneWidget);
 
-      // Arrêter un exemple en cours.
+      // Mettre en pause, reprendre, puis arrêter un exemple en cours.
       await tester.tap(find.text('Jouer l\'exemple'));
       await tester.pump(const Duration(seconds: 2));
+      await tester.tap(find.text('Pause'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Reprendre'), findsOneWidget);
+      expect(find.text('En pause'), findsOneWidget);
+      await tester.tap(find.text('Reprendre'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Pause'), findsOneWidget);
       expect(find.text('Arrêter'), findsOneWidget);
       await tester.tap(find.text('Arrêter'));
       await tester.pump(const Duration(seconds: 1));

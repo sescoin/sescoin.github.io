@@ -1192,7 +1192,7 @@ class _PreviewCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Mon solde',
+                    'Solde',
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   const SizedBox(height: 6),

@@ -97,7 +97,7 @@ class TransactionService {
       );
     }
     if (fromUserId == toUserId) {
-      throw Exception('Impossible de s\'envoyer des fonds à soi-même.');
+      throw Exception('Expéditeur et destinataire identiques.');
     }
 
     final data = await _client.rpc('transfer_funds', params: {

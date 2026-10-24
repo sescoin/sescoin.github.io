@@ -274,7 +274,7 @@ class _ReceiveTabState extends ConsumerState<_ReceiveTab> {
                   Icon(Icons.nfc_rounded, size: 18, color: context.accent),
                   const SizedBox(width: 6),
                   Text(
-                    'NFC actif · approche l’envoyeur',
+                    'NFC actif · téléphones à rapprocher',
                     style: TextStyle(
                       fontSize: 12,
                       color: context.accent,
@@ -478,7 +478,7 @@ class _SendTabState extends ConsumerState<_SendTab> {
     try {
       await FlutterNfcKit.poll(
         timeout: const Duration(seconds: 30),
-        iosAlertMessage: 'Approche le téléphone du destinataire',
+        iosAlertMessage: 'Téléphone du destinataire à rapprocher',
       );
 
       final selResp = await FlutterNfcKit.transceive(_apduSelectAid);

@@ -25,6 +25,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../core/user_handle.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({
@@ -133,7 +134,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       } else {
         AppFeedback.info(
           context,
-          'Photo envoyée ! Elle apparaîtra dès qu\'elle sera approuvée.',
+          'Photo envoyée ! Visible après approbation.',
         );
       }
     } catch (error) {
@@ -667,7 +668,7 @@ class _ProfileHeader extends StatelessWidget {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '@${profile.username}',
+                            userHandle(profile.username),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(color: onSurfaceVariant),
@@ -799,7 +800,7 @@ class _LoansTab extends ConsumerWidget {
               const EmptyState(
                 icon: Icons.handshake_rounded,
                 title: 'Aucun prêt pour le moment',
-                subtitle: 'Crée une demande pour commencer',
+                subtitle: 'Les demandes de prêt apparaissent ici',
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/transaction.dart';
+import '../core/user_handle.dart';
 
 class GlobalTransactionTile extends StatelessWidget {
   const GlobalTransactionTile({
@@ -68,20 +69,20 @@ class GlobalTransactionTile extends StatelessWidget {
             const SizedBox(height: 12),
             if (isBuyerTransaction)
               _UserChip(
-                label: 'Acheteur : @$fromLabel',
+                label: 'Acheteur : ${userHandle(fromLabel)}',
                 onTap: onFromTap,
               )
             else if (transaction.type == TransactionType.initialBalance)
               // Solde initial : l'administrateur qui l'attribue n'est pas une
               // contrepartie, la somme est créée. On l'affiche donc comme un
               // crédit système, au même titre qu'une récompense.
-              _UserChip(label: 'Vers @$toLabel', onTap: onToTap)
+              _UserChip(label: 'Vers ${userHandle(toLabel)}', onTap: onToTap)
             else if (transaction.fromUserId == null)
               // Opération système (crédit, récompense…) : pas de contrepartie.
-              _UserChip(label: 'Vers @$toLabel', onTap: onToTap)
+              _UserChip(label: 'Vers ${userHandle(toLabel)}', onTap: onToTap)
             else if (transaction.toUserId == null)
               // Opération système (débit, taxe…) : pas de contrepartie.
-              _UserChip(label: 'De @$fromLabel', onTap: onFromTap)
+              _UserChip(label: 'De ${userHandle(fromLabel)}', onTap: onFromTap)
             else
               Wrap(
                 spacing: 8,
@@ -89,12 +90,12 @@ class GlobalTransactionTile extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _UserChip(
-                    label: 'De @$fromLabel',
+                    label: 'De ${userHandle(fromLabel)}',
                     onTap: onFromTap,
                   ),
                   const Icon(Icons.arrow_forward_rounded, size: 18),
                   _UserChip(
-                    label: 'Vers @$toLabel',
+                    label: 'Vers ${userHandle(toLabel)}',
                     onTap: onToTap,
                   ),
                 ],

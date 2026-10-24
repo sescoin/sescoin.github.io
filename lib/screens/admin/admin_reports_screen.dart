@@ -14,6 +14,7 @@ import '../../models/grouped_report.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/report_provider.dart';
 import '../../services/file_export/file_export.dart';
+import '../../core/user_handle.dart';
 
 /// Signalements remontés par les élèves, regroupés par message.
 class AdminReportsScreen extends ConsumerStatefulWidget {
@@ -158,13 +159,13 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
           group.isClassChat ? 'Chat de classe' : 'Chat des annonces',
         )
         ..writeln('Export du ${_stampFmt.format(DateTime.now())}')
-        ..writeln('Signalement visant @${group.reportedUsername}')
+        ..writeln('Signalement visant ${userHandle(group.reportedUsername)}')
         ..writeln('${lines.length} message(s)')
         ..writeln('${'=' * 60}\n');
 
       for (final line in lines) {
         final stamp = _stampFmt.format(line.createdAt.toLocal());
-        buffer.writeln('[$stamp] @${line.username} (${line.displayName})');
+        buffer.writeln('[$stamp] ${userHandle(line.username)} (${line.displayName})');
 
         if (line.isDeleted) {
           buffer.writeln('  [SUPPRIMÉ PAR SON AUTEUR]');
@@ -301,7 +302,7 @@ class _GroupCard extends StatelessWidget {
                 child: InkWell(
                   onTap: () => context.push('/user/${group.reportedUsername}'),
                   child: Text(
-                    '@${group.reportedUsername}',
+                    userHandle(group.reportedUsername),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -332,7 +333,7 @@ class _GroupCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            '@$r',
+                            userHandle(r),
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,

@@ -5,6 +5,7 @@ import '../../core/text_sanitizer.dart';
 import '../../core/theme.dart';
 import '../../models/loan.dart';
 import '../common/user_avatar.dart';
+import '../core/user_handle.dart';
 
 class LoanCard extends StatelessWidget {
   const LoanCard({
@@ -116,8 +117,8 @@ class LoanCard extends StatelessWidget {
                       ),
                       Text(
                         _isLender
-                            ? '@${loan.borrowerUsername}'
-                            : '@${loan.lenderUsername}',
+                            ? userHandle(loan.borrowerUsername)
+                            : userHandle(loan.lenderUsername),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,

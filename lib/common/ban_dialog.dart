@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import 'app_dialog.dart';
 import 'dispose_scope.dart';
+import '../core/user_handle.dart';
 
 /// Suspension demandée par l'administrateur.
 class BanRequest {
@@ -60,7 +61,7 @@ Future<BanRequest?> showBanDialog(
         builder: (ctx, setLocal) => AppDialog(
           icon: Icons.gavel_rounded,
           tone: AppDialogTone.danger,
-          title: 'Suspendre @$username',
+          title: 'Suspendre ${userHandle(username)}',
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

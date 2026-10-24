@@ -12,6 +12,7 @@ import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../models/profile.dart';
 import '../../providers/class_provider.dart';
+import '../../core/user_handle.dart';
 
 class AdminClassDetailScreen extends ConsumerWidget {
   const AdminClassDetailScreen(
@@ -248,8 +249,8 @@ class AdminClassDetailScreen extends ConsumerWidget {
                         ),
                         Text(
                           available.isEmpty
-                              ? 'Aucun élève disponible'
-                              : '${available.length} élève(s) sans classe',
+                              ? 'Aucun utilisateur disponible'
+                              : '${available.length} utilisateur(s) sans classe',
                           style: TextStyle(
                             color: context.onAccent.withValues(alpha: 0.85),
                             fontSize: 12,
@@ -279,7 +280,7 @@ class AdminClassDetailScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            'Tous les élèves ont déjà une classe.',
+                            'Tous les utilisateurs ont déjà une classe.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 13,
@@ -331,7 +332,7 @@ class AdminClassDetailScreen extends ConsumerWidget {
                                           ),
                                         ),
                                         Text(
-                                          '@${p.username}',
+                                          userHandle(p.username),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
@@ -391,7 +392,7 @@ class AdminClassDetailScreen extends ConsumerWidget {
         icon: Icons.person_remove_rounded,
         tone: AppDialogTone.danger,
         title: 'Retirer ${profile.displayName} ?',
-        subtitle: '@${profile.username}',
+        subtitle: userHandle(profile.username),
         content: const Text('Ce membre sera retiré de la classe.'),
         actions: [
           TextButton(
@@ -455,7 +456,7 @@ class _MemberTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '@${profile.username}',
+                      userHandle(profile.username),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

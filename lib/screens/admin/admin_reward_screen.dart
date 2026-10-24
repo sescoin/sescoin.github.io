@@ -96,7 +96,7 @@ class _AdminRewardScreenState extends ConsumerState<AdminRewardScreen> {
                                 value?.replaceAll(',', '.') ?? '',
                               );
                               if (amount == null || amount <= 0) {
-                                return 'Entrez un montant valide';
+                                return 'Montant invalide';
                               }
                               return null;
                             },

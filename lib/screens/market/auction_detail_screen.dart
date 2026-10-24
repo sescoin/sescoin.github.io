@@ -13,6 +13,7 @@ import '../../core/theme.dart';
 import '../../providers/auction_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../core/user_handle.dart';
 
 class AuctionDetailScreen extends ConsumerStatefulWidget {
   const AuctionDetailScreen({super.key, required this.auctionId});
@@ -110,14 +111,17 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
         appBar: AppBar(),
         body: ErrorRetry(
           message: e.toString(),
-          onRetry: () => ref.invalidate(auctionStreamProvider(widget.auctionId)),
+          onRetry: () =>
+              ref.invalidate(auctionStreamProvider(widget.auctionId)),
         ),
       ),
       data: (auction) {
         final remaining = auction.endsAt.difference(_now);
         final liveRemaining = remaining.isNegative ? Duration.zero : remaining;
 
-        if (!_checkedExpired && auction.isActive && liveRemaining == Duration.zero) {
+        if (!_checkedExpired &&
+            auction.isActive &&
+            liveRemaining == Duration.zero) {
           _checkedExpired = true;
           Future.microtask(
             () => ref.read(auctionServiceProvider).finalizeExpiredAuctions(),
@@ -125,6 +129,8 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
         }
 
         final isCurrentWinner = auction.currentWinnerId == userId;
+        // L'administrateur consulte, sans enchérir (règle aussi en base).
+        final isAdmin = ref.watch(isAdminProvider);
 
         return Scaffold(
           appBar: AppBar(title: Text(auction.itemName)),
@@ -188,7 +194,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      'Dernier enchérisseur : @${auction.currentWinnerUsername}',
+                                      'Dernier enchérisseur : ${userHandle(auction.currentWinnerUsername)}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -207,7 +213,16 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    if (auction.isActive && !isCurrentWinner) ...[
+                    if (auction.isActive && isAdmin) ...[
+                      Text(
+                        'Enchères réservées aux utilisateurs.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ] else if (auction.isActive && !isCurrentWinner) ...[
                       Text(
                         'Placer une offre',
                         style: Theme.of(context)
@@ -326,7 +341,7 @@ class _AuctionDetailScreenState extends ConsumerState<AuctionDetailScreen> {
                                     username: bid.bidderUsername,
                                     radius: 18,
                                   ),
-                                  title: Text('@${bid.bidderUsername}'),
+                                  title: Text(userHandle(bid.bidderUsername)),
                                   trailing: Text(
                                     '${bid.amount.toStringAsFixed(2)} SC',
                                     style: TextStyle(

@@ -13,6 +13,7 @@ import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/loan_provider.dart';
+import '../../core/user_handle.dart';
 
 /// Façon de renseigner l'échéance d'un prêt.
 enum _DueMode {
@@ -570,7 +571,7 @@ class _LoanCreateScreenState extends ConsumerState<LoanCreateScreen> {
                                         title: Text(
                                             user['display_name'] as String),
                                         subtitle: Text(
-                                          '@${user['username']}',
+                                          userHandle(user['username']),
                                           style: const TextStyle(fontSize: 12),
                                         ),
                                         trailing: alreadySelected

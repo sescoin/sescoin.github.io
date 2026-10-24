@@ -10,6 +10,7 @@ import '../../common/loading_overlay.dart';
 import '../../core/theme.dart';
 import '../../models/sanction.dart';
 import '../../providers/report_provider.dart';
+import '../../core/user_handle.dart';
 
 /// Historique des mesures prises contre les comptes.
 ///
@@ -130,7 +131,7 @@ class _SanctionCard extends StatelessWidget {
                     InkWell(
                       onTap: () => context.push('/user/${sanction.username}'),
                       child: Text(
-                        '@${sanction.username}',
+                        userHandle(sanction.username),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -176,7 +177,9 @@ class _SanctionCard extends StatelessWidget {
                               : Icons.person_rounded,
                           text: sanction.automatic
                               ? 'automatique'
-                              : '@${sanction.issuedByUsername ?? 'admin'}',
+                              : userHandle(
+                                  sanction.issuedByUsername ?? adminUsername,
+                                ),
                         ),
                       ],
                     ),

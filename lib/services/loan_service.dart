@@ -193,7 +193,7 @@ class LoanService {
       throw Exception('Aucun compte actif trouvé pour "$lenderUsername".');
     }
     if (lenderData['id'] == borrowerId) {
-      throw Exception('Impossible de se prêter à soi-même.');
+      throw Exception('Prêteur et emprunteur identiques.');
     }
     if (lenderData['role'] == 'admin') {
       throw Exception('Impossible de demander un prêt à un administrateur.');

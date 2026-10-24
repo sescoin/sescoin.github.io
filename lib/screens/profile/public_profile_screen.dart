@@ -10,6 +10,7 @@ import '../../core/theme.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/transaction_explorer_provider.dart';
 import '../../transaction/global_transaction_tile.dart';
+import '../../core/user_handle.dart';
 
 class PublicProfileScreen extends ConsumerWidget {
   const PublicProfileScreen({
@@ -24,7 +25,7 @@ class PublicProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(publicProfileProvider(username));
 
     return Scaffold(
-      appBar: AppBar(title: Text('@$username')),
+      appBar: AppBar(title: Text(userHandle(username))),
       body: profileAsync.when(
         loading: () => const InlineLoader(message: 'Chargement...'),
         error: (error, _) => ErrorRetry(
@@ -109,7 +110,7 @@ class PublicProfileScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '@${profile.username}',
+                                  userHandle(profile.username),
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.7),
                                   ),

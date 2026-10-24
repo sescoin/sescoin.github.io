@@ -222,7 +222,7 @@ class _AdminMarketItemFormScreenState
                       textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Entrez un nom';
+                          return 'Nom requis';
                         }
                         return null;
                       },
@@ -234,7 +234,7 @@ class _AdminMarketItemFormScreenState
                       textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Entrez une catégorie';
+                          return 'Catégorie requise';
                         }
                         return null;
                       },
@@ -294,7 +294,7 @@ class _AdminMarketItemFormScreenState
                         final amount =
                             double.tryParse(value?.replaceAll(',', '.') ?? '');
                         if (amount == null || amount <= 0) {
-                          return 'Entrez un prix valide';
+                          return 'Prix invalide';
                         }
                         return null;
                       },
@@ -321,7 +321,7 @@ class _AdminMarketItemFormScreenState
                       decoration: const InputDecoration(labelText: 'Stock'),
                       validator: (value) => _validateIntegerField(
                         value,
-                        invalidMessage: 'Entrez un stock valide',
+                        invalidMessage: 'Stock invalide',
                         allowUnlimited: true,
                       ),
                     ),
@@ -334,7 +334,7 @@ class _AdminMarketItemFormScreenState
                       ),
                       validator: (value) => _validateIntegerField(
                         value,
-                        invalidMessage: 'Entrez une limite valide',
+                        invalidMessage: 'Limite invalide',
                         allowUnlimited: true,
                       ),
                     ),

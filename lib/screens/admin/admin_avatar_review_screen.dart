@@ -8,6 +8,7 @@ import '../../common/user_avatar.dart';
 import '../../core/theme.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../core/user_handle.dart';
 
 class AdminAvatarReviewScreen extends ConsumerWidget {
   const AdminAvatarReviewScreen({
@@ -58,7 +59,7 @@ class AdminAvatarReviewScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '@${profile.username}',
+                          userHandle(profile.username),
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),

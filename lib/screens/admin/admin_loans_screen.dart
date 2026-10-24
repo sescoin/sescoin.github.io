@@ -9,6 +9,7 @@ import '../../models/loan.dart';
 import '../../models/loan_config.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/loan_provider.dart';
+import '../../core/user_handle.dart';
 
 class AdminLoansScreen extends ConsumerStatefulWidget {
   const AdminLoansScreen({super.key, this.initialTab = 0});
@@ -374,7 +375,7 @@ class _PartyLine extends StatelessWidget {
         ),
         Flexible(
           child: Text(
-            '@$username',
+            userHandle(username),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -443,13 +444,13 @@ void _showLoanDetail(BuildContext context, Loan loan, DateFormat dateFmt) {
               _DetailRow(
                 icon: Icons.arrow_upward_rounded,
                 label: 'Prêteur',
-                value: '@${loan.lenderUsername}',
+                value: userHandle(loan.lenderUsername),
                 color: AppTheme.positive,
               ),
               _DetailRow(
                 icon: Icons.arrow_downward_rounded,
                 label: 'Emprunteur',
-                value: '@${loan.borrowerUsername}',
+                value: userHandle(loan.borrowerUsername),
                 color: AppTheme.negative,
               ),
               const Divider(height: 28),

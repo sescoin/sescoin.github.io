@@ -199,17 +199,46 @@ class DemoPlayer {
   final DemoController c;
   final GlobalKey _stageKey;
   bool _cancelled = false;
+  Completer<void>? _resumed;
 
-  void cancel() => _cancelled = true;
+  bool get paused => _resumed != null;
+
+  void cancel() {
+    _cancelled = true;
+    // Débloque une attente en pause : elle lèvera DemoCancelled.
+    resume();
+  }
+
+  /// Fige l'exemple à la prochaine attente (au plus 50 ms plus tard).
+  void pause() => _resumed ??= Completer<void>();
+
+  void resume() {
+    final resumed = _resumed;
+    _resumed = null;
+    if (resumed != null && !resumed.isCompleted) resumed.complete();
+  }
 
   void _check() {
     if (_cancelled) throw const DemoCancelled();
   }
 
+  /// Attend [ms] millisecondes de lecture : le temps passé en pause ne
+  /// compte pas.
   Future<void> wait(int ms) async {
     _check();
-    await Future<void>.delayed(Duration(milliseconds: ms));
-    _check();
+    var left = ms;
+    while (left > 0) {
+      final slice = math.min(left, 50);
+      await Future<void>.delayed(Duration(milliseconds: slice));
+      _check();
+      final resumed = _resumed;
+      if (resumed != null) {
+        await resumed.future;
+        _check();
+      } else {
+        left -= slice;
+      }
+    }
   }
 
   void set(String key, Object? value) {

@@ -17,6 +17,7 @@ import '../../models/profile.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../core/user_handle.dart';
 
 class AdminAccountsScreen extends ConsumerStatefulWidget {
   const AdminAccountsScreen({super.key});
@@ -186,7 +187,7 @@ class _AdminAccountsScreenState extends ConsumerState<AdminAccountsScreen> {
         child: AppDialog(
           icon: Icons.key_rounded,
           title: 'Réinitialiser le mot de passe',
-          subtitle: '@${profile.username}',
+          subtitle: userHandle(profile.username),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,8 +202,8 @@ class _AdminAccountsScreenState extends ConsumerState<AdminAccountsScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Le nouveau mot de passe devra être communiqué au titulaire '
-                'du compte : il ne lui sera pas envoyé.',
+                'Le nouveau mot de passe est à communiquer au titulaire du '
+                'compte : aucun envoi automatique.',
                 style: TextStyle(
                   fontSize: 12,
                   height: 1.35,
@@ -446,7 +447,7 @@ class _AccountCard extends StatelessWidget {
                           ),
                           if (isMe) ...[
                             const SizedBox(width: 6),
-                            _Badge(label: 'Moi', color: accent),
+                            _Badge(label: 'Admin', color: accent),
                           ],
                           if (profile.isBanned) ...[
                             const SizedBox(width: 6),
@@ -478,7 +479,7 @@ class _AccountCard extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Text(
-                              '@${profile.username}',
+                              userHandle(profile.username),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(

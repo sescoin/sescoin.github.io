@@ -14,6 +14,7 @@ import '../../../transaction/transaction_tile.dart';
 import '../admin_screen.dart';
 import 'tutorial_engine.dart';
 import 'tutorial_mock.dart';
+import '../../../core/user_handle.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scènes du tutoriel : accueil et administration.
@@ -154,7 +155,7 @@ class DemoHomePage extends StatelessWidget {
                     type: TransactionType.transfer,
                     amount: 15,
                     incoming: true,
-                    other: demoLea,
+                    other: demoX,
                   ),
                 ),
                 const Divider(height: 1, indent: 16),
@@ -164,7 +165,7 @@ class DemoHomePage extends StatelessWidget {
                     type: TransactionType.transfer,
                     amount: 20,
                     incoming: false,
-                    other: demoHugo,
+                    other: demoY,
                     ago: const Duration(days: 1),
                   ),
                 ),
@@ -208,7 +209,7 @@ class _DemoBalanceCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Mon solde',
+                'Solde',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -223,7 +224,7 @@ class _DemoBalanceCard extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: DemoAmount(
-              value: c.number('myBalance', 1250),
+              value: c.number('myBalance', 999999),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 34,
@@ -234,7 +235,7 @@ class _DemoBalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            '@$username',
+            userHandle(username),
             style: TextStyle(
               color: accent,
               fontSize: 13,
@@ -517,7 +518,7 @@ Future<void> playWelcome(DemoPlayer p) async {
   await p.tap('adminButton');
   p.set('page', 'admin');
   await p.wait(800);
-  p.say('Le panneau d\'administration s\'ouvre');
+  p.say('Ouverture du panneau d\'administration');
   await p.wait(900);
   p.say('Tout en bas, après toutes les fonctions : « Tutoriel »');
   await p.reveal('tile_tutorial', alignment: 0.8);
@@ -526,13 +527,13 @@ Future<void> playWelcome(DemoPlayer p) async {
 }
 
 Future<void> playHomeTour(DemoPlayer p) async {
-  p.say('« Mon solde » : le solde du compte');
+  p.say('« Solde » : l\'argent disponible sur le compte');
   await p.moveTo('balance', at: const Alignment(-0.5, 0.2));
   await p.wait(1000);
   p.say('La pastille : le cours monte (vert) ou baisse (rouge)');
   await p.moveTo('rateBadge');
   await p.wait(1000);
-  p.say('Toucher une colonne du graphique : son prix exact s\'affiche');
+  p.say('Toucher une colonne du graphique : affichage de son prix exact');
   await p.reveal('chartArea', alignment: 0.35);
   final chart = p.rectOf('chartArea');
   if (chart != null) {
@@ -573,7 +574,7 @@ Future<void> playAdminPanel(DemoPlayer p) async {
   await p.reveal('tile_rate', alignment: 0.7);
   await p.moveTo('tile_tax', at: const Alignment(-0.5, 0));
   await p.wait(700);
-  p.say('Aide : ce tutoriel, à rouvrir quand vous voulez');
+  p.say('Aide : ce tutoriel, disponible à tout moment');
   await p.reveal('tile_tutorial', alignment: 0.8);
   await p.moveTo('tile_tutorial', at: const Alignment(-0.5, 0));
   await p.wait(1100);
@@ -584,12 +585,12 @@ Future<void> playAdminPanel(DemoPlayer p) async {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const _accountPeople = [
-  demoAdam,
-  demoChloe,
-  demoHugo,
-  demoInes,
-  demoLea,
-  demoNoah,
+  demoU,
+  demoV,
+  demoY,
+  demoZ,
+  demoX,
+  demoW,
 ];
 
 Widget accountsScene(BuildContext context, DemoController c) {
@@ -603,8 +604,8 @@ Widget accountsScene(BuildContext context, DemoController c) {
       DemoPages(
         page: c.page,
         builder: (page) => switch (page) {
-          'profile' => _DemoPublicProfile(c: c, person: demoHugo),
-          'avatar' => _DemoAvatarReview(c: c),
+          'profile' => _DemoPublicProfile(c: c, person: demoY),
+          'avatar' => DemoAvatarReview(c: c),
           _ => _DemoAccountsList(c: c),
         },
       ),
@@ -693,7 +694,7 @@ Widget accountsScene(BuildContext context, DemoController c) {
         child: AppDialog(
           icon: Icons.gavel_rounded,
           tone: AppDialogTone.danger,
-          title: 'Suspendre @$target',
+          title: 'Suspendre ${userHandle(target)}',
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -756,7 +757,7 @@ Widget accountsScene(BuildContext context, DemoController c) {
         child: AppDialog(
           icon: Icons.key_rounded,
           title: 'Réinitialiser le mot de passe',
-          subtitle: '@$target',
+          subtitle: userHandle(target),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -920,7 +921,7 @@ class _DemoAccountsList extends StatelessWidget {
                     c: c,
                     name: me.name,
                     username: me.username,
-                    balance: 1250,
+                    balance: 999999,
                     isMe: true,
                   ),
                 ),
@@ -964,7 +965,7 @@ class _DemoAccountCard extends StatelessWidget {
     final accent = context.accent;
     final banned =
         (c.get<List<String>>('banned') ?? const <String>[]).contains(username);
-    final photo = c.flag('photoPending') && username == demoChloe.username;
+    final photo = c.flag('photoPending') && username == demoV.username;
     final value =
         (c.get<Map<String, double>>('balances') ?? const {})[username] ??
             balance;
@@ -998,7 +999,7 @@ class _DemoAccountCard extends StatelessWidget {
                           ),
                           if (isMe) ...[
                             const SizedBox(width: 6),
-                            MockPill('Moi', color: accent, square: true),
+                            MockPill('Admin', color: accent, square: true),
                           ],
                           if (banned) ...[
                             const SizedBox(width: 6),
@@ -1026,7 +1027,7 @@ class _DemoAccountCard extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Text(
-                              '@$username',
+                              userHandle(username),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -1081,7 +1082,7 @@ class _DemoPublicProfile extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = context.accent;
     return MockScreen(
-      title: '@${person.username}',
+      title: userHandle(person.username),
       body: ListView(
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -1119,7 +1120,7 @@ class _DemoPublicProfile extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '@${person.username}',
+                          userHandle(person.username),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                           ),
@@ -1168,7 +1169,7 @@ class _DemoPublicProfile extends StatelessWidget {
               type: TransactionType.transfer,
               amount: 12,
               from: person,
-              to: demoLea,
+              to: demoX,
               description: 'Remboursement cantine',
               method: 'qr',
             ),
@@ -1190,8 +1191,9 @@ class _DemoPublicProfile extends StatelessWidget {
   }
 }
 
-class _DemoAvatarReview extends StatelessWidget {
-  const _DemoAvatarReview({required this.c});
+/// Validation d'une photo de profil (aussi ouverte depuis la notification).
+class DemoAvatarReview extends StatelessWidget {
+  const DemoAvatarReview({super.key, required this.c});
 
   final DemoController c;
 
@@ -1235,7 +1237,7 @@ class _DemoAvatarReview extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    demoChloe.name,
+                    demoV.name,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
@@ -1243,7 +1245,7 @@ class _DemoAvatarReview extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '@${demoChloe.username}',
+                    userHandle(demoV.username),
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -1257,7 +1259,7 @@ class _DemoAvatarReview extends StatelessWidget {
                           'Photo actuelle',
                           Center(
                             child: UserAvatar(
-                              username: demoChloe.username,
+                              username: demoV.username,
                               radius: 46,
                             ),
                           ),
@@ -1357,11 +1359,11 @@ Future<void> playSearchAccounts(DemoPlayer p) async {
   p.say('Toucher la barre de recherche');
   await p.tap('search');
   p.set('searchFocus', true);
-  p.say('Taper un nom ou un identifiant : la liste se filtre');
-  await p.type('query', 'hugo', perChar: 130);
+  p.say('Taper un nom ou un identifiant : liste filtrée en direct');
+  await p.type('query', 'y', perChar: 130);
   await p.wait(900);
   p.say('Toucher le compte pour ouvrir sa fiche');
-  await p.tap('card_hugo.mercier', at: const Alignment(-0.4, 0));
+  await p.tap('card_utilisateur.y', at: const Alignment(-0.4, 0));
   p
     ..set('searchFocus', false)
     ..set('page', 'profile');
@@ -1373,7 +1375,7 @@ Future<void> playSearchAccounts(DemoPlayer p) async {
 
 Future<void> playCredit(DemoPlayer p) async {
   p.say('Toucher ⋮ à droite du compte');
-  await _openAccountMenu(p, 'hugo.mercier');
+  await _openAccountMenu(p, 'utilisateur.y');
   p.say('Choisir « Créditer » (ou « Débiter » pour retirer)');
   await p.tap('m_credit');
   p
@@ -1384,7 +1386,7 @@ Future<void> playCredit(DemoPlayer p) async {
   await p.tap('f_amount');
   p.set('focus', 'amount');
   await p.type('amount', '20', perChar: 160);
-  p.say('Puis la raison, qui apparaîtra dans l\'historique de l\'élève');
+  p.say('Puis la raison, visible dans l\'historique du compte');
   await p.tap('f_reason');
   p.set('focus', 'reason');
   await p.type('reason', 'Exposé réussi');
@@ -1394,20 +1396,20 @@ Future<void> playCredit(DemoPlayer p) async {
   p
     ..set('focus', null)
     ..set('dialog', null)
-    ..set('balances', {'hugo.mercier': 107.0});
+    ..set('balances', {'utilisateur.y': 107.0});
   await p.wait(300);
   await p.toast('+20.00 SC appliqué.');
 }
 
 Future<void> playBan(DemoPlayer p) async {
   p.say('Toucher ⋮ puis « Bannir »');
-  await _openAccountMenu(p, 'ines.garnier');
+  await _openAccountMenu(p, 'utilisateur.z');
   await p.tap('m_ban');
   p
     ..set('menuRect', null)
     ..set('dialog', 'ban');
   await p.wait(450);
-  p.say('Écrire le motif : l\'élève le verra sur son accueil');
+  p.say('Écrire le motif, affiché sur l\'accueil du compte');
   await p.tap('f_banReason');
   p.set('focus', 'banReason');
   await p.type('banReason', 'Insultes dans le chat');
@@ -1420,11 +1422,11 @@ Future<void> playBan(DemoPlayer p) async {
   p
     ..set('focus', null)
     ..set('dialog', null)
-    ..set('banned', ['ines.garnier']);
+    ..set('banned', ['utilisateur.z']);
   await p.toast('Compte suspendu, levée automatique.', ms: 1900);
   p.say('Pour lever plus tôt : ⋮ puis « Débannir »');
   p.set('targetBanned', true);
-  await _openAccountMenu(p, 'ines.garnier');
+  await _openAccountMenu(p, 'utilisateur.z');
   await p.tap('m_ban');
   p
     ..set('menuRect', null)
@@ -1434,7 +1436,7 @@ Future<void> playBan(DemoPlayer p) async {
 
 Future<void> playResetPassword(DemoPlayer p) async {
   p.say('Toucher ⋮ puis « Réinitialiser le mot de passe »');
-  await _openAccountMenu(p, 'lea.fontaine');
+  await _openAccountMenu(p, 'utilisateur.x');
   await p.tap('m_reset');
   p
     ..set('menuRect', null)
@@ -1445,7 +1447,7 @@ Future<void> playResetPassword(DemoPlayer p) async {
   p.set('focus', 'password');
   await p.type('password', 'Soleil2026', perChar: 90);
   await p.wait(400);
-  p.say('« Réinitialiser » : puis le communiquer vous-même à l\'élève');
+  p.say('« Réinitialiser », puis communiquer ce mot de passe au titulaire');
   await p.tap('doReset');
   p
     ..set('focus', null)
@@ -1455,7 +1457,7 @@ Future<void> playResetPassword(DemoPlayer p) async {
 
 Future<void> playDeleteAccount(DemoPlayer p) async {
   p.say('Toucher ⋮ puis « Supprimer »');
-  await _openAccountMenu(p, 'adam.girard');
+  await _openAccountMenu(p, 'utilisateur.u');
   await p.tap('m_delete');
   p
     ..set('menuRect', null)
@@ -1466,13 +1468,13 @@ Future<void> playDeleteAccount(DemoPlayer p) async {
   await p.tap('doDelete');
   p
     ..set('dialog', null)
-    ..set('deleted', ['adam.girard']);
+    ..set('deleted', ['utilisateur.u']);
   await p.wait(300);
   await p.toast('Compte supprimé.');
 }
 
 Future<void> playPhotoReview(DemoPlayer p) async {
-  p.say('La pastille « Photo » : une nouvelle photo attend votre accord');
+  p.say('La pastille « Photo » : une nouvelle photo attend une validation');
   await p.moveTo('photoBadge');
   await p.wait(1000);
   await p.tap('photoBadge');
@@ -1488,7 +1490,7 @@ Future<void> playPhotoReview(DemoPlayer p) async {
   await p.tap('closeZoom');
   p.set('photoZoom', false);
   await p.wait(450);
-  p.say('« Approuver » la publie, « Refuser » la rejette');
+  p.say('« Approuver » : photo publiée. « Refuser » : photo rejetée');
   await p.tap('approvePhoto');
   p
     ..set('photoPending', false)
@@ -1500,8 +1502,8 @@ Future<void> playPhotoReview(DemoPlayer p) async {
 // Demandes de compte
 // ═════════════════════════════════════════════════════════════════════════════
 
-const _demoJade = DemoPerson('Jade Morel', 'jade.morel', 0);
-const _demoClasses = ['5e B', '4e A', '3e C'];
+const _demoT = DemoPerson('Utilisateur T', 'utilisateur.t', 0);
+const _demoClasses = ['Terminale B', 'Première A', 'Terminale C'];
 
 Widget requestsScene(BuildContext context, DemoController c) {
   return Stack(
@@ -1520,15 +1522,15 @@ Widget requestsScene(BuildContext context, DemoController c) {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: c.mark(
                   'req_lea',
-                  _DemoRequestCard(c: c, person: demoLea, id: 'lea'),
+                  _DemoRequestCard(c: c, person: demoX, id: 'lea'),
                 ),
               ),
             ),
             _DemoRequestCard(
               c: c,
-              person: _demoJade,
+              person: _demoT,
               id: 'jade',
-              className: '4e A',
+              className: 'Première A',
             ),
           ],
         ),
@@ -1538,7 +1540,7 @@ Widget requestsScene(BuildContext context, DemoController c) {
         child: AppDialog(
           icon: Icons.how_to_reg_rounded,
           title: 'Approuver le compte',
-          subtitle: '@${demoLea.username}',
+          subtitle: userHandle(demoX.username),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1664,7 +1666,7 @@ class _DemoRequestCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '@${person.username}',
+                        userHandle(person.username),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -1751,11 +1753,11 @@ Future<void> playApproveRequest(DemoPlayer p) async {
     ..set('focus', 'balance')
     ..set('balance', '');
   await p.type('balance', '150', perChar: 140);
-  p.say('La classe de l\'élève');
-  await p.tap('cls_5e B');
+  p.say('La classe de l\'utilisateur');
+  await p.tap('cls_Terminale B');
   p
     ..set('focus', null)
-    ..set('dlgClass', '5e B');
+    ..set('dlgClass', 'Terminale B');
   await p.wait(500);
   p.say('« Approuver » : le compte est créé tout de suite');
   await p.tap('doApprove');
@@ -1847,7 +1849,7 @@ class _DemoReportCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
-            '@$username',
+            userHandle(username),
             style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
           ),
         );
@@ -1910,7 +1912,7 @@ class _DemoReportCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
-                  'Personne ne t\'a invité, va jouer ailleurs 🙄',
+                  'fais gaffe en rentrant chez toi',
                   style: TextStyle(fontSize: 13.5, height: 1.4),
                 ),
               ),
@@ -1921,7 +1923,7 @@ class _DemoReportCard extends StatelessWidget {
               'Auteur',
               AppTheme.negative,
               Text(
-                '@${demoNoah.username}',
+                userHandle(demoW.username),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -1938,9 +1940,9 @@ class _DemoReportCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  reporter(demoLea.username),
-                  reporter(demoHugo.username),
-                  reporter(demoChloe.username),
+                  reporter(demoX.username),
+                  reporter(demoY.username),
+                  reporter(demoV.username),
                 ],
               ),
             ),
@@ -2018,7 +2020,7 @@ Future<void> playReports(DemoPlayer p) async {
   p.say('Le nombre de signalements du message (orange : 3 ou 4)');
   await p.moveTo('severity');
   await p.wait(1000);
-  p.say('Le message, son auteur et les élèves qui l\'ont signalé');
+  p.say('Le message, son auteur et les utilisateurs qui l\'ont signalé');
   await p.moveTo('reportedMessage');
   await p.wait(1200);
   p.say('« Discussion » : toute la conversation dans un fichier texte');
@@ -2056,11 +2058,11 @@ Widget sanctionsScene(BuildContext context, DemoController c) {
             c: c,
             id: 'ban',
             kind: 'ban',
-            username: demoNoah.username,
+            username: demoW.username,
             reason: 'Insultes répétées dans le chat',
             createdAt: now.subtract(const Duration(hours: 2)),
             until: now.add(const Duration(days: 7)),
-            issuedBy: '@${me.username}',
+            issuedBy: userHandle(me.username),
           ),
         ),
         c.mark(
@@ -2069,7 +2071,7 @@ Widget sanctionsScene(BuildContext context, DemoController c) {
             c: c,
             id: 'mute',
             kind: 'mute',
-            username: demoHugo.username,
+            username: demoY.username,
             reason: '9 messages censurés en 24 h',
             createdAt: now.subtract(const Duration(hours: 5)),
             until: now.add(const Duration(hours: 19)),
@@ -2082,11 +2084,11 @@ Widget sanctionsScene(BuildContext context, DemoController c) {
             c: c,
             id: 'lifted',
             kind: 'ban',
-            username: demoAdam.username,
-            reason: 'Triche au marché',
+            username: demoU.username,
+            reason: 'Messages répétés hors sujet',
             createdAt: now.subtract(const Duration(days: 3)),
             liftedAt: now.subtract(const Duration(days: 2)),
-            issuedBy: '@${me.username}',
+            issuedBy: userHandle(me.username),
           ),
         ),
       ],
@@ -2183,7 +2185,7 @@ class _DemoSanctionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '@$username',
+                      userHandle(username),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -2293,17 +2295,17 @@ Widget marketAdminScene(BuildContext context, DemoController c) {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Achats de Sortie anticipée (5 min)',
+                  'Achats de Retrait d\'une absence',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 12),
-                for (final (i, buyer) in const [demoLea, demoAdam].indexed)
+                for (final (i, buyer) in const [demoX, demoU].indexed)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: MockAvatar(buyer, radius: 18),
                     title: Text(buyer.name),
                     subtitle: Text(
-                      'Sortie anticipée (5 min) · x1 · '
+                      'Retrait d\'une absence · x1 · '
                       '${_shortFmt.format(DateTime.now().subtract(Duration(days: i + 1)))}',
                     ),
                     trailing: Text(
@@ -2329,7 +2331,7 @@ Widget marketAdminScene(BuildContext context, DemoController c) {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Historique de Déjeuner avec le prof',
+                  'Historique de +1 point sur la dernière évaluation',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 12),
@@ -2341,26 +2343,26 @@ Widget marketAdminScene(BuildContext context, DemoController c) {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Gagnant actuel : @${demoLea.username} - 24.00 SC',
+                    'Gagnant actuel : ${userHandle(demoX.username)} - 24.00 SC',
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
                 const SizedBox(height: 8),
                 for (final (person, amount) in const [
-                  (demoLea, 24.0),
-                  (demoHugo, 22.0),
-                  (demoInes, 15.0),
+                  (demoX, 24.0),
+                  (demoY, 22.0),
+                  (demoZ, 15.0),
                 ])
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: MockAvatar(person, radius: 18),
                     title: Text(person.name),
-                    subtitle: Text('@${person.username}'),
+                    subtitle: Text(userHandle(person.username)),
                     trailing: Text(
                       '${amount.toStringAsFixed(2)} SC',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: person == demoLea ? context.accent : null,
+                        color: person == demoX ? context.accent : null,
                       ),
                     ),
                   ),
@@ -2424,7 +2426,7 @@ class _DemoShopAdmin extends StatelessWidget {
                   _DemoItemCard(
                     c: c,
                     id: 'i0',
-                    name: 'Sortie anticipée (5 min)',
+                    name: 'Retrait d\'une absence',
                     category: 'Privilèges',
                     price: c.number('price0', 80),
                     stock: 3,
@@ -2739,9 +2741,9 @@ class _DemoAuctionsAdmin extends StatelessWidget {
                   _DemoAuctionAdminCard(
                     c: c,
                     id: 'a0',
-                    name: 'Déjeuner avec le prof',
+                    name: '+1 point sur la dernière évaluation',
                     price: 24,
-                    leader: demoLea.username,
+                    leader: demoX.username,
                     emoji: '🔥',
                     remaining: const Duration(minutes: 3, seconds: 40),
                     ended: c.flag('auctionEnded'),
@@ -2872,7 +2874,7 @@ class _DemoAuctionAdminCardState extends State<_DemoAuctionAdminCard> {
               _mark(
                 'leader',
                 Text(
-                  'En tête : @${widget.leader}'
+                  'En tête : ${userHandle(widget.leader)}'
                   '${widget.emoji != null ? ' ${widget.emoji}' : ''}',
                   style: const TextStyle(fontSize: 12),
                 ),
@@ -3027,14 +3029,14 @@ Future<void> playCreateItem(DemoPlayer p) async {
     ..set('focus', 'stock')
     ..set('f_stock', '');
   await p.type('f_stock', '10', perChar: 150);
-  p.say('La limite par élève : 1 (-1 = sans limite)');
+  p.say('La limite par utilisateur : 1 (-1 = sans limite)');
   await p.tap('f_limit');
   p
     ..set('focus', 'limit')
     ..set('f_limit', '');
   await p.type('f_limit', '1', perChar: 150);
   p.set('focus', null);
-  p.say('« Créer l\'offre » : elle est en vente immédiatement');
+  p.say('« Créer l\'offre » : mise en vente immédiate');
   await p.tap('submitItem');
   p
     ..set('page', 'shop')
@@ -3058,12 +3060,12 @@ Future<void> playManageItem(DemoPlayer p) async {
   await p.tap('i0_edit');
   p
     ..set('editing', true)
-    ..set('f_name', 'Sortie anticipée (5 min)')
+    ..set('f_name', 'Retrait d\'une absence')
     ..set('f_cat', 'Privilèges')
     ..set('f_price', '80')
     ..set('f_stock', '3')
     ..set('f_limit', '1')
-    ..set('f_desc', 'Quitter le cours cinq minutes avant la sonnerie.')
+    ..set('f_desc', 'Demande de retrait d\'une absence du dossier.')
     ..set('page', 'itemForm');
   await p.wait(800);
   p.say('Exemple : baisser le prix à 60 SC');
@@ -3115,7 +3117,7 @@ Future<void> playCreateAuction(DemoPlayer p) async {
     ..set('a_minutes', '');
   await p.type('a_minutes', '30', perChar: 150);
   p.set('focus', null);
-  p.say('« Créer l\'enchère » : elle est visible tout de suite');
+  p.say('« Créer l\'enchère » : visible tout de suite');
   await p.tap('submitAuction');
   p
     ..set('page', 'auctions')
@@ -3137,10 +3139,10 @@ Future<void> playManageAuction(DemoPlayer p) async {
   await p.wait(1900);
   p.set('sheet', null);
   await p.wait(450);
-  p.say('« Annuler » : arrêt sans gagnant, Léa est remboursée');
+  p.say('« Annuler » : arrêt sans gagnant, X est remboursé');
   await p.moveTo('a0_cancel');
   await p.wait(1100);
-  p.say('« Clôturer » : l\'enchère se termine, Léa l\'emporte');
+  p.say('« Clôturer » : fin de l\'enchère, victoire de X');
   await p.tap('a0_finalize');
   p.set('auctionEnded', true);
   await p.wait(1400);
@@ -3227,11 +3229,11 @@ class _DemoClassList extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
-          _DemoClassCard(c: c, name: '5e B', members: 3),
-          _DemoClassCard(c: c, name: '4e A', members: 2),
+          _DemoClassCard(c: c, name: 'Terminale B', members: 3),
+          _DemoClassCard(c: c, name: 'Première A', members: 2),
           _Collapse(
             visible: c.flag('created'),
-            child: _DemoClassCard(c: c, name: '3e C', members: 0),
+            child: _DemoClassCard(c: c, name: 'Terminale C', members: 0),
           ),
         ],
       ),
@@ -3335,14 +3337,14 @@ class _DemoClassDetail extends StatelessWidget {
     final theme = Theme.of(context);
     final accent = context.accent;
     final members = [
-      demoLea,
-      demoHugo,
-      demoAdam,
-      if (c.flag('memberAdded')) demoNoah,
+      demoX,
+      demoY,
+      demoU,
+      if (c.flag('memberAdded')) demoW,
     ];
 
     return MockScreen(
-      title: '5e B',
+      title: 'Terminale B',
       body: ListView(
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -3378,7 +3380,7 @@ class _DemoClassDetail extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '5e B',
+                        'Terminale B',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -3453,7 +3455,7 @@ class _DemoClassDetail extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '@${member.username}',
+                              userHandle(member.username),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: theme.colorScheme.onSurfaceVariant,
@@ -3524,7 +3526,7 @@ class _DemoAddMemberDialog extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '2 élève(s) sans classe',
+                      '2 utilisateur(s) sans classe',
                       style: TextStyle(
                         color: onAccent.withValues(alpha: 0.85),
                         fontSize: 12,
@@ -3535,7 +3537,7 @@ class _DemoAddMemberDialog extends StatelessWidget {
               ],
             ),
           ),
-          for (final person in const [demoNoah, _demoJade])
+          for (final person in const [demoW, _demoT])
             c.mark(
               'pick_${person.username}',
               Padding(
@@ -3557,7 +3559,7 @@ class _DemoAddMemberDialog extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '@${person.username}',
+                            userHandle(person.username),
                             style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(context)
@@ -3595,7 +3597,7 @@ Future<void> playClasses(DemoPlayer p) async {
   p.say('Le nom de la classe');
   await p.tap('f_class');
   p.set('focus', 'class');
-  await p.type('className', '3e C', perChar: 140);
+  await p.type('className', 'Terminale C', perChar: 140);
   p.say('« Créer »');
   await p.tap('doCreate');
   p
@@ -3604,8 +3606,8 @@ Future<void> playClasses(DemoPlayer p) async {
     ..set('created', true);
   await p.wait(1000);
   p.say('⋮ : « Renommer » ou « Supprimer » une classe');
-  await p.tap('dots_5e B');
-  p.set('menuRect', p.rectOf('dots_5e B'));
+  await p.tap('dots_Terminale B');
+  p.set('menuRect', p.rectOf('dots_Terminale B'));
   await p.wait(1700);
   p.set('menuRect', null);
   await p.wait(300);
@@ -3613,20 +3615,20 @@ Future<void> playClasses(DemoPlayer p) async {
 
 Future<void> playClassMembers(DemoPlayer p) async {
   p.say('Toucher une classe pour ouvrir sa fiche');
-  await p.tap('class_5e B', at: const Alignment(-0.4, 0));
+  await p.tap('class_Terminale B', at: const Alignment(-0.4, 0));
   p.set('page', 'detail');
   await p.wait(900);
-  p.say('« Ajouter » : choisir parmi les élèves qui n\'ont pas de classe');
+  p.say('« Ajouter » : choisir parmi les utilisateurs sans classe');
   await p.tap('addMember');
   p.set('dialog', 'addMember');
   await p.wait(700);
-  await p.tap('pick_noah.lambert');
+  await p.tap('pick_utilisateur.w');
   p
     ..set('dialog', null)
     ..set('memberAdded', true);
   await p.wait(1000);
   p.say('L\'icône rouge retire un membre de la classe');
-  await p.moveTo('remove_hugo.mercier');
+  await p.moveTo('remove_utilisateur.y');
   await p.wait(1200);
   p.say('La bulle, en haut : le chat de la classe');
   await p.moveTo('classChat');
@@ -3691,7 +3693,7 @@ class _DemoLoanList extends StatelessWidget {
               ),
             ),
             Text(
-              '@$username',
+              userHandle(username),
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ],
@@ -3767,9 +3769,9 @@ class _DemoLoanList extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 children: [
-                  tile('loan0', 30, demoLea, demoHugo),
+                  tile('loan0', 30, demoX, demoY),
                   const SizedBox(height: 8),
-                  tile('loan1', 12.5, demoInes, demoAdam),
+                  tile('loan1', 12.5, demoZ, demoU),
                 ],
               ),
             ),
@@ -3856,13 +3858,13 @@ class _DemoLoanDetail extends StatelessWidget {
           row(
             Icons.arrow_upward_rounded,
             'Prêteur',
-            '@${demoLea.username}',
+            userHandle(demoX.username),
             color: AppTheme.positive,
           ),
           row(
             Icons.arrow_downward_rounded,
             'Emprunteur',
-            '@${demoHugo.username}',
+            userHandle(demoY.username),
             color: AppTheme.negative,
           ),
           const Divider(height: 18),
@@ -4029,8 +4031,7 @@ Future<void> playLoanSettings(DemoPlayer p) async {
   await p.type('daily', '150', perChar: 140);
   p.set('focus', null);
   await p.wait(300);
-  p.say(
-      '« Enregistrer » : les nouvelles règles s\'appliquent à toutes les demandes');
+  p.say('« Enregistrer » : nouvelles règles valables pour toutes les demandes');
   await p.reveal('saveLoans', alignment: 0.6);
   await p.tap('saveLoans');
   await p.toast('Paramètres enregistrés.');
@@ -4055,7 +4056,7 @@ Widget taxScene(BuildContext context, DemoController c) {
               icon: Icons.percent_rounded,
               title: 'Prélèvement global',
               message: 'Cette action prélève un pourcentage sur tous les '
-                  'comptes actifs. Elle est irréversible.',
+                  'comptes actifs. Opération irréversible.',
               color: AppTheme.negative,
             ),
             const SizedBox(height: 16),
@@ -4079,7 +4080,8 @@ Widget taxScene(BuildContext context, DemoController c) {
                     c.mark(
                       'f_taxReason',
                       MockField(
-                        label: 'Raison affichée aux utilisateurs',
+                        label: 'Raison (facultative)',
+                        helper: 'Affichée aux utilisateurs',
                         prefixIcon: Icons.notes_rounded,
                         value: c.text('taxReason'),
                         focused: focus == 'taxReason',
@@ -4139,7 +4141,7 @@ Future<void> playTax(DemoPlayer p) async {
   await p.tap('f_percent');
   p.set('focus', 'percent');
   await p.type('percent', '10', perChar: 160);
-  p.say('La raison, affichée aux élèves (obligatoire)');
+  p.say('La raison (facultative), affichée aux utilisateurs');
   await p.tap('f_taxReason');
   p.set('focus', 'taxReason');
   await p.type('taxReason', 'Impôt de fin de trimestre');
@@ -4221,11 +4223,11 @@ Widget rewardScene(BuildContext context, DemoController c) {
 }
 
 Future<void> playReward(DemoPlayer p) async {
-  p.say('Le montant crédité à chaque élève');
+  p.say('Le montant crédité à chaque utilisateur');
   await p.tap('f_rewardAmount');
   p.set('focus', 'rewardAmount');
   await p.type('rewardAmount', '25', perChar: 160);
-  p.say('La raison, facultative, affichée aux élèves');
+  p.say('La raison, facultative, affichée aux utilisateurs');
   await p.tap('f_rewardReason');
   p.set('focus', 'rewardReason');
   await p.type('rewardReason', 'Bravo pour le projet');
@@ -4345,8 +4347,8 @@ Widget rateScene(BuildContext context, DemoController c) {
                     c.mark(
                       'chartArea',
                       DemoMarketChart(
-                        demand: demoDemand,
-                        supply: demoSupply,
+                        demand: c.get<List<double>>('demand') ?? demoDemand,
+                        supply: c.get<List<double>>('supply') ?? demoSupply,
                         price: price,
                         editing: series,
                         dragIndex: c.get<int>('dragIndex'),
@@ -4500,24 +4502,64 @@ Widget rateScene(BuildContext context, DemoController c) {
   );
 }
 
-Future<void> playRate(DemoPlayer p) async {
-  p.say('1. Choisir la série à dessiner : ici, le prix');
-  await p.tap('series', at: const Alignment(0.67, 0));
-  p.set('series', DemoSeries.price);
-  await p.wait(600);
+/// Volumes dessinés par l'exemple : leur maximum laisse l'échelle du
+/// graphique (0 à 500) inchangée pendant le tracé.
+const _newDemand = <double>[40, 120, 150, 170, 190, 210, 200, 180, 160, 140];
+const _newSupply = <double>[30, 100, 130, 150, 160, 170, 175, 165, 150, 140];
+const _volumeScale = 500.0;
 
-  p.say('2. Glisser le doigt sur le graphique : la courbe suit le doigt');
+/// Glisse sur le graphique pour redessiner une série de colonnes.
+Future<void> _drawVolumes(
+  DemoPlayer p,
+  Rect inner,
+  String key,
+  List<double> start,
+  List<double> target,
+) async {
+  final values = List<double>.of(start);
+  await p.drag(
+    // Les colonnes occupent 85 % de la hauteur.
+    demoColumnPath(inner, [for (final v in target) v / _volumeScale * 0.85]),
+    onPoint: (i) {
+      values[i] = target[i];
+      p
+        ..set(key, List<double>.of(values))
+        ..set('dragIndex', i);
+    },
+  );
+  p.set('dragIndex', null);
+  await p.wait(400);
+}
+
+Future<void> playRate(DemoPlayer p) async {
   await p.reveal('chartArea', alignment: 0.25);
   final chart = p.rectOf('chartArea');
   if (chart != null) {
-    // Même repère que le dessin : marges de 18 en haut, 4 en bas, et 94 %
-    // de la hauteur pour le prix, sur un axe de 0 à 10 €.
+    // Même repère que le dessin : marges de 18 en haut, 4 en bas.
     final inner = Rect.fromLTRB(
       chart.left,
       chart.top + 18,
       chart.right,
       chart.bottom - 4,
     );
+
+    p.say('1. Série « Demande » : glisser sur le graphique pour la dessiner');
+    await p.tap('series', at: const Alignment(-0.67, 0));
+    p.set('series', DemoSeries.demand);
+    await p.wait(400);
+    await _drawVolumes(p, inner, 'demand', demoDemand, _newDemand);
+
+    p.say('2. Série « Offre » : même geste');
+    await p.tap('series', at: const Alignment(0, 0));
+    p.set('series', DemoSeries.supply);
+    await p.wait(400);
+    await _drawVolumes(p, inner, 'supply', demoSupply, _newSupply);
+
+    p.say('3. Série « Prix » : la courbe suit le mouvement');
+    await p.tap('series', at: const Alignment(0.67, 0));
+    p.set('series', DemoSeries.price);
+    await p.wait(400);
+    // Prix : 94 % de la hauteur, sur un axe de 0 à 10 €.
     const shape = [0.11, 0.13, 0.17, 0.2, 0.25, 0.29, 0.34, 0.39, 0.44, 0.5];
     final values = List<double>.of(demoPrice);
     await p.drag(
@@ -4532,7 +4574,7 @@ Future<void> playRate(DemoPlayer p) async {
     p.set('dragIndex', null);
     await p.wait(400);
 
-    p.say('3. Appui long sur une colonne : saisir sa valeur exacte');
+    p.say('4. Appui long sur une colonne : saisir sa valeur exacte');
     await p
         .longPressAt(Offset(chart.left + chart.width * 0.95, chart.center.dy));
     p.set('dialog', 'exact');
@@ -4551,12 +4593,12 @@ Future<void> playRate(DemoPlayer p) async {
     await p.wait(700);
   }
 
-  p.say('4. La flèche ↓ reprend le dernier prix comme cours affiché');
+  p.say('5. La flèche ↓ reprend le dernier prix comme cours affiché');
   await p.reveal('arrow', alignment: 0.5);
   await p.tap('arrow');
   p.set('rate', '5.5000');
   await p.wait(500);
-  p.say('5. La raison, puis « Appliquer le nouveau cours »');
+  p.say('6. La raison, puis « Appliquer le nouveau cours »');
   await p.tap('f_rateReason');
   p.set('focus', 'rateReason');
   await p.type('rateReason', 'Forte demande au marché');

@@ -15,6 +15,7 @@ import '../../common/empty_state.dart';
 import '../../common/error_retry.dart';
 import '../../common/loading_overlay.dart';
 import '../../common/user_avatar.dart';
+import '../../core/user_handle.dart';
 
 class AdminRequestsScreen extends ConsumerWidget {
   const AdminRequestsScreen({super.key});
@@ -124,7 +125,7 @@ class AdminRequestsScreen extends ConsumerWidget {
           icon: Icons.person_off_rounded,
           tone: AppDialogTone.danger,
           title: 'Refuser la demande',
-          subtitle: 'L\'élève sera informé du refus',
+          subtitle: 'Le refus est notifié au demandeur',
           content: TextField(
             controller: reasonCtrl,
             decoration:
@@ -204,7 +205,7 @@ class _RequestCardState extends State<_RequestCard> {
           builder: (d, setS) => AppDialog(
             icon: Icons.how_to_reg_rounded,
             title: 'Approuver le compte',
-            subtitle: '@${widget.req.username}',
+            subtitle: userHandle(widget.req.username),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,7 +339,7 @@ class _RequestCardState extends State<_RequestCard> {
                         ),
                       ),
                       Text(
-                        '@${widget.req.username}',
+                        userHandle(widget.req.username),
                         style: TextStyle(
                           color: Theme.of(context)
                               .colorScheme
@@ -536,7 +537,7 @@ class _RequestCardState extends State<_RequestCard> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '@${req.username}',
+                      userHandle(req.username),
                       style: TextStyle(
                         color: context.accent,
                         fontWeight: FontWeight.w600,

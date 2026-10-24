@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme.dart';
+import '../../../core/user_handle.dart';
 import '../../../providers/auth_provider.dart';
 import 'tutorial_engine.dart';
 import 'tutorial_mock.dart';
@@ -60,6 +61,7 @@ class _AdminTutorialScreenState extends ConsumerState<AdminTutorialScreen> {
   final Set<int> _played = {};
 
   bool get _playing => _player != null;
+  bool get _paused => _player?.paused ?? false;
   bool get _isLast => _index == tutorialSteps.length - 1;
 
   // Le contrôleur d'une étape est libéré par [_SessionHost], quand sa scène
@@ -132,6 +134,12 @@ class _AdminTutorialScreenState extends ConsumerState<AdminTutorialScreen> {
     setState(() => _player = null);
   }
 
+  void _togglePause() {
+    final player = _player;
+    if (player == null) return;
+    setState(() => player.paused ? player.resume() : player.pause());
+  }
+
   // ── Sommaire ──────────────────────────────────────────────────────────────
 
   void _openSummary() {
@@ -169,7 +177,8 @@ class _AdminTutorialScreenState extends ConsumerState<AdminTutorialScreen> {
         const SingleActivator(LogicalKeyboardKey.arrowRight): _next,
         const SingleActivator(LogicalKeyboardKey.arrowLeft): _previous,
         const SingleActivator(LogicalKeyboardKey.space): () =>
-            _playing ? _stop() : _play(),
+            _playing ? _togglePause() : _play(),
+        const SingleActivator(LogicalKeyboardKey.escape): _stop,
       },
       child: Focus(
         autofocus: true,
@@ -182,6 +191,7 @@ class _AdminTutorialScreenState extends ConsumerState<AdminTutorialScreen> {
                   step: step,
                   controller: _session.controller,
                   playing: _playing,
+                  paused: _paused,
                   onQuit: _quit,
                   onSummary: _openSummary,
                 ),
@@ -204,8 +214,10 @@ class _AdminTutorialScreenState extends ConsumerState<AdminTutorialScreen> {
                                     .overrideWithValue(demoMeId),
                               ],
                               child: DemoIdentity(
-                                name: profile?.displayName ?? 'Administrateur',
-                                username: profile?.username ?? 'admin',
+                                // Le tutoriel est réservé à l'administrateur :
+                                // ses écrans portent son nom public.
+                                name: adminPublicName,
+                                username: profile?.username ?? adminUsername,
                                 child: AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 280),
                                   child: _SessionHost(
@@ -233,10 +245,12 @@ class _AdminTutorialScreenState extends ConsumerState<AdminTutorialScreen> {
                 _BottomBar(
                   index: _index,
                   playing: _playing,
+                  paused: _paused,
                   isLast: _isLast,
                   onPrevious: _index > 0 ? _previous : null,
                   onNext: _next,
                   onStop: _stop,
+                  onTogglePause: _togglePause,
                 ),
               ],
             ),
@@ -255,6 +269,7 @@ class _Header extends StatelessWidget {
     required this.step,
     required this.controller,
     required this.playing,
+    required this.paused,
     required this.onQuit,
     required this.onSummary,
   });
@@ -263,6 +278,7 @@ class _Header extends StatelessWidget {
   final TutorialStep step;
   final DemoController controller;
   final bool playing;
+  final bool paused;
   final VoidCallback onQuit;
   final VoidCallback onSummary;
 
@@ -313,7 +329,10 @@ class _Header extends StatelessWidget {
               duration: const Duration(milliseconds: 220),
               child: playing
                   ? _Caption(
-                      key: const ValueKey('caption'), controller: controller)
+                      key: const ValueKey('caption'),
+                      controller: controller,
+                      paused: paused,
+                    )
                   : Padding(
                       key: const ValueKey('progress'),
                       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -375,9 +394,14 @@ class _Header extends StatelessWidget {
 
 /// Action en cours de l'exemple, numérotée.
 class _Caption extends StatelessWidget {
-  const _Caption({super.key, required this.controller});
+  const _Caption({
+    super.key,
+    required this.controller,
+    required this.paused,
+  });
 
   final DemoController controller;
+  final bool paused;
 
   @override
   Widget build(BuildContext context) {
@@ -442,6 +466,25 @@ class _Caption extends StatelessWidget {
                   ),
                 ),
               ),
+              if (paused) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.warning.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: const Text(
+                    'En pause',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.warning,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
@@ -962,81 +1005,103 @@ class _BottomBar extends StatelessWidget {
   const _BottomBar({
     required this.index,
     required this.playing,
+    required this.paused,
     required this.isLast,
     required this.onPrevious,
     required this.onNext,
     required this.onStop,
+    required this.onTogglePause,
   });
 
   final int index;
   final bool playing;
+  final bool paused;
   final bool isLast;
   final VoidCallback? onPrevious;
   final VoidCallback onNext;
   final VoidCallback onStop;
+  final VoidCallback onTogglePause;
+
+  static const _compact = EdgeInsets.symmetric(horizontal: 12);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Pendant l'exemple, la barre ne commande que l'exemple.
+    final controls = Row(
+      key: const ValueKey('controls'),
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onTogglePause,
+            style: OutlinedButton.styleFrom(padding: _compact),
+            icon: Icon(
+              paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+            ),
+            label: Text(paused ? 'Reprendre' : 'Pause', maxLines: 1),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: onStop,
+            style: FilledButton.styleFrom(
+              padding: _compact,
+              backgroundColor: AppTheme.negative,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.stop_rounded),
+            label: const Text('Arrêter', maxLines: 1),
+          ),
+        ),
+      ],
+    );
+
+    final navigation = Row(
+      key: const ValueKey('navigation'),
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onPrevious,
+            style: OutlinedButton.styleFrom(padding: _compact),
+            icon: const Icon(Icons.arrow_back_rounded),
+            label: const Text('Retour', maxLines: 1),
+          ),
+        ),
+        SizedBox(
+          width: 64,
+          child: Text(
+            '${index + 1} / ${tutorialSteps.length}',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: onNext,
+            iconAlignment: IconAlignment.end,
+            style: FilledButton.styleFrom(padding: _compact),
+            icon: Icon(
+              isLast ? Icons.check_rounded : Icons.arrow_forward_rounded,
+            ),
+            label: Text(isLast ? 'Terminer' : 'Suivant', maxLines: 1),
+          ),
+        ),
+      ],
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: SizedBox(
         height: 48,
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onPrevious,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Retour', maxLines: 1),
-              ),
-            ),
-            const SizedBox(width: 10),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              child: playing
-                  ? TextButton.icon(
-                      key: const ValueKey('stop'),
-                      onPressed: onStop,
-                      icon: const Icon(Icons.stop_rounded),
-                      label: const Text('Arrêter'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.negative,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                      ),
-                    )
-                  : SizedBox(
-                      key: const ValueKey('count'),
-                      width: 56,
-                      child: Text(
-                        '${index + 1} / ${tutorialSteps.length}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: onNext,
-                iconAlignment: IconAlignment.end,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-                icon: Icon(
-                  isLast ? Icons.check_rounded : Icons.arrow_forward_rounded,
-                ),
-                label: Text(isLast ? 'Terminer' : 'Suivant', maxLines: 1),
-              ),
-            ),
-          ],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: playing ? controls : navigation,
         ),
       ),
     );

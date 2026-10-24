@@ -179,9 +179,9 @@ class _ShopTab extends ConsumerWidget {
             .toList()
           ..sort((a, b) => a.key.compareTo(b.key));
         final singleItems = (grouped.entries
-                .where((e) => e.value.length == 1)
-                .map((e) => e.value.first)
-                .toList())
+            .where((e) => e.value.length == 1)
+            .map((e) => e.value.first)
+            .toList())
           ..sort((a, b) => a.category.compareTo(b.category));
 
         Widget buildCard(MarketplaceItem item) {
@@ -362,8 +362,9 @@ class _ShopTab extends ConsumerWidget {
               child: const Text('Annuler'),
             ),
             FilledButton.icon(
-              onPressed:
-                  tooExpensive ? null : () => Navigator.pop(dialogContext, true),
+              onPressed: tooExpensive
+                  ? null
+                  : () => Navigator.pop(dialogContext, true),
               icon: const Icon(Icons.check_rounded, size: 18),
               label: const Text('Acheter'),
             ),
@@ -396,6 +397,8 @@ class _AuctionsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auctionsAsync = ref.watch(activeAuctionsProvider);
     final bidState = ref.watch(bidProvider);
+    // L'administrateur consulte les enchères mais n'enchérit pas.
+    final isAdmin = ref.watch(isAdminProvider);
 
     return auctionsAsync.when(
       loading: () => const InlineLoader(message: 'Chargement des enchères...'),
@@ -425,6 +428,7 @@ class _AuctionsTab extends ConsumerWidget {
               child: AuctionCard(
                 auction: auctions[index],
                 isLoading: bidState.isLoading,
+                actionLabel: isAdmin ? 'Voir l\'enchère' : null,
                 onBid: () => context.push('/auction/${auctions[index].id}'),
               ),
             ),

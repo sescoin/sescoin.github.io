@@ -138,7 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       TextStyle(fontWeight: FontWeight.w700),
                                 ),
                                 Text(
-                                  'Mode principal · approche les téléphones',
+                                  'Mode principal · téléphones à rapprocher',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey.shade600,

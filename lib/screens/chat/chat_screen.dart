@@ -25,6 +25,7 @@ import '../../providers/chat_provider.dart';
 import '../../providers/class_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../core/user_handle.dart';
 
 // ── Écran principal ────────────────────────────────────────────────────────────
 
@@ -476,7 +477,7 @@ void _showClassMembers(BuildContext context, String classId, String className) {
                             m.displayName,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          subtitle: Text('@${m.username}'),
+                          subtitle: Text(userHandle(m.username)),
                           onTap: () {
                             Navigator.pop(context);
                             context.push('/user/${m.username}');
@@ -736,7 +737,7 @@ class _GlobalChatBodyState extends ConsumerState<_GlobalChatBody> {
       builder: (d) => AlertDialog(
         title: const Text('Accepter le prêt'),
         content: Text(
-          'Prêter ${msg.loanAmount?.toStringAsFixed(2) ?? '?'} SC à @${msg.username} ?'
+          'Prêter ${msg.loanAmount?.toStringAsFixed(2) ?? '?'} SC à ${userHandle(msg.username)} ?'
           '${msg.loanInterestRate != null ? '\nTaux : ${msg.loanInterestRate}%' : ''}'
           '${msg.loanDueDate != null ? '\nÉchéance : ${_formatDueDate(msg.loanDueDate!)}' : ''}',
         ),
@@ -1116,7 +1117,7 @@ class _ClassChatBodyState extends ConsumerState<_ClassChatBody> {
       builder: (d) => AlertDialog(
         title: const Text('Accepter le prêt'),
         content: Text(
-          'Prêter ${msg.loanAmount?.toStringAsFixed(2) ?? '?'} SC à @${msg.username} ?'
+          'Prêter ${msg.loanAmount?.toStringAsFixed(2) ?? '?'} SC à ${userHandle(msg.username)} ?'
           '${msg.loanInterestRate != null ? '\nTaux : ${msg.loanInterestRate}%' : ''}'
           '${msg.loanDueDate != null ? '\nÉchéance : ${_loanDueDateLabel(msg.loanDueDate!)}' : ''}',
         ),
@@ -2558,7 +2559,7 @@ class _GiftBubble extends StatelessWidget {
                           child: Text(
                             claimedByMe
                                 ? 'Cadeau récupéré'
-                                : 'Récupéré par @${message.giftClaimedUsername ?? '?'}',
+                                : 'Récupéré par ${userHandle(message.giftClaimedUsername ?? '?')}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -3130,7 +3131,7 @@ Future<void> _confirmAndReport(
       icon: Icons.flag_rounded,
       tone: AppDialogTone.danger,
       title: 'Signaler ce message ?',
-      subtitle: '@${message.username}',
+      subtitle: userHandle(message.username),
       content: const Text(
         'Le message sera transmis à l\'administrateur. Un même message ne '
         'peut être signalé qu\'une fois.',
