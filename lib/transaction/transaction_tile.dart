@@ -26,7 +26,15 @@ class TransactionTile extends ConsumerWidget {
     final userId = ref.watch(currentUserIdProvider) ?? '';
     final isCredit = transaction.isCredit(userId);
     final amount = transaction.signedAmount(userId);
-    final otherParty = transaction.otherPartyName(userId) ?? 'Inconnu';
+    final otherParty = isCredit
+        ? userLabel(
+            displayName: transaction.fromDisplayName,
+            username: transaction.fromUsername,
+          )
+        : userLabel(
+            displayName: transaction.toDisplayName,
+            username: transaction.toUsername,
+          );
 
     return InkWell(
       onTap: onTap,
@@ -89,7 +97,7 @@ class TransactionTile extends ConsumerWidget {
   String _subtitle(String otherParty, bool isCredit) {
     switch (transaction.type) {
       case TransactionType.transfer:
-        return isCredit ? 'De ${userHandle(otherParty)}' : 'À ${userHandle(otherParty)}';
+        return isCredit ? 'De $otherParty' : 'À $otherParty';
       case TransactionType.purchase:
         return transaction.marketplaceItemName == null
             ? 'Achat boutique'
@@ -115,8 +123,8 @@ class TransactionTile extends ConsumerWidget {
         return 'Solde initial';
       case TransactionType.gift:
         return isCredit
-            ? 'Cadeau récupéré de ${userHandle(otherParty)}'
-            : 'Cadeau récupéré par ${userHandle(otherParty)}';
+            ? 'Cadeau récupéré de $otherParty'
+            : 'Cadeau récupéré par $otherParty';
     }
   }
 }

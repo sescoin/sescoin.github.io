@@ -22,10 +22,14 @@ class GlobalTransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fromLabel =
-        transaction.fromDisplayName ?? transaction.fromUsername ?? 'Inconnu';
-    final toLabel =
-        transaction.toDisplayName ?? transaction.toUsername ?? 'Inconnu';
+    final fromLabel = userLabel(
+      displayName: transaction.fromDisplayName,
+      username: transaction.fromUsername,
+    );
+    final toLabel = userLabel(
+      displayName: transaction.toDisplayName,
+      username: transaction.toUsername,
+    );
     final isBuyerTransaction = transaction.type == TransactionType.purchase ||
         transaction.type == TransactionType.auction;
     final rawDescription = _visibleDescription;
@@ -69,35 +73,29 @@ class GlobalTransactionTile extends StatelessWidget {
             const SizedBox(height: 12),
             if (isBuyerTransaction)
               _UserChip(
-                label: 'Acheteur : ${userHandle(fromLabel)}',
+                label: 'Acheteur : $fromLabel',
                 onTap: onFromTap,
               )
             else if (transaction.type == TransactionType.initialBalance)
               // Solde initial : l'administrateur qui l'attribue n'est pas une
               // contrepartie, la somme est créée. On l'affiche donc comme un
               // crédit système, au même titre qu'une récompense.
-              _UserChip(label: 'Vers ${userHandle(toLabel)}', onTap: onToTap)
+              _UserChip(label: 'Vers $toLabel', onTap: onToTap)
             else if (transaction.fromUserId == null)
               // Opération système (crédit, récompense…) : pas de contrepartie.
-              _UserChip(label: 'Vers ${userHandle(toLabel)}', onTap: onToTap)
+              _UserChip(label: 'Vers $toLabel', onTap: onToTap)
             else if (transaction.toUserId == null)
               // Opération système (débit, taxe…) : pas de contrepartie.
-              _UserChip(label: 'De ${userHandle(fromLabel)}', onTap: onFromTap)
+              _UserChip(label: 'De $fromLabel', onTap: onFromTap)
             else
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  _UserChip(
-                    label: 'De ${userHandle(fromLabel)}',
-                    onTap: onFromTap,
-                  ),
+                  _UserChip(label: 'De $fromLabel', onTap: onFromTap),
                   const Icon(Icons.arrow_forward_rounded, size: 18),
-                  _UserChip(
-                    label: 'Vers ${userHandle(toLabel)}',
-                    onTap: onToTap,
-                  ),
+                  _UserChip(label: 'Vers $toLabel', onTap: onToTap),
                 ],
               ),
             if (description != null) ...[

@@ -180,8 +180,11 @@ AnimatedSwitcherLayoutBuilder _demoSwitcherLayout(
 }
 
 /// Position de l'élément [anchor] dans le repère du plateau [stageKey].
-Rect? demoRectOf(GlobalKey stageKey, GlobalKey anchor) {
-  final target = anchor.currentContext?.findRenderObject();
+Rect? demoRectOf(GlobalKey stageKey, GlobalKey anchor) =>
+    _demoRectOfContext(stageKey, anchor.currentContext);
+
+Rect? _demoRectOfContext(GlobalKey stageKey, BuildContext? context) {
+  final target = context?.findRenderObject();
   final stage = stageKey.currentContext?.findRenderObject();
   if (target is! RenderBox || stage is! RenderBox) return null;
   if (!target.attached || !target.hasSize || !stage.attached) return null;
@@ -200,6 +203,9 @@ class DemoPlayer {
   final GlobalKey _stageKey;
   bool _cancelled = false;
   Completer<void>? _resumed;
+
+  /// Clé du plateau, repère de toutes les positions.
+  GlobalKey get stageKey => _stageKey;
 
   bool get paused => _resumed != null;
 
@@ -256,6 +262,34 @@ class DemoPlayer {
 
   Rect? rectOf(String id) => demoRectOf(_stageKey, c.anchor(id));
 
+  /// Fait défiler la liste qui contient [id] pour l'amener au centre quand
+  /// il est caché en partie ou collé à un bord : le geste reste visible.
+  Future<void> _center(String id) async {
+    final context = c.anchor(id).currentContext;
+    if (context == null || !context.mounted) return;
+    final scrollable = Scrollable.maybeOf(context);
+    if (scrollable == null || scrollable.position.axis != Axis.vertical) {
+      return;
+    }
+    final target = rectOf(id);
+    final view = _demoRectOfContext(_stageKey, scrollable.context);
+    if (target == null || view == null) return;
+
+    final margin = view.height * 0.12;
+    final comfortable = target.top >= view.top + margin &&
+        target.bottom <= view.bottom - margin;
+    // Un élément plus haut que la zone confortable ne peut pas y tenir.
+    if (comfortable || target.height > view.height - 2 * margin) return;
+
+    await Scrollable.ensureVisible(
+      context,
+      alignment: 0.5,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeInOutCubic,
+    );
+    await wait(80);
+  }
+
   /// Taille du plateau, pour viser une zone sans élément repéré.
   Size get stageSize {
     final box = _stageKey.currentContext?.findRenderObject();
@@ -270,6 +304,7 @@ class DemoPlayer {
   }) async {
     // Laisse la scène se mettre en page après le dernier changement.
     await wait(40);
+    await _center(id);
     final rect = rectOf(id);
     if (rect == null) return;
     await moveToPoint(at.withinRect(rect), ms: ms);

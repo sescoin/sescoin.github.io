@@ -1171,7 +1171,6 @@ class _DemoPublicProfile extends StatelessWidget {
               amount: 12,
               from: person,
               to: demoX,
-              description: 'Remboursement cantine',
               method: 'qr',
             ),
           ),
@@ -2420,7 +2419,6 @@ class _DemoShopAdmin extends StatelessWidget {
                         price: 50,
                         stock: 10,
                         maxPerUser: 1,
-                        description: 'Dispense d\'un devoir maison au choix.',
                       ),
                     ),
                   ),
@@ -2432,8 +2430,6 @@ class _DemoShopAdmin extends StatelessWidget {
                     price: c.number('price0', 80),
                     stock: 3,
                     maxPerUser: 1,
-                    description:
-                        'Quitter le cours cinq minutes avant la sonnerie.',
                   ),
                   const SizedBox(height: 10),
                   const _DemoItemCard(
@@ -2464,7 +2460,7 @@ class _DemoItemCard extends StatelessWidget {
     required this.price,
     required this.stock,
     required this.maxPerUser,
-    required this.description,
+    this.description = '',
   });
 
   final DemoController? c;
@@ -2532,13 +2528,15 @@ class _DemoItemCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: neutral),
-            ),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: neutral),
+              ),
+            ],
             const SizedBox(height: 10),
             Row(
               children: [
@@ -4533,29 +4531,30 @@ Future<void> _drawVolumes(
   await p.wait(400);
 }
 
-Future<void> playRate(DemoPlayer p) async {
-  await p.reveal('chartArea', alignment: 0.25);
+/// Zone de dessin du graphique (marges de 18 en haut, 4 en bas), relue
+/// avant chaque geste : la liste a pu défiler entre-temps.
+Rect? _chartInner(DemoPlayer p) {
   final chart = p.rectOf('chartArea');
-  if (chart != null) {
-    // Même repère que le dessin : marges de 18 en haut, 4 en bas.
-    final inner = Rect.fromLTRB(
-      chart.left,
-      chart.top + 18,
-      chart.right,
-      chart.bottom - 4,
-    );
+  if (chart == null) return null;
+  return Rect.fromLTRB(
+      chart.left, chart.top + 18, chart.right, chart.bottom - 4);
+}
 
+Future<void> playRate(DemoPlayer p) async {
+  // Séries et graphique visibles ensemble, sans défilement pendant le tracé.
+  await p.reveal('series', alignment: 0.2);
+  if (_chartInner(p) != null) {
     p.say('1. Série « Demande » : glisser sur le graphique pour la dessiner');
     await p.tap('series', at: const Alignment(-0.67, 0));
     p.set('series', DemoSeries.demand);
     await p.wait(400);
-    await _drawVolumes(p, inner, 'demand', demoDemand, _newDemand);
+    await _drawVolumes(p, _chartInner(p)!, 'demand', demoDemand, _newDemand);
 
     p.say('2. Série « Offre » : même geste');
     await p.tap('series', at: const Alignment(0, 0));
     p.set('series', DemoSeries.supply);
     await p.wait(400);
-    await _drawVolumes(p, inner, 'supply', demoSupply, _newSupply);
+    await _drawVolumes(p, _chartInner(p)!, 'supply', demoSupply, _newSupply);
 
     p.say('3. Série « Prix » : la courbe suit le mouvement');
     await p.tap('series', at: const Alignment(0.67, 0));
@@ -4565,7 +4564,7 @@ Future<void> playRate(DemoPlayer p) async {
     const shape = [0.11, 0.13, 0.17, 0.2, 0.25, 0.29, 0.34, 0.39, 0.44, 0.5];
     final values = List<double>.of(demoPrice);
     await p.drag(
-      demoColumnPath(inner, [for (final t in shape) t * 0.94]),
+      demoColumnPath(_chartInner(p)!, [for (final t in shape) t * 0.94]),
       onPoint: (i) {
         values[i] = (shape[i] * 1000).roundToDouble() / 100;
         p
@@ -4578,7 +4577,8 @@ Future<void> playRate(DemoPlayer p) async {
 
     // Sans glisser : un toucher place la colonne à la hauteur touchée.
     p.say('Un simple toucher sur une colonne rectifie aussi sa valeur');
-    final column = demoColumnPath(inner, List.filled(10, 0.3 * 0.94))[6];
+    final column =
+        demoColumnPath(_chartInner(p)!, List.filled(10, 0.3 * 0.94))[6];
     p.set('dragIndex', 6);
     await p.tapAt(column);
     values[6] = 3.0;
@@ -4588,6 +4588,7 @@ Future<void> playRate(DemoPlayer p) async {
     await p.wait(400);
 
     p.say('4. Appui long sur une colonne : saisir sa valeur exacte');
+    final chart = _chartInner(p)!;
     await p
         .longPressAt(Offset(chart.left + chart.width * 0.95, chart.center.dy));
     p.set('dialog', 'exact');

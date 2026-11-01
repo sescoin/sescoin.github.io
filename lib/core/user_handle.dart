@@ -16,6 +16,18 @@ String userHandle(String? username) {
   return '@$name';
 }
 
+/// Nom à afficher pour un compte : son nom tel quel (sans « @ »), ou à
+/// défaut « @identifiant ». L'administrateur apparaît sous son nom public.
+String userLabel({String? displayName, String? username}) {
+  if (isAdminName(username) || isAdminName(displayName)) {
+    return adminPublicName;
+  }
+  final name = (displayName ?? '').trim();
+  if (name.isNotEmpty) return name;
+  if ((username ?? '').trim().isEmpty) return 'Inconnu';
+  return userHandle(username);
+}
+
 /// Vrai pour l'identifiant ou le nom public de l'administrateur.
 bool isAdminName(String? name) {
   final value = (name ?? '').trim().toLowerCase();

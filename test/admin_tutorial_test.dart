@@ -15,18 +15,38 @@ import 'package:ses_coin/screens/admin/tutorial/tutorial_engine.dart';
 import 'package:ses_coin/screens/admin/tutorial/tutorial_mock.dart';
 import 'package:ses_coin/screens/admin/tutorial/tutorial_steps.dart';
 
-/// Joueur qui note les éléments introuvables : le doigt les ignorerait
-/// sans rien dire.
+/// Joueur qui note les éléments introuvables (le point les ignorerait sans
+/// rien dire) et ceux qu'il touche alors qu'ils sont coupés par le bord de
+/// leur liste.
 class _CheckingPlayer extends DemoPlayer {
   _CheckingPlayer(super.c, super.stageKey);
 
   final missing = <String>{};
+  final hidden = <String>{};
 
   @override
   Rect? rectOf(String id) {
     final rect = super.rectOf(id);
     if (rect == null) missing.add(id);
     return rect;
+  }
+
+  @override
+  Future<void> moveTo(
+    String id, {
+    Alignment at = Alignment.center,
+    int ms = 650,
+  }) async {
+    await super.moveTo(id, at: at, ms: ms);
+    final context = c.anchor(id).currentContext;
+    final rect = super.rectOf(id);
+    final stage = stageKey.currentContext?.findRenderObject();
+    if (context == null || rect == null || stage is! RenderBox) return;
+    final scrollable = Scrollable.maybeOf(context);
+    final box = scrollable?.context.findRenderObject();
+    if (box is! RenderBox) return;
+    final view = box.localToGlobal(Offset.zero, ancestor: stage) & box.size;
+    if (!view.deflate(2).contains(at.withinRect(rect))) hidden.add(id);
   }
 }
 
@@ -118,6 +138,11 @@ void main() {
         expect(done, isTrue, reason: 'exemple jamais terminé');
         expect(error, isNull);
         expect(player.missing, isEmpty, reason: 'éléments introuvables');
+        expect(
+          player.hidden,
+          isEmpty,
+          reason: 'éléments touchés hors de la partie visible de leur liste',
+        );
       }
 
       await tester.pumpWidget(const SizedBox());

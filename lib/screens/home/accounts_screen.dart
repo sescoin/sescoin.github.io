@@ -36,9 +36,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
 
   /// Tri par solde décroissant, puis filtre de recherche. Le rang affiché
   /// reste celui du classement complet : filtrer ne renumérote pas.
-  /// L'administrateur n'est pas classé.
   List<(int, Profile)> _ranked(List<Profile> profiles) {
-    final sorted = profiles.where((p) => !p.isAdmin).toList()
+    final sorted = [...profiles]
       ..sort((a, b) => b.balance.compareTo(a.balance));
 
     final ranked = <(int, Profile)>[];

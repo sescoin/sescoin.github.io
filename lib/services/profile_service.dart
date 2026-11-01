@@ -42,7 +42,6 @@ class ProfileService {
         .select(
             'id, username, display_name, avatar_url, balance, role, is_banned, created_at, fcm_token')
         .eq('is_banned', false)
-        .neq('role', 'admin')
         .order('balance', ascending: false)
         .limit(50);
     return (data as List).map((e) => Profile.fromJson(e)).toList();
@@ -245,15 +244,14 @@ class ProfileService {
         .map((rows) => Profile.fromJson(rows.first));
   }
 
-  /// Stream du leaderboard en temps réel (sans l'administrateur, qui n'est
-  /// pas en compétition).
+  /// Stream du leaderboard en temps réel
   Stream<List<Profile>> watchLeaderboard() {
     return _client
         .from('profiles')
         .stream(primaryKey: ['id'])
         .order('balance', ascending: false)
         .map((rows) => rows
-            .where((r) => r['is_banned'] == false && r['role'] != 'admin')
+            .where((r) => r['is_banned'] == false)
             .map((r) => Profile.fromJson(r))
             .toList());
   }

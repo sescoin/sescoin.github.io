@@ -272,7 +272,7 @@ class _DemoClassChat extends StatelessWidget {
                   id: 'msg_adam',
                   name: demoU.name,
                   username: demoU.username,
-                  text: 'Exercice 3 terminé, on regarde ensemble ?',
+                  text: 'J\'ai terminé l\'exo 3, on peut regarder ensemble',
                   time: '13:04',
                   flagId: 'flag_adam',
                 ),
@@ -282,7 +282,7 @@ class _DemoClassChat extends StatelessWidget {
                   name: me.name,
                   username: me.username,
                   own: true,
-                  text: 'Contrôle jeudi : révisions conseillées.',
+                  text: 'Contrôle jeudi n\'oubliez pas de réviser :)',
                   time: '13:06',
                   readers: const [demoX, demoY, demoU],
                   readersOpen: c.flag('readsOpen'),
@@ -1885,7 +1885,6 @@ class _DemoShopTab extends StatelessWidget {
                           50,
                           stock: 10,
                           maxPerUser: 1,
-                          description: 'Dispense d\'un devoir maison au choix.',
                         ),
                         fillHeight: true,
                         onBuy: demoNoop,
@@ -1945,7 +1944,6 @@ class _DemoShopTab extends StatelessWidget {
                           120,
                           stock: 6,
                           category: 'Objets',
-                          description: 'Sweat brodé aux couleurs du lycée.',
                         ),
                         image: const _DemoProductPhoto(),
                         fillHeight: true,
@@ -3390,6 +3388,8 @@ Future<void> playNotifications(DemoPlayer p) async {
   p.set('page', 'notifs');
   await p.wait(800);
   p.say('Glisser vers la gauche (ou toucher la corbeille) : supprimer');
+  // Ligne amenée au centre avant le glissement.
+  await p.moveTo('notif_2', at: const Alignment(0.6, 0));
   final row = p.rectOf('notif_2');
   if (row != null) {
     final y = row.center.dy;
