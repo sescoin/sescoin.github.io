@@ -3841,6 +3841,12 @@ Widget explorerScene(BuildContext context, DemoController c) {
 
 const _ranking = [demoZ, demoX, demoV, demoY, demoU, demoW];
 
+/// Classement de l'exemple : l'administrateur en tête, avec ses 999 999 SC.
+List<DemoPerson> _rankingOf(BuildContext context) {
+  final me = DemoIdentity.of(context);
+  return [DemoPerson(me.name, me.username, 999999), ..._ranking];
+}
+
 class _DemoLeaderboard extends StatelessWidget {
   const _DemoLeaderboard({required this.c});
 
@@ -3849,6 +3855,7 @@ class _DemoLeaderboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final ranking = _rankingOf(context);
     Widget spot(DemoPerson person, int rank, Color color, double height) =>
         Expanded(
           child: Column(
@@ -3921,16 +3928,16 @@ class _DemoLeaderboard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                spot(_ranking[1], 2, const Color(0xFFC9D1D9), 70),
+                spot(ranking[1], 2, const Color(0xFFC9D1D9), 70),
                 const SizedBox(width: 10),
-                spot(_ranking[0], 1, AppTheme.gold, 92),
+                spot(ranking[0], 1, AppTheme.gold, 92),
                 const SizedBox(width: 10),
-                spot(_ranking[2], 3, const Color(0xFFCD7F32), 56),
+                spot(ranking[2], 3, const Color(0xFFCD7F32), 56),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          for (final (i, person) in _ranking.skip(3).indexed)
+          for (final (i, person) in ranking.skip(3).indexed)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Container(
@@ -3985,6 +3992,7 @@ class _DemoDirectory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final ranking = _rankingOf(context);
     Color? podium(int rank) => switch (rank) {
           1 => const Color(0xFFD4AF37),
           2 => const Color(0xFF9AA3B2),
@@ -4011,7 +4019,7 @@ class _DemoDirectory extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                 children: [
-                  for (final (i, person) in _ranking.indexed)
+                  for (final (i, person) in ranking.indexed)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Card(
@@ -4409,12 +4417,12 @@ class _DemoFilterDrawer extends StatelessWidget {
 }
 
 Future<void> playExplore(DemoPlayer p) async {
-  p.say('Classement : le podium des trois plus riches, puis tous les comptes');
+  p.say('Classement : tous les comptes, administrateur compris, par solde');
   await p.moveTo('podium');
   await p.wait(1400);
   p.set('page', 'accounts');
   await p.wait(800);
-  p.say('Comptes : l\'annuaire par solde, avec recherche et accès aux fiches');
+  p.say('Comptes : l\'annuaire complet, administrateur compris, avec recherche');
   await p.moveTo('directory', at: const Alignment(0, -0.6));
   await p.wait(1300);
   p.set('page', 'explorer');

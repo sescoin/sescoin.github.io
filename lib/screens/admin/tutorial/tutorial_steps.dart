@@ -706,8 +706,10 @@ const tutorialSteps = <TutorialStep>[
     title: 'Classement, comptes et blockchain',
     text: 'Trois écrans pour observer l\'économie de la classe.',
     points: [
-      'Classement : le podium des plus riches, puis tous les comptes.',
-      'Comptes : l\'annuaire, avec recherche.',
+      'Classement : le podium des plus riches, puis tous les comptes, '
+          'administrateur compris.',
+      'Comptes : l\'annuaire de tous les comptes, administrateur compris, '
+          'avec recherche.',
       'Blockchain : toutes les transactions de tous les comptes, en direct.',
       'L\'icône de filtres : recherche, montant, type, méthode de paiement.',
     ],
